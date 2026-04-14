@@ -62,6 +62,7 @@ describe('materializer — dateToIndex / indexToDate roundtrip', () => {
   });
 
   it('should roundtrip for all days in 2025', () => {
+    // Comprehensive check: validates the entire year's date conversion logic
     for (let i = 0; i < 365; i++) {
       const date = indexToDate(2025, i);
       assert.equal(dateToIndex(date), i, `Roundtrip failed for index ${i} → ${date}`);
