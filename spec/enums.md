@@ -54,7 +54,7 @@ Standard labels that can be applied to days. These are not exhaustive — custom
 | `NEW_YEAR` | New Year's Day | 元旦 |
 | `SPRING_FESTIVAL` | Spring Festival (Chinese New Year) | 春节 |
 | `TOMB_SWEEPING` | Tomb-Sweeping Day (Qingming) | 清明节 |
-| `LABOR_DAY` | International Labor Day | 劳动节 |
+| `LABOUR_DAY` | International Labour Day | 劳动节 |
 | `DRAGON_BOAT` | Dragon Boat Festival (Duanwu) | 端午节 |
 | `MID_AUTUMN` | Mid-Autumn Festival | 中秋节 |
 | `NATIONAL_DAY` | National Day | 国庆节 |
