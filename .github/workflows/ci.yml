@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  spec-validate:
+    name: Validate JSON Schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install -g ajv-cli
+      - name: Validate schemas
+        run: |
+          for schema in spec/holiday-json-schema/*.schema.json; do
+            echo "Validating $schema..."
+            ajv compile -s "$schema" --spec=draft7
+          done
+
+  compiler-test:
+    name: TypeScript Compiler Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - run: pnpm install
+      - run: pnpm -r run build
+      - run: pnpm -r run lint
+      - name: Validate pipeline
+        run: |
+          node packages/ts-compiler/dist/esm/cli.js validate --input data/canonical/CN/2025.canon.json
+          node packages/ts-compiler/dist/esm/cli.js validate --input data/canonical/CN/2026.canon.json
+          node packages/ts-compiler/dist/esm/cli.js inspect --bundle data/bundles/CN/2025.hday
+          node packages/ts-compiler/dist/esm/cli.js inspect --bundle data/bundles/CN/2026.hday
+
+  java-build:
+    name: Java Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ['8', '17']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+      - name: Build with Gradle
+        working-directory: java
+        run: gradle build
+
+  node-build:
+    name: Node.js Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['16', '18', '20']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - run: pnpm install
+      - run: pnpm -r run build
+
+  bundle-verify:
+    name: Bundle Integrity Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify bundles
+        run: bash scripts/verify-bundles.sh
