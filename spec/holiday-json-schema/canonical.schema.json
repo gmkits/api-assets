@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://holiday-platform.dev/schemas/canonical.schema.json",
+  "title": "CanonicalSpec",
+  "description": "Canonical holiday specification file — defines rules and sources for a region-year bundle",
+  "type": "object",
+  "required": ["meta", "sources", "rules", "overrides", "extensions"],
+  "properties": {
+    "meta": { "$ref": "#/definitions/CommonMeta" },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Source" },
+      "description": "Data sources referenced by rules"
+    },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Rule" },
+      "description": "Holiday rules"
+    },
+    "overrides": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Rule" },
+      "description": "Override rules applied after base rules"
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Extension data",
+      "default": {}
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "CommonMeta": {
+      "type": "object",
+      "description": "Common metadata shared across spec and materialized formats",
+      "required": ["specVersion", "bundleId", "regionCode", "year", "validFrom", "validTo", "calendarSystem", "timezone", "weekendMask", "locales", "sourceVersion", "generatedAt", "generator", "extensions"],
+      "properties": {
+        "specVersion": { "type": "string", "description": "Specification version" },
+        "bundleId": { "type": "string", "description": "Unique bundle identifier" },
+        "regionCode": { "type": "string", "minLength": 2, "description": "Region code (e.g. CN, CN-SH)" },
+        "parentRegionCode": { "type": ["string", "null"], "description": "Parent region code, null if top-level" },
+        "year": { "type": "integer", "description": "Calendar year" },
+        "validFrom": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Start of validity period (YYYY-MM-DD)" },
+        "validTo": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "End of validity period (YYYY-MM-DD)" },
+        "calendarSystem": { "type": "string", "enum": ["GREGORIAN", "CHINESE_LUNAR"], "description": "Calendar system" },
+        "timezone": { "type": "string", "description": "IANA timezone identifier" },
+        "weekendMask": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+          },
+          "description": "Days of the week considered weekend by default"
+        },
+        "locales": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Supported locale codes"
+        },
+        "sourceVersion": { "type": "string", "description": "Data source version" },
+        "generatedAt": { "type": "string", "format": "date-time", "description": "ISO 8601 generation timestamp" },
+        "generator": {
+          "type": "object",
+          "required": ["name", "version"],
+          "properties": {
+            "name": { "type": "string", "description": "Generator tool name" },
+            "version": { "type": "string", "description": "Generator tool version" }
+          },
+          "additionalProperties": false,
+          "description": "Generator tool information"
+        },
+        "extensions": { "type": "object", "description": "Extension data", "default": {} }
+      },
+      "additionalProperties": false
+    },
+    "Source": {
+      "type": "object",
+      "description": "A data source referenced by rules",
+      "required": ["id", "type", "title", "publishedAt"],
+      "properties": {
+        "id": { "type": "string", "description": "Unique source identifier" },
+        "type": {
+          "type": "string",
+          "enum": ["GOV_NOTICE", "ICS_FEED", "THIRD_PARTY_JSON", "CSV_IMPORT", "MANUAL_ENTRY", "ENTERPRISE_PATCH"],
+          "description": "Source type"
+        },
+        "title": { "type": "string", "description": "Human-readable title" },
+        "url": { "type": "string", "format": "uri", "description": "Source URL" },
+        "publishedAt": { "type": "string", "format": "date-time", "description": "Publication timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "Rule": {
+      "type": "object",
+      "description": "A holiday or workday rule",
+      "required": ["id", "type", "dayKind", "displayNames", "labels", "sourceRefs"],
+      "properties": {
+        "id": { "type": "string", "description": "Unique rule identifier" },
+        "type": {
+          "type": "string",
+          "enum": ["FIXED_DATE", "DATE_RANGE", "WEEKDAY_OVERRIDE", "LUNAR_DATE", "RECURRENCE", "PATCH"],
+          "description": "Rule type"
+        },
+        "dayKind": { "type": "string", "description": "Kind of day this rule produces" },
+        "displayNames": {
+          "type": "object",
+          "description": "Multi-language display names",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Label tags"
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "References to source IDs"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Date for FIXED_DATE rules (YYYY-MM-DD)"
+        },
+        "from": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Start date for DATE_RANGE rules (YYYY-MM-DD)"
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "End date for DATE_RANGE rules (YYYY-MM-DD)"
+        },
+        "calendarSystem": {
+          "type": "string",
+          "enum": ["GREGORIAN", "CHINESE_LUNAR"],
+          "description": "Calendar system for LUNAR_DATE rules"
+        },
+        "month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Month for LUNAR_DATE rules"
+        },
+        "day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31,
+          "description": "Day for LUNAR_DATE rules"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

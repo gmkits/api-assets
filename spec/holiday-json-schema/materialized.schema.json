@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://holiday-platform.dev/schemas/materialized.schema.json",
+  "title": "MaterializedYearData",
+  "description": "Materialized year data — pre-computed day-level holiday information for a region-year",
+  "type": "object",
+  "required": ["meta", "days"],
+  "properties": {
+    "meta": { "$ref": "#/definitions/CommonMeta" },
+    "days": {
+      "type": "object",
+      "description": "Map of date strings (YYYY-MM-DD) to day information",
+      "patternProperties": {
+        "^\\d{4}-\\d{2}-\\d{2}$": { "$ref": "#/definitions/DayEntry" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "CommonMeta": {
+      "type": "object",
+      "description": "Common metadata shared across spec and materialized formats",
+      "required": ["specVersion", "bundleId", "regionCode", "year", "validFrom", "validTo", "calendarSystem", "timezone", "weekendMask", "locales", "sourceVersion", "generatedAt", "generator", "extensions"],
+      "properties": {
+        "specVersion": { "type": "string", "description": "Specification version" },
+        "bundleId": { "type": "string", "description": "Unique bundle identifier" },
+        "regionCode": { "type": "string", "minLength": 2, "description": "Region code (e.g. CN, CN-SH)" },
+        "parentRegionCode": { "type": ["string", "null"], "description": "Parent region code, null if top-level" },
+        "year": { "type": "integer", "description": "Calendar year" },
+        "validFrom": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Start of validity period (YYYY-MM-DD)" },
+        "validTo": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "End of validity period (YYYY-MM-DD)" },
+        "calendarSystem": { "type": "string", "enum": ["GREGORIAN", "CHINESE_LUNAR"], "description": "Calendar system" },
+        "timezone": { "type": "string", "description": "IANA timezone identifier" },
+        "weekendMask": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+          },
+          "description": "Days of the week considered weekend by default"
+        },
+        "locales": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Supported locale codes"
+        },
+        "sourceVersion": { "type": "string", "description": "Data source version" },
+        "generatedAt": { "type": "string", "format": "date-time", "description": "ISO 8601 generation timestamp" },
+        "generator": {
+          "type": "object",
+          "required": ["name", "version"],
+          "properties": {
+            "name": { "type": "string", "description": "Generator tool name" },
+            "version": { "type": "string", "description": "Generator tool version" }
+          },
+          "additionalProperties": false,
+          "description": "Generator tool information"
+        },
+        "extensions": { "type": "object", "description": "Extension data", "default": {} }
+      },
+      "additionalProperties": false
+    },
+    "DayEntry": {
+      "type": "object",
+      "description": "Day-level holiday information",
+      "required": ["isHoliday", "isWorkday", "isWeekend", "isStatutoryHoliday", "isAdjustedWorkday", "holidayNames", "labels"],
+      "properties": {
+        "isHoliday": { "type": "boolean", "description": "Whether this day is a holiday (day off)" },
+        "isWorkday": { "type": "boolean", "description": "Whether this day is a working day" },
+        "isWeekend": { "type": "boolean", "description": "Whether this day falls on a default weekend" },
+        "isStatutoryHoliday": { "type": "boolean", "description": "Whether this day is a statutory holiday proper" },
+        "isAdjustedWorkday": { "type": "boolean", "description": "Whether this day is an adjusted workday (调休补班)" },
+        "holidayNames": {
+          "type": "object",
+          "description": "Multi-language holiday names",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Label tags for this day"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
