@@ -1,0 +1,172 @@
+{
+  "meta": {
+    "specVersion": "1.0.0",
+    "bundleId": "CN-2025",
+    "regionCode": "CN",
+    "parentRegionCode": null,
+    "year": 2025,
+    "validFrom": "2025-01-01",
+    "validTo": "2025-12-31",
+    "calendarSystem": "GREGORIAN",
+    "timezone": "Asia/Shanghai",
+    "weekendMask": ["SAT", "SUN"],
+    "locales": ["zh-CN", "en-US"],
+    "sourceVersion": "2024.11.12",
+    "generatedAt": "2024-11-12T12:00:00+08:00",
+    "generator": {
+      "name": "holiday-compiler",
+      "version": "1.0.0"
+    },
+    "extensions": {}
+  },
+  "sources": [
+    {
+      "id": "gov-notice-2025",
+      "type": "GOV_NOTICE",
+      "title": "国务院办公厅关于2025年部分节假日安排的通知",
+      "url": "https://www.gov.cn/zhengce/content/202411/content_6985382.htm",
+      "publishedAt": "2024-11-12T00:00:00+08:00"
+    }
+  ],
+  "rules": [
+    {
+      "id": "new-year-2025",
+      "type": "FIXED_DATE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "元旦",
+        "en-US": "New Year's Day"
+      },
+      "labels": ["NEW_YEAR", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "date": "2025-01-01"
+    },
+    {
+      "id": "spring-festival-2025",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "春节",
+        "en-US": "Spring Festival"
+      },
+      "labels": ["SPRING_FESTIVAL", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "from": "2025-01-28",
+      "to": "2025-02-04"
+    },
+    {
+      "id": "spring-festival-2025-makeup-1",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "春节调休",
+        "en-US": "Spring Festival makeup"
+      },
+      "labels": ["SPRING_FESTIVAL", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "date": "2025-01-26"
+    },
+    {
+      "id": "spring-festival-2025-makeup-2",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "春节调休",
+        "en-US": "Spring Festival makeup"
+      },
+      "labels": ["SPRING_FESTIVAL", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "date": "2025-02-08"
+    },
+    {
+      "id": "tomb-sweeping-2025",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "清明节",
+        "en-US": "Tomb-Sweeping Day"
+      },
+      "labels": ["TOMB_SWEEPING", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "from": "2025-04-04",
+      "to": "2025-04-06"
+    },
+    {
+      "id": "labour-day-2025",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "劳动节",
+        "en-US": "Labour Day"
+      },
+      "labels": ["LABOUR_DAY", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "from": "2025-05-01",
+      "to": "2025-05-05"
+    },
+    {
+      "id": "labour-day-2025-makeup-1",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "劳动节调休",
+        "en-US": "Labour Day makeup"
+      },
+      "labels": ["LABOUR_DAY", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "date": "2025-04-27"
+    },
+    {
+      "id": "dragon-boat-2025",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "端午节",
+        "en-US": "Dragon Boat Festival"
+      },
+      "labels": ["DRAGON_BOAT", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "from": "2025-05-31",
+      "to": "2025-06-02"
+    },
+    {
+      "id": "mid-autumn-national-day-2025",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "中秋节、国庆节",
+        "en-US": "Mid-Autumn Festival, National Day"
+      },
+      "labels": ["MID_AUTUMN", "NATIONAL_DAY", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "from": "2025-10-01",
+      "to": "2025-10-08"
+    },
+    {
+      "id": "national-day-2025-makeup-1",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "国庆节调休",
+        "en-US": "National Day makeup"
+      },
+      "labels": ["NATIONAL_DAY", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "date": "2025-09-28"
+    },
+    {
+      "id": "national-day-2025-makeup-2",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "国庆节调休",
+        "en-US": "National Day makeup"
+      },
+      "labels": ["NATIONAL_DAY", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2025"],
+      "date": "2025-10-11"
+    }
+  ],
+  "overrides": [],
+  "extensions": {}
+}
