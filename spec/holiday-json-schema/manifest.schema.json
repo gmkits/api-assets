@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://holiday-platform.dev/schemas/manifest.schema.json",
+  "title": "Manifest",
+  "description": "Manifest file — index of all available region-year bundles",
+  "type": "object",
+  "required": ["specVersion", "bundleFormatVersion", "defaultRegion", "publishedAt", "bundles"],
+  "properties": {
+    "specVersion": { "type": "string", "description": "Specification version" },
+    "bundleFormatVersion": { "type": "string", "description": "Bundle format version" },
+    "defaultRegion": { "type": "string", "description": "Default region code" },
+    "publishedAt": { "type": "string", "format": "date-time", "description": "Publication timestamp (ISO 8601)" },
+    "bundles": {
+      "type": "object",
+      "description": "Map of region codes to year bundles",
+      "additionalProperties": {
+        "type": "object",
+        "description": "Map of year strings to bundle entries",
+        "additionalProperties": { "$ref": "#/definitions/BundleEntry" }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "BundleEntry": {
+      "type": "object",
+      "description": "A single region-year bundle entry",
+      "required": ["file", "sha256", "crc32", "sourceVersion"],
+      "properties": {
+        "file": { "type": "string", "description": "Relative file path to the bundle" },
+        "sha256": { "type": "string", "description": "SHA-256 hash of the bundle file" },
+        "crc32": { "type": "string", "description": "CRC-32 checksum of the bundle file" },
+        "sourceVersion": { "type": "string", "description": "Data source version" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
