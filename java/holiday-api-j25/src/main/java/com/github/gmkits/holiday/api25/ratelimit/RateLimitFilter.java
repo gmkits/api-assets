@@ -105,8 +105,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
      */
     static class TokenBucket {
         private final AtomicLong lastRefillNanos = new AtomicLong(System.nanoTime());
-        /** 初始化时给满令牌，避免冷启动被限流 */
-        private final AtomicLong tokens = new AtomicLong(Long.MAX_VALUE);
+        private final AtomicLong tokens = new AtomicLong(0);
         private volatile boolean initialized = false;
 
         boolean tryConsume(int qps) {
@@ -115,9 +114,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
             }
             long maxTokens = qps * 2L;
 
-            // 首次调用时初始化令牌数为 maxTokens
+            // 首次调用时初始化令牌数为 maxTokens，避免冷启动被限流
             if (!initialized) {
-                tokens.set(maxTokens);
+                tokens.compareAndSet(0, maxTokens);
                 initialized = true;
             }
 
@@ -125,13 +124,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
             long last = lastRefillNanos.get();
             long elapsed = now - last;
 
-            // 补充令牌
+            // 补充令牌（CAS 更新保证线程安全）
             if (elapsed > 0) {
                 long newTokens = elapsed * qps / 1_000_000_000L;
                 if (newTokens > 0 && lastRefillNanos.compareAndSet(last, now)) {
-                    long current = tokens.get();
-                    long updated = Math.min(current + newTokens, maxTokens);
-                    tokens.set(updated);
+                    while (true) {
+                        long current = tokens.get();
+                        long updated = Math.min(current + newTokens, maxTokens);
+                        if (tokens.compareAndSet(current, updated)) {
+                            break;
+                        }
+                    }
                 }
             }
 
