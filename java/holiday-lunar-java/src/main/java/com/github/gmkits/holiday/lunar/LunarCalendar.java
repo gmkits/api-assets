@@ -272,6 +272,7 @@ public final class LunarCalendar {
         int slotCount = offsets.length - 1; // 最后一个是哨兵
 
         // 从后往前扫描找到 offset 所在的月槽
+        // 不变式：offsets[0] = 0，因此至少会命中 slot 0
         int slot = 0;
         for (int s = slotCount - 1; s >= 0; s--) {
             if (offsets[s] <= offset) {
