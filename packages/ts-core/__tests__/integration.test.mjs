@@ -13,10 +13,15 @@ const BUNDLE_2026 = resolve(__dirname, '../../../data/bundles/CN/2026.hday');
 let bundle2025 = null;
 let bundle2026 = null;
 
+/** Convert a Node.js Buffer to an ArrayBuffer suitable for parseHdayBundle. */
+function toArrayBuffer(buf) {
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+}
+
 async function loadBundle(path) {
   try {
     const buf = await readFile(path);
-    return parseHdayBundle(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+    return parseHdayBundle(toArrayBuffer(buf));
   } catch {
     return null;
   }
