@@ -25,11 +25,12 @@
     "BundleEntry": {
       "type": "object",
       "description": "A single region-year bundle entry",
-      "required": ["file", "sha256", "crc32", "sourceVersion"],
+      "required": ["file", "sha256", "crc32", "size", "sourceVersion"],
       "properties": {
         "file": { "type": "string", "description": "Relative file path to the bundle" },
         "sha256": { "type": "string", "description": "SHA-256 hash of the bundle file" },
         "crc32": { "type": "string", "description": "CRC-32 checksum of the bundle file" },
+        "size": { "type": "integer", "minimum": 0, "description": "File size in bytes" },
         "sourceVersion": { "type": "string", "description": "Data source version" }
       },
       "additionalProperties": false
