@@ -44,16 +44,32 @@ async function query() {
           <td>{{ result.date }}</td>
         </tr>
         <tr>
-          <td class="label">Name</td>
-          <td>{{ result.name }}</td>
+          <td class="label">Holiday</td>
+          <td>{{ result.isHoliday ? '✅ Yes' : '❌ No' }}</td>
         </tr>
         <tr>
-          <td class="label">Kind</td>
-          <td>{{ result.kind }}</td>
+          <td class="label">Workday</td>
+          <td>{{ result.isWorkday ? 'Yes' : 'No' }}</td>
         </tr>
         <tr>
-          <td class="label">Is Off</td>
-          <td>{{ result.isOff ? '✅ Yes' : '❌ No' }}</td>
+          <td class="label">Statutory</td>
+          <td>{{ result.isStatutoryHoliday ? '✅ Yes' : 'No' }}</td>
+        </tr>
+        <tr>
+          <td class="label">Adjusted Workday</td>
+          <td>{{ result.isAdjustedWorkday ? '💼 Yes' : 'No' }}</td>
+        </tr>
+        <tr>
+          <td class="label">Weekend</td>
+          <td>{{ result.isWeekend ? 'Yes' : 'No' }}</td>
+        </tr>
+        <tr>
+          <td class="label">Names</td>
+          <td>{{ result.holidayNames?.['zh-CN']?.join(', ') || '—' }}</td>
+        </tr>
+        <tr>
+          <td class="label">Labels</td>
+          <td>{{ result.labels?.join(', ') || '—' }}</td>
         </tr>
       </table>
       <details>
