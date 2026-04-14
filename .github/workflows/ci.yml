@@ -57,14 +57,14 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
-      - name: Build legacy Java modules
+      - name: Build Java modules (JDK 17)
         if: matrix.java == '17'
         working-directory: java
-        run: ./gradlew :holiday-spec-java:build :holiday-core-java:build :holiday-lunar-java:build :holiday-spring-starter:build :holiday-api-j8:build
-      - name: Build Java 25 API
+        run: mvn -B clean verify
+      - name: Build all modules including J25 API (JDK 25)
         if: matrix.java == '25'
         working-directory: java
-        run: ./gradlew :holiday-api-j25:build
+        run: mvn -B clean verify -Pj25
 
   node-build:
     name: Node.js Build & Test
