@@ -1,6 +1,6 @@
 package com.github.gmkits.holiday.api25.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.github.gmkits.holiday.api25.dto.ApiResponse;
 import com.github.gmkits.holiday.api25.dto.ApiResponses;
 import com.github.gmkits.holiday.api25.dto.BundleMetadataPayload;
