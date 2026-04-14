@@ -1,0 +1,24 @@
+{
+  "specVersion": "1.0.0",
+  "bundleFormatVersion": "1",
+  "defaultRegion": "CN",
+  "publishedAt": "2026-04-14T04:54:08.327Z",
+  "bundles": {
+    "CN": {
+      "2025": {
+        "file": "CN/2025.hday",
+        "sha256": "09b0c6fe0205c67d2c6effc1b621a7feab025e92b6ee92ca74a5bfb090e5d8e2",
+        "crc32": "0e22ac33",
+        "sourceVersion": "",
+        "size": 3909
+      },
+      "2026": {
+        "file": "CN/2026.hday",
+        "sha256": "75d94db6273a8df01626cc0f8008ca7b551783ecc06ec820a81eb2997c42bb57",
+        "crc32": "849b3778",
+        "sourceVersion": "",
+        "size": 3882
+      }
+    }
+  }
+}
