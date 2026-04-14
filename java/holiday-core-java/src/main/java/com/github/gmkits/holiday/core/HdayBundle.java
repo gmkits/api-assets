@@ -139,7 +139,13 @@ public final class HdayBundle {
         for (int[] pair : pairs) {
             int keyIdx = pair[0];
             int valIdx = pair[1];
-            if (keyIdx == NO_INDEX || valIdx == NO_INDEX || keyIdx >= strings.length || valIdx >= strings.length) {
+            if (keyIdx == NO_INDEX) {
+                continue;
+            }
+            if (valIdx == NO_INDEX) {
+                continue;
+            }
+            if (keyIdx >= strings.length || valIdx >= strings.length) {
                 continue;
             }
             String key = strings[keyIdx];
@@ -166,7 +172,10 @@ public final class HdayBundle {
         for (int[] pair : pairs) {
             int keyIdx = pair[0];
             int valIdx = pair[1];
-            if (keyIdx != NO_INDEX || valIdx == NO_INDEX || valIdx >= strings.length) {
+            if (keyIdx != NO_INDEX) {
+                continue;
+            }
+            if (valIdx == NO_INDEX || valIdx >= strings.length) {
                 continue;
             }
             result.add(strings[valIdx]);

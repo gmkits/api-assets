@@ -3,6 +3,7 @@ package com.github.gmkits.holiday.api25.service;
 import com.github.gmkits.holiday.api25.config.HolidayApi25Properties;
 import com.github.gmkits.holiday.api25.dto.OperationResult;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -17,6 +18,7 @@ import java.util.Set;
 /**
  * 运维动作：缓存清理、预热、manifest 重载。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HolidayOpsService {
@@ -83,8 +85,8 @@ public class HolidayOpsService {
                 try {
                     proxy.getYear(region, year.intValue());
                     warmedKeys.add(region + ":" + year);
-                } catch (Exception ignored) {
-                    // 缺失数据时跳过，避免预热阻塞启动或运维动作。
+                } catch (Exception ex) {
+                    log.debug("holiday warmup skipped for {}:{} - {}", region, year, ex.getMessage());
                 }
             }
         }
