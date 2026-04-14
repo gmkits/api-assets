@@ -1,0 +1,12 @@
+server:
+  port: 8080
+holiday:
+  default-region: CN
+  data-path: ${HOLIDAY_DATA_PATH:}
+  classpath-fallback: true
+spring:
+  application:
+    name: holiday-api
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
