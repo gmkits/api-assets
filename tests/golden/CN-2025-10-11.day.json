@@ -1,0 +1,24 @@
+{
+  "date": "2025-10-11",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": false,
+  "isWorkday": true,
+  "isWeekend": true,
+  "isStatutoryHoliday": false,
+  "isAdjustedWorkday": true,
+  "holidayNames": {
+    "en-US": [
+      "National Day makeup"
+    ],
+    "zh-CN": [
+      "国庆节调休"
+    ]
+  },
+  "labels": [
+    "NATIONAL_DAY",
+    "ADJUSTED_WORKDAY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

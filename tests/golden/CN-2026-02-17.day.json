@@ -1,0 +1,26 @@
+{
+  "date": "2026-02-17",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "Spring Festival",
+      "Spring Festival (New Year's Day)"
+    ],
+    "zh-CN": [
+      "春节",
+      "春节（初一）"
+    ]
+  },
+  "labels": [
+    "SPRING_FESTIVAL",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

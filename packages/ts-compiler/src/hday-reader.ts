@@ -7,6 +7,7 @@ import type {
   MaterializedDay,
   CommonMeta,
   CalendarSystem,
+  MultiLangNames,
 } from '@holiday/spec';
 import {
   DAY_FLAGS,
@@ -53,23 +54,33 @@ function parseStringTable(buf: Buffer, offset: number): string[] {
 }
 
 /**
- * Parse a name list table from the buffer at the given offset.
- * Format: [count:u16] [listLen:u16 [stringIdx:u16]*]*
+ * A key-value pair from the name list table.
  */
-function parseNameListTable(buf: Buffer, offset: number): number[][] {
+interface NamePairParsed {
+  keyIndex: number;
+  valueIndex: number;
+}
+
+/**
+ * Parse a name list table from the buffer at the given offset.
+ * Format: [count:u16] [pairCount:u16 [keyIdx:u16 valueIdx:u16]*]*
+ */
+function parseNameListTable(buf: Buffer, offset: number): NamePairParsed[][] {
   const count = buf.readUInt16LE(offset);
   let pos = offset + 2;
-  const lists: number[][] = [];
+  const lists: NamePairParsed[][] = [];
 
   for (let i = 0; i < count; i++) {
-    const listLen = buf.readUInt16LE(pos);
+    const pairCount = buf.readUInt16LE(pos);
     pos += 2;
-    const indices: number[] = [];
-    for (let j = 0; j < listLen; j++) {
-      indices.push(buf.readUInt16LE(pos));
-      pos += 2;
+    const pairs: NamePairParsed[] = [];
+    for (let j = 0; j < pairCount; j++) {
+      const keyIndex = buf.readUInt16LE(pos);
+      const valueIndex = buf.readUInt16LE(pos + 2);
+      pairs.push({ keyIndex, valueIndex });
+      pos += 4;
     }
-    lists.push(indices);
+    lists.push(pairs);
   }
 
   return lists;
@@ -97,20 +108,22 @@ export function readHday(buf: Buffer): MaterializedYearData {
     throw new Error(`Invalid .hday file: expected magic "${HDAY_MAGIC}", got "${magic}"`);
   }
 
-  // --- Parse header ---
-  const formatVersion = buf.readUInt16LE(4);
-  if (formatVersion !== 1) {
-    throw new Error(`Unsupported .hday format version: ${formatVersion}`);
+  // --- Parse header (32 bytes per spec) ---
+  const majorVersion = buf.readUInt8(4);
+  const minorVersion = buf.readUInt8(5);
+  if (majorVersion !== 1) {
+    throw new Error(`Unsupported .hday major version: ${majorVersion}`);
   }
 
-  const year = buf.readUInt16LE(6);
-  const regionCodeLen = buf.readUInt8(8);
-  const regionCode = buf.subarray(9, 9 + regionCodeLen).toString('utf-8');
-  const calSystemCode = buf.readUInt8(17);
+  // const flags = buf.readUInt16LE(6); // reserved
+  const year = buf.readUInt16LE(8);
+  const regionCodeLen = buf.readUInt8(10);
+  const regionCode = buf.subarray(11, 11 + regionCodeLen).toString('utf-8');
+  const calSystemCode = buf.readUInt8(27);
   const calendarSystem = CODE_TO_CALENDAR[calSystemCode] ?? 'GREGORIAN';
-  const totalDays = buf.readUInt16LE(18);
-  const numSections = buf.readUInt16LE(20);
-  const sectionTableOffset = buf.readUInt32LE(22);
+  const totalDays = buf.readUInt16LE(28);
+  const numSections = buf.readUInt16LE(30);
+  const sectionTableOffset = HDAY_HEADER_SIZE;
 
   // --- Verify CRC32 ---
   const crcOffset = buf.length - 4;
@@ -128,7 +141,7 @@ export function readHday(buf: Buffer): MaterializedYearData {
     const entryOffset = sectionTableOffset + i * HDAY_SECTION_ENTRY_SIZE;
     sections.push({
       type: buf.readUInt16LE(entryOffset),
-      offset: buf.readUInt32LE(entryOffset + 4),
+      offset: buf.readUInt32LE(entryOffset + 2),
     });
   }
 
@@ -146,10 +159,24 @@ export function readHday(buf: Buffer): MaterializedYearData {
   // --- Parse name list table ---
   const nameLists = parseNameListTable(buf, nameListSection.offset);
 
-  /** Resolve a name list index to an array of strings. */
-  function resolveNameList(idx: number): string[] {
+  /** Resolve a name list index to MultiLangNames (locale → names[]) */
+  function resolveNames(idx: number): MultiLangNames {
+    if (idx === NO_INDEX || idx >= nameLists.length) return {};
+    const pairs = nameLists[idx];
+    const result: MultiLangNames = {};
+    for (const pair of pairs) {
+      const locale = strings[pair.keyIndex] ?? 'default';
+      const name = strings[pair.valueIndex] ?? '';
+      if (!result[locale]) result[locale] = [];
+      result[locale].push(name);
+    }
+    return result;
+  }
+
+  /** Resolve a label list index to string[] (labels have keyIndex=0xFFFF) */
+  function resolveLabels(idx: number): string[] {
     if (idx === NO_INDEX || idx >= nameLists.length) return [];
-    return nameLists[idx].map(si => strings[si] ?? '');
+    return nameLists[idx].map(pair => strings[pair.valueIndex] ?? '');
   }
 
   // --- Parse day table ---
@@ -161,8 +188,8 @@ export function readHday(buf: Buffer): MaterializedYearData {
     const labelListIdx = buf.readUInt16LE(offset + 4);
 
     const dateStr = indexToDate(year, i);
-    const holidayNamesList = resolveNameList(nameListIdx);
-    const labels = resolveNameList(labelListIdx);
+    const holidayNames = resolveNames(nameListIdx);
+    const labels = resolveLabels(labelListIdx);
 
     days[dateStr] = {
       isHoliday: !!(flags & DAY_FLAGS.IS_HOLIDAY),
@@ -170,8 +197,7 @@ export function readHday(buf: Buffer): MaterializedYearData {
       isWeekend: !!(flags & DAY_FLAGS.IS_WEEKEND),
       isStatutoryHoliday: !!(flags & DAY_FLAGS.IS_STATUTORY_HOLIDAY),
       isAdjustedWorkday: !!(flags & DAY_FLAGS.IS_ADJUSTED_WORKDAY),
-      // Names stored as flat list under a generic key for round-trip
-      holidayNames: holidayNamesList.length > 0 ? { default: holidayNamesList } : {},
+      holidayNames,
       labels,
     };
   }

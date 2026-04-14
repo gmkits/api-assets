@@ -1,0 +1,24 @@
+{
+  "date": "2026-06-19",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "Dragon Boat Festival"
+    ],
+    "zh-CN": [
+      "端午节"
+    ]
+  },
+  "labels": [
+    "DRAGON_BOAT",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

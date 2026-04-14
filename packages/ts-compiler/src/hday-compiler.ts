@@ -87,22 +87,28 @@ class StringTableBuilder {
 
 // --- Name List Table Builder ---
 
+/** A key-value pair of string indices (keyIndex, valueIndex) */
+interface NamePair {
+  keyIndex: number;
+  valueIndex: number;
+}
+
 class NameListTableBuilder {
-  private lists: number[][] = [];
+  private lists: NamePair[][] = [];
   private indexMap = new Map<string, number>();
 
-  /** Add a name list (array of string indices) and return the name-list index. */
-  add(stringIndices: number[]): number {
-    const key = stringIndices.join(',');
+  /** Add a name list (array of key-value pairs) and return the name-list index. */
+  add(pairs: NamePair[]): number {
+    const key = pairs.map(p => `${p.keyIndex}:${p.valueIndex}`).join(',');
     const existing = this.indexMap.get(key);
     if (existing !== undefined) return existing;
     const idx = this.lists.length;
-    this.lists.push(stringIndices);
+    this.lists.push(pairs);
     this.indexMap.set(key, idx);
     return idx;
   }
 
-  /** Serialize: [count:u16] [listLen:u16 [stringIdx:u16]*]* */
+  /** Serialize: [count:u16] [pairCount:u16 [keyIdx:u16 valueIdx:u16]*]* */
   serialize(): Buffer {
     const parts: Buffer[] = [];
     const countBuf = Buffer.alloc(2);
@@ -113,10 +119,11 @@ class NameListTableBuilder {
       const lenBuf = Buffer.alloc(2);
       lenBuf.writeUInt16LE(list.length, 0);
       parts.push(lenBuf);
-      for (const idx of list) {
-        const idxBuf = Buffer.alloc(2);
-        idxBuf.writeUInt16LE(idx, 0);
-        parts.push(idxBuf);
+      for (const pair of list) {
+        const pairBuf = Buffer.alloc(4);
+        pairBuf.writeUInt16LE(pair.keyIndex, 0);
+        pairBuf.writeUInt16LE(pair.valueIndex, 2);
+        parts.push(pairBuf);
       }
     }
 
@@ -125,21 +132,36 @@ class NameListTableBuilder {
 }
 
 /**
- * Flatten MultiLangNames into a sorted, deduplicated list of strings
- * suitable for the binary format.
+ * Convert MultiLangNames into key-value pairs of string indices.
+ * Each pair is (localeStringIndex, nameStringIndex).
  */
-function flattenNames(names: MultiLangNames): string[] {
-  const allNames: string[] = [];
-  // Sort locales for deterministic output
+function buildNamePairs(
+  names: MultiLangNames,
+  strTable: StringTableBuilder,
+): NamePair[] {
+  const pairs: NamePair[] = [];
   const locales = Object.keys(names).sort();
   for (const locale of locales) {
+    const keyIndex = strTable.add(locale);
     for (const name of names[locale]) {
-      if (!allNames.includes(name)) {
-        allNames.push(name);
-      }
+      const valueIndex = strTable.add(name);
+      pairs.push({ keyIndex, valueIndex });
     }
   }
-  return allNames;
+  return pairs;
+}
+
+/**
+ * Convert labels into key-value pairs where key is 0xFFFF (no locale).
+ */
+function buildLabelPairs(
+  labels: string[],
+  strTable: StringTableBuilder,
+): NamePair[] {
+  return labels.map(label => ({
+    keyIndex: NO_INDEX,
+    valueIndex: strTable.add(label),
+  }));
 }
 
 /**
@@ -196,20 +218,19 @@ export function compile(data: MaterializedYearData): Buffer {
     if (day.isAdjustedWorkday) flags |= DAY_FLAGS.IS_ADJUSTED_WORKDAY;
 
     // Build name list
-    const names = flattenNames(day.holidayNames);
     let nameListIdx = NO_INDEX;
-    if (names.length > 0) {
+    const namePairs = buildNamePairs(day.holidayNames, strTable);
+    if (namePairs.length > 0) {
       flags |= DAY_FLAGS.HAS_NAME;
-      const nameStringIndices = names.map(n => strTable.add(n));
-      nameListIdx = nameListTable.add(nameStringIndices);
+      nameListIdx = nameListTable.add(namePairs);
     }
 
     // Build label list
     let labelListIdx = NO_INDEX;
     if (day.labels.length > 0) {
       flags |= DAY_FLAGS.HAS_LABEL;
-      const labelStringIndices = day.labels.map(l => strTable.add(l));
-      labelListIdx = nameListTable.add(labelStringIndices);
+      const labelPairs = buildLabelPairs(day.labels, strTable);
+      labelListIdx = nameListTable.add(labelPairs);
     }
 
     dayEntries.push({ flags, nameListIdx, labelListIdx });
@@ -246,39 +267,41 @@ export function compile(data: MaterializedYearData): Buffer {
   // --- Header (32 bytes) ---
   // Bytes 0-3: Magic "HDAY"
   buf.write(HDAY_MAGIC, 0, 4, 'ascii');
-  // Bytes 4-5: Format version (1)
-  buf.writeUInt16LE(1, 4);
-  // Bytes 6-7: Year
-  buf.writeUInt16LE(year, 6);
-  // Byte 8: Region code length + region code (up to 8 bytes)
+  // Byte 4: Major version
+  buf.writeUInt8(1, 4);
+  // Byte 5: Minor version
+  buf.writeUInt8(0, 5);
+  // Bytes 6-7: Flags (reserved)
+  buf.writeUInt16LE(0, 6);
+  // Bytes 8-9: Year
+  buf.writeUInt16LE(year, 8);
+  // Byte 10: Region code length
   const regionBuf = Buffer.from(meta.regionCode, 'utf-8');
-  buf.writeUInt8(regionBuf.length, 8);
-  regionBuf.copy(buf, 9, 0, Math.min(regionBuf.length, 8));
-  // Byte 17: Calendar system
-  buf.writeUInt8(CALENDAR_SYSTEM_CODES[meta.calendarSystem] ?? 0, 17);
-  // Bytes 18-19: Total days
-  buf.writeUInt16LE(totalDays, 18);
-  // Bytes 20-21: Number of sections
-  buf.writeUInt16LE(numSections, 20);
-  // Bytes 22-25: Section table offset
-  buf.writeUInt32LE(sectionTableOffset, 22);
-  // Bytes 26-31: Reserved (zeroes)
+  buf.writeUInt8(regionBuf.length, 10);
+  // Bytes 11-26: Region code (16 bytes, zero-padded)
+  regionBuf.copy(buf, 11, 0, Math.min(regionBuf.length, 16));
+  // Byte 27: Calendar system
+  buf.writeUInt8(CALENDAR_SYSTEM_CODES[meta.calendarSystem] ?? 0, 27);
+  // Bytes 28-29: Day count
+  buf.writeUInt16LE(totalDays, 28);
+  // Bytes 30-31: Section count
+  buf.writeUInt16LE(numSections, 30);
 
-  // --- Section Table ---
+  // --- Section Table (type:u16 + offset:u32 + length:u16 = 8B per entry) ---
   // Entry 0: DAY_TABLE
   buf.writeUInt16LE(SECTION_TYPES.DAY_TABLE, sectionTableOffset);
-  buf.writeUInt16LE(0, sectionTableOffset + 2); // reserved
-  buf.writeUInt32LE(dayTableOffset, sectionTableOffset + 4);
+  buf.writeUInt32LE(dayTableOffset, sectionTableOffset + 2);
+  buf.writeUInt16LE(dayTableBuf.length, sectionTableOffset + 6);
 
   // Entry 1: STRING_TABLE
   buf.writeUInt16LE(SECTION_TYPES.STRING_TABLE, sectionTableOffset + 8);
-  buf.writeUInt16LE(0, sectionTableOffset + 10);
-  buf.writeUInt32LE(strTableOffset, sectionTableOffset + 12);
+  buf.writeUInt32LE(strTableOffset, sectionTableOffset + 10);
+  buf.writeUInt16LE(strTableBuf.length, sectionTableOffset + 14);
 
   // Entry 2: NAME_LIST_TABLE
   buf.writeUInt16LE(SECTION_TYPES.NAME_LIST_TABLE, sectionTableOffset + 16);
-  buf.writeUInt16LE(0, sectionTableOffset + 18);
-  buf.writeUInt32LE(nameListTableOffset, sectionTableOffset + 20);
+  buf.writeUInt32LE(nameListTableOffset, sectionTableOffset + 18);
+  buf.writeUInt16LE(nameListTableBuf.length, sectionTableOffset + 22);
 
   // --- Data sections ---
   dayTableBuf.copy(buf, dayTableOffset);

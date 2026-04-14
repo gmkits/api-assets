@@ -1,0 +1,3667 @@
+{
+  "meta": {
+    "specVersion": "1.0.0",
+    "bundleId": "CN-2025",
+    "regionCode": "CN",
+    "parentRegionCode": null,
+    "year": 2025,
+    "validFrom": "2025-01-01",
+    "validTo": "2025-12-31",
+    "calendarSystem": "GREGORIAN",
+    "timezone": "Asia/Shanghai",
+    "weekendMask": [
+      "SAT",
+      "SUN"
+    ],
+    "locales": [
+      "zh-CN",
+      "en-US"
+    ],
+    "sourceVersion": "2024.11.12",
+    "generatedAt": "2024-11-12T12:00:00+08:00",
+    "generator": {
+      "name": "holiday-compiler",
+      "version": "1.0.0"
+    },
+    "extensions": {}
+  },
+  "days": {
+    "2025-01-01": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "元旦"
+        ],
+        "en-US": [
+          "New Year's Day"
+        ]
+      },
+      "labels": [
+        "NEW_YEAR",
+        "STATUTORY"
+      ]
+    },
+    "2025-01-02": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-03": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-04": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-05": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-06": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-07": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-08": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-09": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-11": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-12": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-13": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-15": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-16": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-18": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-19": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-20": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-22": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-23": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-25": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": true,
+      "holidayNames": {
+        "zh-CN": [
+          "春节调休"
+        ],
+        "en-US": [
+          "Spring Festival makeup"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "ADJUSTED_WORKDAY"
+      ]
+    },
+    "2025-01-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-01-28": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "春节",
+          "春节（除夕）"
+        ],
+        "en-US": [
+          "Spring Festival",
+          "Spring Festival (New Year's Eve)"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
+    },
+    "2025-01-29": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "春节",
+          "春节（初一）"
+        ],
+        "en-US": [
+          "Spring Festival",
+          "Spring Festival (New Year's Day)"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
+    },
+    "2025-01-30": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "春节",
+          "春节（初二）"
+        ],
+        "en-US": [
+          "Spring Festival",
+          "Spring Festival (Day 2)"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
+    },
+    "2025-01-31": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "春节"
+        ],
+        "en-US": [
+          "Spring Festival"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
+    },
+    "2025-02-01": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "春节"
+        ],
+        "en-US": [
+          "Spring Festival"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
+    },
+    "2025-02-02": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "春节"
+        ],
+        "en-US": [
+          "Spring Festival"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
+    },
+    "2025-02-03": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "春节"
+        ],
+        "en-US": [
+          "Spring Festival"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
+    },
+    "2025-02-04": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "春节"
+        ],
+        "en-US": [
+          "Spring Festival"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
+    },
+    "2025-02-05": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-06": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-07": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-08": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": true,
+      "holidayNames": {
+        "zh-CN": [
+          "春节调休"
+        ],
+        "en-US": [
+          "Spring Festival makeup"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "ADJUSTED_WORKDAY"
+      ]
+    },
+    "2025-02-09": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-12": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-13": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-15": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-16": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-19": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-20": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-22": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-23": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-02-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-01": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-02": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-03": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-04": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-05": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-06": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-07": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-08": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-09": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-12": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-13": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-15": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-16": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-19": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-20": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-22": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-23": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-29": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-30": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-03-31": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-01": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-02": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-03": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-04": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "清明节"
+        ],
+        "en-US": [
+          "Tomb-Sweeping Day"
+        ]
+      },
+      "labels": [
+        "TOMB_SWEEPING",
+        "STATUTORY"
+      ]
+    },
+    "2025-04-05": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "清明节"
+        ],
+        "en-US": [
+          "Tomb-Sweeping Day"
+        ]
+      },
+      "labels": [
+        "TOMB_SWEEPING",
+        "STATUTORY"
+      ]
+    },
+    "2025-04-06": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "清明节"
+        ],
+        "en-US": [
+          "Tomb-Sweeping Day"
+        ]
+      },
+      "labels": [
+        "TOMB_SWEEPING",
+        "STATUTORY"
+      ]
+    },
+    "2025-04-07": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-08": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-09": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-12": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-13": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-15": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-16": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-19": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-20": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-22": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-23": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-26": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": true,
+      "holidayNames": {
+        "zh-CN": [
+          "劳动节调休"
+        ],
+        "en-US": [
+          "Labour Day makeup"
+        ]
+      },
+      "labels": [
+        "LABOUR_DAY",
+        "ADJUSTED_WORKDAY"
+      ]
+    },
+    "2025-04-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-29": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-04-30": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-01": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "劳动节"
+        ],
+        "en-US": [
+          "Labour Day"
+        ]
+      },
+      "labels": [
+        "LABOUR_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-05-02": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "劳动节"
+        ],
+        "en-US": [
+          "Labour Day"
+        ]
+      },
+      "labels": [
+        "LABOUR_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-05-03": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "劳动节"
+        ],
+        "en-US": [
+          "Labour Day"
+        ]
+      },
+      "labels": [
+        "LABOUR_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-05-04": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "劳动节"
+        ],
+        "en-US": [
+          "Labour Day"
+        ]
+      },
+      "labels": [
+        "LABOUR_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-05-05": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "劳动节"
+        ],
+        "en-US": [
+          "Labour Day"
+        ]
+      },
+      "labels": [
+        "LABOUR_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-05-06": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-07": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-08": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-09": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-10": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-11": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-12": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-13": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-15": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-16": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-17": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-18": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-19": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-20": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-22": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-23": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-24": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-25": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-29": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-30": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-05-31": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "端午节"
+        ],
+        "en-US": [
+          "Dragon Boat Festival"
+        ]
+      },
+      "labels": [
+        "DRAGON_BOAT",
+        "STATUTORY"
+      ]
+    },
+    "2025-06-01": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "端午节"
+        ],
+        "en-US": [
+          "Dragon Boat Festival"
+        ]
+      },
+      "labels": [
+        "DRAGON_BOAT",
+        "STATUTORY"
+      ]
+    },
+    "2025-06-02": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "端午节"
+        ],
+        "en-US": [
+          "Dragon Boat Festival"
+        ]
+      },
+      "labels": [
+        "DRAGON_BOAT",
+        "STATUTORY"
+      ]
+    },
+    "2025-06-03": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-04": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-05": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-06": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-07": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-08": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-09": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-12": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-13": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-14": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-15": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-16": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-19": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-20": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-21": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-22": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-23": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-28": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-29": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-06-30": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-01": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-02": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-03": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-04": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-05": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-06": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-07": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-08": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-09": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-12": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-13": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-15": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-16": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-19": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-20": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-22": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-23": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-26": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-27": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-29": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-30": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-07-31": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-01": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-02": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-03": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-04": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-05": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-06": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-07": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-08": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-09": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-10": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-12": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-13": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-15": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-16": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-17": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-19": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-20": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-22": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-23": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-24": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-29": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-30": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-08-31": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-01": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-02": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-03": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-04": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-05": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-06": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-07": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-08": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-09": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-12": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-13": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-14": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-15": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-16": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-19": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-20": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-21": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-22": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-23": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-27": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": true,
+      "holidayNames": {
+        "zh-CN": [
+          "国庆节调休"
+        ],
+        "en-US": [
+          "National Day makeup"
+        ]
+      },
+      "labels": [
+        "NATIONAL_DAY",
+        "ADJUSTED_WORKDAY"
+      ]
+    },
+    "2025-09-29": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-09-30": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-01": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "中秋节、国庆节",
+          "国庆节"
+        ],
+        "en-US": [
+          "Mid-Autumn Festival, National Day",
+          "National Day"
+        ]
+      },
+      "labels": [
+        "MID_AUTUMN",
+        "NATIONAL_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-10-02": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "中秋节、国庆节",
+          "国庆节"
+        ],
+        "en-US": [
+          "Mid-Autumn Festival, National Day",
+          "National Day"
+        ]
+      },
+      "labels": [
+        "MID_AUTUMN",
+        "NATIONAL_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-10-03": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "中秋节、国庆节",
+          "国庆节"
+        ],
+        "en-US": [
+          "Mid-Autumn Festival, National Day",
+          "National Day"
+        ]
+      },
+      "labels": [
+        "MID_AUTUMN",
+        "NATIONAL_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-10-04": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "中秋节、国庆节"
+        ],
+        "en-US": [
+          "Mid-Autumn Festival, National Day"
+        ]
+      },
+      "labels": [
+        "MID_AUTUMN",
+        "NATIONAL_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-10-05": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "中秋节、国庆节"
+        ],
+        "en-US": [
+          "Mid-Autumn Festival, National Day"
+        ]
+      },
+      "labels": [
+        "MID_AUTUMN",
+        "NATIONAL_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-10-06": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": true,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "中秋节、国庆节",
+          "中秋节"
+        ],
+        "en-US": [
+          "Mid-Autumn Festival, National Day",
+          "Mid-Autumn Festival"
+        ]
+      },
+      "labels": [
+        "MID_AUTUMN",
+        "NATIONAL_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-10-07": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "中秋节、国庆节"
+        ],
+        "en-US": [
+          "Mid-Autumn Festival, National Day"
+        ]
+      },
+      "labels": [
+        "MID_AUTUMN",
+        "NATIONAL_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-10-08": {
+      "isHoliday": true,
+      "isWorkday": false,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {
+        "zh-CN": [
+          "中秋节、国庆节"
+        ],
+        "en-US": [
+          "Mid-Autumn Festival, National Day"
+        ]
+      },
+      "labels": [
+        "MID_AUTUMN",
+        "NATIONAL_DAY",
+        "STATUTORY"
+      ]
+    },
+    "2025-10-09": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": true,
+      "holidayNames": {
+        "zh-CN": [
+          "国庆节调休"
+        ],
+        "en-US": [
+          "National Day makeup"
+        ]
+      },
+      "labels": [
+        "NATIONAL_DAY",
+        "ADJUSTED_WORKDAY"
+      ]
+    },
+    "2025-10-12": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-13": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-15": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-16": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-18": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-19": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-20": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-22": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-23": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-25": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-26": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-29": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-30": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-10-31": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-01": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-02": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-03": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-04": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-05": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-06": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-07": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-08": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-09": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-12": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-13": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-14": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-15": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-16": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-19": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-20": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-21": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-22": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-23": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-27": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-28": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-29": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-11-30": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-01": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-02": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-03": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-04": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-05": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-06": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-07": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-08": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-09": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-10": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-11": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-12": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-13": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-14": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-15": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-16": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-17": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-18": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-19": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-20": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-21": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-22": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-23": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-24": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-25": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-26": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-27": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-28": {
+      "isHoliday": false,
+      "isWorkday": false,
+      "isWeekend": true,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-29": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-30": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    },
+    "2025-12-31": {
+      "isHoliday": false,
+      "isWorkday": true,
+      "isWeekend": false,
+      "isStatutoryHoliday": false,
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
+    }
+  }
+}

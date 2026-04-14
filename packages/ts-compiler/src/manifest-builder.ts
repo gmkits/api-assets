@@ -9,7 +9,29 @@ import type { Manifest, BundleEntry } from '@holiday/spec';
 import {
   HDAY_MAGIC,
 } from '@holiday/spec';
-import { crc32 } from './hday-compiler.js';
+
+/**
+ * Recursively find all .hday files in a directory.
+ */
+function findHdayFiles(
+  dir: string,
+  baseDir: string,
+): Array<{ relativePath: string; absolutePath: string }> {
+  const results: Array<{ relativePath: string; absolutePath: string }> = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findHdayFiles(fullPath, baseDir));
+    } else if (entry.isFile() && entry.name.endsWith('.hday')) {
+      results.push({
+        relativePath: path.relative(baseDir, fullPath),
+        absolutePath: fullPath,
+      });
+    }
+  }
+  return results;
+}
 
 /**
  * Parse region code and year from an .hday file header.
@@ -19,9 +41,9 @@ function parseHdayHeader(buf: Buffer): { regionCode: string; year: number } {
   if (magic !== HDAY_MAGIC) {
     throw new Error('Invalid .hday file');
   }
-  const year = buf.readUInt16LE(6);
-  const regionCodeLen = buf.readUInt8(8);
-  const regionCode = buf.subarray(9, 9 + regionCodeLen).toString('utf-8');
+  const year = buf.readUInt16LE(8);
+  const regionCodeLen = buf.readUInt8(10);
+  const regionCode = buf.subarray(11, 11 + regionCodeLen).toString('utf-8');
   return { regionCode, year };
 }
 
@@ -49,26 +71,26 @@ export function buildManifest(
     defaultRegion?: string;
   },
 ): Manifest {
-  const files = fs.readdirSync(bundlesDir).filter(f => f.endsWith('.hday'));
+  const hdayFiles = findHdayFiles(bundlesDir, bundlesDir);
   const bundles: Record<string, Record<string, BundleEntry>> = {};
 
-  for (const file of files) {
-    const filePath = path.join(bundlesDir, file);
-    const buf = fs.readFileSync(filePath);
-    const stat = fs.statSync(filePath);
+  for (const { relativePath, absolutePath } of hdayFiles) {
+    const buf = fs.readFileSync(absolutePath);
+    const stat = fs.statSync(absolutePath);
 
     const { regionCode, year } = parseHdayHeader(buf);
 
     const sha256 = crypto.createHash('sha256').update(buf).digest('hex');
-    const crcValue = crc32(buf);
-    const crcHex = crcValue.toString(16).padStart(8, '0');
+    // Read the embedded CRC32 from the last 4 bytes of the .hday file
+    const embeddedCrc = buf.readUInt32LE(buf.length - 4);
+    const crcHex = embeddedCrc.toString(16).padStart(8, '0');
 
     if (!bundles[regionCode]) {
       bundles[regionCode] = {};
     }
 
     bundles[regionCode][String(year)] = {
-      file,
+      file: relativePath,
       sha256,
       crc32: crcHex,
       sourceVersion: '',

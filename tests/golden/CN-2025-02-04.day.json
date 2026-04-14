@@ -1,0 +1,24 @@
+{
+  "date": "2025-02-04",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": false,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "Spring Festival"
+    ],
+    "zh-CN": [
+      "春节"
+    ]
+  },
+  "labels": [
+    "SPRING_FESTIVAL",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

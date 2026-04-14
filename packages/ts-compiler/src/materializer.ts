@@ -74,7 +74,9 @@ export function getWeekday(dateStr: string): WeekDay {
  */
 function mergeNames(target: MultiLangNames, source: MultiLangNames): MultiLangNames {
   const result = { ...target };
-  for (const [locale, names] of Object.entries(source)) {
+  for (const [locale, rawNames] of Object.entries(source)) {
+    // Handle both string and string[] values for compatibility
+    const names: string[] = Array.isArray(rawNames) ? rawNames : [rawNames as unknown as string];
     const existing = result[locale] ?? [];
     const merged = [...existing];
     for (const name of names) {

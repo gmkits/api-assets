@@ -1,0 +1,24 @@
+{
+  "date": "2026-01-04",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": false,
+  "isWorkday": true,
+  "isWeekend": true,
+  "isStatutoryHoliday": false,
+  "isAdjustedWorkday": true,
+  "holidayNames": {
+    "en-US": [
+      "New Year makeup"
+    ],
+    "zh-CN": [
+      "元旦调休"
+    ]
+  },
+  "labels": [
+    "NEW_YEAR",
+    "ADJUSTED_WORKDAY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

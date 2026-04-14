@@ -24,6 +24,19 @@ importers:
         specifier: ^5.4.0
         version: 5.9.3
 
+  packages/ts-core:
+    dependencies:
+      '@holiday/spec':
+        specifier: workspace:*
+        version: link:../ts-spec
+    devDependencies:
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(typescript@5.9.3)
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+
   packages/ts-spec:
     devDependencies:
       tsup:

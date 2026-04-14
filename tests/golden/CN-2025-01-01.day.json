@@ -1,0 +1,24 @@
+{
+  "date": "2025-01-01",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "New Year's Day"
+    ],
+    "zh-CN": [
+      "元旦"
+    ]
+  },
+  "labels": [
+    "NEW_YEAR",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}
