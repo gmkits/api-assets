@@ -106,6 +106,71 @@ final class HolidayServiceImpl implements HolidayService {
         return new ArrayList<DayInfo>(bundle.getDayInfos());
     }
 
+    @Override
+    public List<DayInfo> getMonth(int year, int month) {
+        return getMonth(defaultRegion, year, month);
+    }
+
+    @Override
+    public List<DayInfo> getMonth(String regionCode, int year, int month) {
+        HdayBundle bundle = resolveBundle(regionCode, year);
+        if (bundle == null) {
+            return new ArrayList<DayInfo>();
+        }
+        LocalDate first = LocalDate.of(year, month, 1);
+        LocalDate last = first.withDayOfMonth(first.lengthOfMonth());
+        int startIndex = first.getDayOfYear() - 1;
+        int endIndex = last.getDayOfYear() - 1;
+        return bundle.getRange(startIndex, endIndex);
+    }
+
+    @Override
+    public int countWorkdays(LocalDate from, LocalDate to) {
+        return countWorkdays(defaultRegion, from, to);
+    }
+
+    @Override
+    public int countWorkdays(String regionCode, LocalDate from, LocalDate to) {
+        List<DayInfo> days = getRange(regionCode, from, to);
+        int count = 0;
+        for (DayInfo day : days) {
+            if (day.isWorkday()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public DayInfo getNextHoliday(LocalDate from) {
+        return getNextHoliday(defaultRegion, from);
+    }
+
+    @Override
+    public DayInfo getNextHoliday(String regionCode, LocalDate from) {
+        // 先在当年搜索
+        HdayBundle bundle = resolveBundle(regionCode, from.getYear());
+        if (bundle != null) {
+            int startIndex = from.getDayOfYear() - 1;
+            List<DayInfo> days = bundle.getRange(startIndex, bundle.getDayCount() - 1);
+            for (DayInfo day : days) {
+                if (day.isStatutoryHoliday()) {
+                    return day;
+                }
+            }
+        }
+        // 搜索下一年
+        HdayBundle nextBundle = resolveBundle(regionCode, from.getYear() + 1);
+        if (nextBundle != null) {
+            for (DayInfo day : nextBundle.getDayInfos()) {
+                if (day.isStatutoryHoliday()) {
+                    return day;
+                }
+            }
+        }
+        return null;
+    }
+
     private HdayBundle resolveBundle(String region, int year) {
         String key = region + "/" + year;
         HdayBundle bundle = cache.get(key);

@@ -45,6 +45,12 @@ export interface HolidayService {
   isWorkday(date: string, regionCode?: string): Promise<boolean>;
   getRange(from: string, to: string, regionCode?: string): Promise<DayInfo[]>;
   getYear(year: number, regionCode?: string): Promise<DayInfo[]>;
+  /** 查询指定月的所有日期信息。 */
+  getMonth(year: number, month: number, regionCode?: string): Promise<DayInfo[]>;
+  /** 统计闭区间内的工作日天数。 */
+  countWorkdays(from: string, to: string, regionCode?: string): Promise<number>;
+  /** 从指定日期（含）起查找下一个假期。 */
+  getNextHoliday(from: string, regionCode?: string): Promise<DayInfo | null>;
 }
 
 const DEFAULT_CACHE_SIZE = 32;
@@ -208,6 +214,68 @@ class HolidayServiceImpl implements HolidayService {
     const region = regionCode ?? this.defaultRegion;
     const bundle = await this.getBundle(region, year);
     return queryYear(bundle);
+  }
+
+  async getMonth(
+    year: number,
+    month: number,
+    regionCode?: string,
+  ): Promise<DayInfo[]> {
+    const region = regionCode ?? this.defaultRegion;
+    const bundle = await this.getBundle(region, year);
+
+    // 计算月份的首日和末日 dayIndex
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startIndex = dayOfYear(year, month, 1);
+    const endIndex = dayOfYear(year, month, daysInMonth);
+
+    return queryRange(bundle, startIndex, endIndex);
+  }
+
+  async countWorkdays(
+    from: string,
+    to: string,
+    regionCode?: string,
+  ): Promise<number> {
+    const days = await this.getRange(from, to, regionCode);
+    let count = 0;
+    for (const d of days) {
+      if (d.isWorkday) count++;
+    }
+    return count;
+  }
+
+  async getNextHoliday(
+    from: string,
+    regionCode?: string,
+  ): Promise<DayInfo | null> {
+    const region = regionCode ?? this.defaultRegion;
+    const [year, month, day] = parseDate(from);
+    const startIndex = dayOfYear(year, month, day);
+
+    // 先在当年内搜索
+    const bundle = await this.getBundle(region, year);
+    const view = queryRange(bundle, startIndex, bundle.days.length - 1);
+    for (const d of view) {
+      if (d.isHoliday && d.isStatutoryHoliday) {
+        return d;
+      }
+    }
+
+    // 当年没找到，搜索下一年
+    try {
+      const nextBundle = await this.getBundle(region, year + 1);
+      const nextView = queryYear(nextBundle);
+      for (const d of nextView) {
+        if (d.isHoliday && d.isStatutoryHoliday) {
+          return d;
+        }
+      }
+    } catch {
+      // 下一年没有数据
+    }
+
+    return null;
   }
 }
 

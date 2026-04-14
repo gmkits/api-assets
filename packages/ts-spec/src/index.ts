@@ -291,3 +291,30 @@ export interface Manifest {
   /** Nested map: regionCode → year → BundleEntry */
   bundles: Record<string, Record<string, BundleEntry>>;
 }
+
+// --- 农历扩展类型 ---
+
+/**
+ * 农历日期信息。
+ *
+ * <p>用于 DayInfo.extensions 中的 "lunar" 字段，
+ * 提供公历日期对应的农历信息。</p>
+ */
+export interface LunarDateInfo {
+  /** 农历年。 */
+  year: number;
+  /** 农历月（1-12）。 */
+  month: number;
+  /** 农历日（1-30）。 */
+  day: number;
+  /** 是否闰月。 */
+  isLeapMonth: boolean;
+  /** 干支年名（如"乙巳年"）。 */
+  ganZhiYear: string;
+  /** 生肖。 */
+  shengXiao: string;
+  /** 月份中文名（如"正月"）。 */
+  monthName: string;
+  /** 日期中文名（如"初一"）。 */
+  dayName: string;
+}

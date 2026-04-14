@@ -6,6 +6,7 @@ import com.github.gmkits.holiday.api25.dto.ApiResponses;
 import com.github.gmkits.holiday.api25.dto.BundleMetadataPayload;
 import com.github.gmkits.holiday.api25.dto.RegionInfo;
 import com.github.gmkits.holiday.api25.dto.VersionPayload;
+import com.github.gmkits.holiday.api25.dto.WorkdayCountPayload;
 import com.github.gmkits.holiday.api25.service.CachedHolidayQueryService;
 import com.github.gmkits.holiday.spec.DayInfo;
 import io.swagger.v3.oas.annotations.Operation;
@@ -91,5 +92,34 @@ public class HolidayQueryController {
             @PathVariable @Min(1900) @Max(3000) int year,
             HttpServletRequest request) {
         return ApiResponses.success(cachedHolidayQueryService.getBundleMetadata(regionCode, year), request);
+    }
+
+    @GetMapping("/month")
+    @Operation(summary = "查询指定月份")
+    public ApiResponse<List<DayInfo>> getMonth(
+            @RequestParam(defaultValue = "CN") @Pattern(regexp = "^[A-Z0-9_-]{2,32}$") String regionCode,
+            @RequestParam @Min(1900) @Max(3000) int year,
+            @RequestParam @Min(1) @Max(12) int month,
+            HttpServletRequest request) {
+        return ApiResponses.success(cachedHolidayQueryService.getMonth(regionCode, year, month), request);
+    }
+
+    @GetMapping("/workday-count")
+    @Operation(summary = "统计区间内工作日天数")
+    public ApiResponse<WorkdayCountPayload> getWorkdayCount(
+            @RequestParam(defaultValue = "CN") @Pattern(regexp = "^[A-Z0-9_-]{2,32}$") String regionCode,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            HttpServletRequest request) {
+        return ApiResponses.success(cachedHolidayQueryService.countWorkdays(regionCode, from, to), request);
+    }
+
+    @GetMapping("/next-holiday")
+    @Operation(summary = "查找下一个法定节假日")
+    public ApiResponse<DayInfo> getNextHoliday(
+            @RequestParam(defaultValue = "CN") @Pattern(regexp = "^[A-Z0-9_-]{2,32}$") String regionCode,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            HttpServletRequest request) {
+        return ApiResponses.success(cachedHolidayQueryService.getNextHoliday(regionCode, from), request);
     }
 }
