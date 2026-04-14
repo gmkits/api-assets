@@ -18,7 +18,7 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
-    "test": "node --test dist/esm/__tests__/index.test.js",
+    "test": "node --test __tests__/index.test.mjs",
     "lint": "tsc --noEmit"
   },
   "devDependencies": {
