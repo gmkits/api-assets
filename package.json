@@ -1,0 +1,15 @@
+{
+  "name": "cn-holiday-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Holiday Data Platform — cross-platform holiday toolkit for China",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "specVersion": "1.0.0",
+    "bundleId": "CN-2026",
+    "regionCode": "CN",
+    "parentRegionCode": null,
+    "year": 2026,
+    "validFrom": "2026-01-01",
+    "validTo": "2026-12-31",
+    "calendarSystem": "GREGORIAN",
+    "timezone": "Asia/Shanghai",
+    "weekendMask": ["SAT", "SUN"],
+    "locales": ["zh-CN", "en-US"],
+    "sourceVersion": "2025.11.04",
+    "generatedAt": "2025-11-04T12:00:00+08:00",
+    "generator": {
+      "name": "holiday-compiler",
+      "version": "1.0.0"
+    },
+    "extensions": {}
+  },
+  "sources": [
+    {
+      "id": "gov-notice-2026",
+      "type": "GOV_NOTICE",
+      "title": "国务院办公厅关于2026年部分节假日安排的通知",
+      "url": "https://www.gov.cn/zhengce/content/202511/content_2026.htm",
+      "publishedAt": "2025-11-04T00:00:00+08:00"
+    }
+  ],
+  "rules": [
+    {
+      "id": "new-year-2026",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "元旦",
+        "en-US": "New Year's Day"
+      },
+      "labels": ["NEW_YEAR", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "from": "2026-01-01",
+      "to": "2026-01-03"
+    },
+    {
+      "id": "new-year-2026-makeup-1",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "元旦调休",
+        "en-US": "New Year makeup"
+      },
+      "labels": ["NEW_YEAR", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "date": "2026-01-04"
+    },
+    {
+      "id": "spring-festival-2026",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "春节",
+        "en-US": "Spring Festival"
+      },
+      "labels": ["SPRING_FESTIVAL", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "from": "2026-02-15",
+      "to": "2026-02-21"
+    },
+    {
+      "id": "spring-festival-2026-makeup-1",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "春节调休",
+        "en-US": "Spring Festival makeup"
+      },
+      "labels": ["SPRING_FESTIVAL", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "date": "2026-02-14"
+    },
+    {
+      "id": "spring-festival-2026-makeup-2",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "春节调休",
+        "en-US": "Spring Festival makeup"
+      },
+      "labels": ["SPRING_FESTIVAL", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "date": "2026-02-22"
+    },
+    {
+      "id": "tomb-sweeping-2026",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "清明节",
+        "en-US": "Tomb-Sweeping Day"
+      },
+      "labels": ["TOMB_SWEEPING", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "from": "2026-04-04",
+      "to": "2026-04-06"
+    },
+    {
+      "id": "labour-day-2026",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "劳动节",
+        "en-US": "Labour Day"
+      },
+      "labels": ["LABOUR_DAY", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "from": "2026-05-01",
+      "to": "2026-05-05"
+    },
+    {
+      "id": "labour-day-2026-makeup-1",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "劳动节调休",
+        "en-US": "Labour Day makeup"
+      },
+      "labels": ["LABOUR_DAY", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "date": "2026-04-26"
+    },
+    {
+      "id": "dragon-boat-2026",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "端午节",
+        "en-US": "Dragon Boat Festival"
+      },
+      "labels": ["DRAGON_BOAT", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "from": "2026-06-19",
+      "to": "2026-06-21"
+    },
+    {
+      "id": "mid-autumn-2026",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "中秋节",
+        "en-US": "Mid-Autumn Festival"
+      },
+      "labels": ["MID_AUTUMN", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "from": "2026-09-25",
+      "to": "2026-09-27"
+    },
+    {
+      "id": "national-day-2026",
+      "type": "DATE_RANGE",
+      "dayKind": "OFFICIAL_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "国庆节",
+        "en-US": "National Day"
+      },
+      "labels": ["NATIONAL_DAY", "STATUTORY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "from": "2026-10-01",
+      "to": "2026-10-07"
+    },
+    {
+      "id": "national-day-2026-makeup-1",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "国庆节调休",
+        "en-US": "National Day makeup"
+      },
+      "labels": ["NATIONAL_DAY", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "date": "2026-09-27"
+    },
+    {
+      "id": "national-day-2026-makeup-2",
+      "type": "FIXED_DATE",
+      "dayKind": "ADJUSTED_WORKDAY",
+      "displayNames": {
+        "zh-CN": "国庆节调休",
+        "en-US": "National Day makeup"
+      },
+      "labels": ["NATIONAL_DAY", "ADJUSTED_WORKDAY"],
+      "sourceRefs": ["gov-notice-2026"],
+      "date": "2026-10-10"
+    }
+  ],
+  "overrides": [],
+  "extensions": {}
+}
