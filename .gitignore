@@ -19,3 +19,8 @@ tests/cross-lang/output/
 
 # Vue tsc build info
 *.tsbuildinfo
+
+# vue-tsc emit artifacts
+apps/admin-web/src/**/*.vue.js
+apps/admin-web/src/**/*.js
+!apps/admin-web/src/**/*.test.js
