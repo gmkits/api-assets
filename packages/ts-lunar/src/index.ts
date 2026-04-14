@@ -79,6 +79,9 @@ const DAY_NAMES = [
   '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十',
 ] as const;
 
+/** 闰月大月位掩码（bit 16）。 */
+const LEAP_MONTH_BIG_MASK = 0x10000;
+
 // ===================================================================
 // 农历信息查询（位运算解码）
 // ===================================================================
@@ -98,7 +101,7 @@ export function leapMonth(lunarYear: number): number {
  */
 export function leapMonthDays(lunarYear: number): number {
   if (leapMonth(lunarYear) === 0) return 0;
-  return (LUNAR_INFO[lunarYear - LUNAR_START_YEAR] & 0x10000) !== 0 ? 30 : 29;
+  return (LUNAR_INFO[lunarYear - LUNAR_START_YEAR] & LEAP_MONTH_BIG_MASK) !== 0 ? 30 : 29;
 }
 
 /**
@@ -111,7 +114,7 @@ export function monthDays(lunarYear: number, month: number): number {
   if (month < 1 || month > 12) {
     throw new RangeError(`月份超出范围: ${month}，应为 1-12`);
   }
-  return (LUNAR_INFO[lunarYear - LUNAR_START_YEAR] & (0x10000 >> month)) !== 0 ? 30 : 29;
+  return (LUNAR_INFO[lunarYear - LUNAR_START_YEAR] & (LEAP_MONTH_BIG_MASK >> month)) !== 0 ? 30 : 29;
 }
 
 /**
@@ -124,13 +127,13 @@ export function yearDays(lunarYear: number): number {
 
   // 12 个正常月
   for (let m = 1; m <= 12; m++) {
-    total += (info & (0x10000 >> m)) !== 0 ? 30 : 29;
+    total += (info & (LEAP_MONTH_BIG_MASK >> m)) !== 0 ? 30 : 29;
   }
 
   // 闰月
   const leap = info & 0xf;
   if (leap > 0) {
-    total += (info & 0x10000) !== 0 ? 30 : 29;
+    total += (info & LEAP_MONTH_BIG_MASK) !== 0 ? 30 : 29;
   }
 
   return total;
@@ -212,12 +215,14 @@ export function solarToLunar(solarYear: number, solarMonth: number, solarDay: nu
   let lunarMonth = 1;
   let isLeapMonth = false;
   let daysInMonth: number;
+  let found = false;
 
   for (let m = 1; m <= 12; m++) {
     // 正常月
     daysInMonth = monthDays(lunarYear, m);
     if (offset < daysInMonth) {
       lunarMonth = m;
+      found = true;
       break;
     }
     offset -= daysInMonth;
@@ -228,16 +233,16 @@ export function solarToLunar(solarYear: number, solarMonth: number, solarDay: nu
       if (offset < daysInMonth) {
         lunarMonth = m;
         isLeapMonth = true;
+        found = true;
         break;
       }
       offset -= daysInMonth;
     }
+  }
 
-    if (m === 12) {
-      lunarMonth = 12;
-    } else {
-      lunarMonth = m + 1;
-    }
+  // 若循环结束仍未定位，说明 offset 落在最后一月
+  if (!found) {
+    lunarMonth = 12;
   }
 
   const lunarDay = offset + 1;
