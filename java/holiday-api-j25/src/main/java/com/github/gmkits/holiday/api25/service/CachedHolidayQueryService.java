@@ -1,6 +1,6 @@
 package com.github.gmkits.holiday.api25.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.github.gmkits.holiday.api25.config.HolidayApi25Properties;
 import com.github.gmkits.holiday.api25.dto.BundleMetadataPayload;
 import com.github.gmkits.holiday.api25.dto.RegionInfo;

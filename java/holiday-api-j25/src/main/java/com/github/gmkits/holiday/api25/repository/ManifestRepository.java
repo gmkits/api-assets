@@ -1,7 +1,7 @@
 package com.github.gmkits.holiday.api25.repository;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.github.gmkits.holiday.api25.config.HolidayApi25Properties;
 import com.github.gmkits.holiday.api25.exception.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -64,10 +64,9 @@ public class ManifestRepository {
 
     public List<String> getSupportedRegions() {
         JsonNode bundlesNode = getManifest().path("bundles");
-        List<String> regions = new ArrayList<String>();
-        Iterator<String> fields = bundlesNode.fieldNames();
-        while (fields.hasNext()) {
-            regions.add(fields.next());
+        List<String> regions = new ArrayList<>();
+        for (String name : bundlesNode.propertyNames()) {
+            regions.add(name);
         }
         return regions;
     }
