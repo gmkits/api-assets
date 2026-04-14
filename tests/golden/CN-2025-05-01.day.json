@@ -1,0 +1,24 @@
+{
+  "date": "2025-05-01",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "Labour Day"
+    ],
+    "zh-CN": [
+      "劳动节"
+    ]
+  },
+  "labels": [
+    "LABOUR_DAY",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

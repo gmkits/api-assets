@@ -1,0 +1,24 @@
+{
+  "date": "2026-04-05",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": true,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "Tomb-Sweeping Day"
+    ],
+    "zh-CN": [
+      "清明节"
+    ]
+  },
+  "labels": [
+    "TOMB_SWEEPING",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

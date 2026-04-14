@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-25",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "Mid-Autumn Festival"
+    ],
+    "zh-CN": [
+      "中秋节"
+    ]
+  },
+  "labels": [
+    "MID_AUTUMN",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

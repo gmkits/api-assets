@@ -1,0 +1,27 @@
+{
+  "date": "2025-10-01",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "Mid-Autumn Festival, National Day",
+      "National Day"
+    ],
+    "zh-CN": [
+      "中秋节、国庆节",
+      "国庆节"
+    ]
+  },
+  "labels": [
+    "MID_AUTUMN",
+    "NATIONAL_DAY",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}

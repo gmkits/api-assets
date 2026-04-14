@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-01",
+  "regionCode": "CN",
+  "calendarSystem": "GREGORIAN",
+  "isHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
+  "holidayNames": {
+    "en-US": [
+      "National Day"
+    ],
+    "zh-CN": [
+      "国庆节"
+    ]
+  },
+  "labels": [
+    "NATIONAL_DAY",
+    "STATUTORY"
+  ],
+  "sourceVersion": "",
+  "extensions": {}
+}
