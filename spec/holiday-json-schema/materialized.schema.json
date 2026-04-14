@@ -36,7 +36,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+            "enum": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
           },
           "description": "Days of the week considered weekend by default"
         },
