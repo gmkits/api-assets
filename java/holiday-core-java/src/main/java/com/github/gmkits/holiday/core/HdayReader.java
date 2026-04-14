@@ -102,15 +102,15 @@ public final class HdayReader {
             throw new IOException("Invalid magic bytes");
         }
 
-        int majorVersion = Byte.toUnsignedInt(buf.get());      // offset 4
-        int minorVersion = Byte.toUnsignedInt(buf.get());       // offset 5
-        buf.getShort();                                          // flags (offset 6), reserved for future use
-        int year = Short.toUnsignedInt(buf.getShort());          // offset 8
-        int regionCodeLen = Byte.toUnsignedInt(buf.get());       // offset 10
+        int majorVersion = Byte.toUnsignedInt(buf.get());      // offset 4  (u8)
+        int minorVersion = Byte.toUnsignedInt(buf.get());       // offset 5  (u8)
+        buf.getShort();                                          // offset 6-7  flags (u16), reserved
+        int year = Short.toUnsignedInt(buf.getShort());          // offset 8-9  (u16)
+        int regionCodeLen = Byte.toUnsignedInt(buf.get());       // offset 10   (u8)
         byte[] regionBytes = new byte[16];
-        buf.get(regionBytes);                                    // offset 11..26
+        buf.get(regionBytes);                                    // offset 11-26 (16B)
         String regionCode = new String(regionBytes, 0, regionCodeLen, StandardCharsets.UTF_8);
-        int calSys = Byte.toUnsignedInt(buf.get());              // offset 27
+        int calSys = Byte.toUnsignedInt(buf.get());              // offset 27   (u8)
         CalendarSystem calendarSystem = calSys < CalendarSystem.values().length
                 ? CalendarSystem.values()[calSys] : CalendarSystem.GREGORIAN;
         int dayCount = Short.toUnsignedInt(buf.getShort());      // offset 28
