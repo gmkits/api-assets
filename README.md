@@ -117,6 +117,14 @@ LocalDate date = LunarCalendar.lunarToSolar(2025, 1, 1);
 
 本次实现已经对核心查询链路做了针对性优化：
 
+### 农历模块算法优化
+
+- **预计算年天数表 + 前缀和**：模块初始化时构建 `YEAR_DAYS_CACHE[]` 和 `CUMULATIVE_DAYS[]`
+- `yearDays()` 从 O(12) 循环优化为 O(1) 查表
+- `solarToLunar()` 年份定位从 O(n) 逐年扫描优化为 O(log n) 二分查找
+- `lunarToSolar()` 年份累计从 O(n) 逐年累加优化为 O(1) 前缀和查表
+- 位压缩存储：每年 20-bit，201 年仅 ~800 字节
+
 ### TypeScript 查询内核
 
 - 预计算 `dayIndex -> month/day` 映射，避免重复月份换算
@@ -147,21 +155,13 @@ pnpm run build
 pnpm run lint
 ```
 
-### Java — Maven（推荐）
+### Java（Maven）
 
 ```bash
 cd java
-mvn test
+mvn test                # JDK 17 模块（spec + core + lunar + starter + api-j8）
+mvn test -Pj25          # JDK 25 API 模块需要 JDK 25+
 ```
-
-### Java — Gradle
-
-```bash
-cd java
-./gradlew build
-```
-
-> 说明：仓库同时保留 Gradle 和 Maven 构建文件（`pom.xml` + `build.gradle`），两者共存。Maven 为推荐构建方式。
 
 ## 2. TypeScript 查询示例
 
@@ -211,7 +211,7 @@ service.getNextHoliday("CN", LocalDate.of(2025, 7, 1));
 
 ```bash
 cd java
-./gradlew :holiday-api-j8:bootRun
+mvn -pl holiday-api-j8 spring-boot:run
 ```
 
 ### 新服务：holiday-api-j25
@@ -220,7 +220,7 @@ cd java
 
 ```bash
 cd java
-./gradlew :holiday-api-j25:bootRun
+mvn -Pj25 -pl holiday-api-j25 spring-boot:run
 ```
 
 默认能力包括：
@@ -277,7 +277,7 @@ cn-holiday-kit/
 │   ├── ts-compiler/           # 编译器
 │   ├── ts-web-client/         # HTTP 客户端
 │   └── ts-vue/                # Vue 组件
-├── java/                      # Java 多模块工程（Gradle + Maven 双轨）
+├── java/                      # Java 多模块工程（Maven 构建）
 │   ├── holiday-spec-java/     # 共享类型
 │   ├── holiday-core-java/     # 查询核心
 │   ├── holiday-lunar-java/    # 农历转换
@@ -298,11 +298,35 @@ cn-holiday-kit/
 - `spec/enums.md`：枚举字典
 - `spec/holiday-json-schema/`：JSON Schema 定义
 
+## 算法优化说明
+
+### 农历模块性能优化
+
+农历转换模块在 TS 和 Java 中均做了以下数学与算法优化：
+
+1. **年天数预计算表**：模块加载 / 类初始化时一次性构建所有 201 年的天数缓存，`yearDays()` 从 O(12) 循环降至 O(1) 查表。
+
+2. **前缀和数组 + 二分查找**：预构建从 1900 到每个年份的累计天数前缀和，`solarToLunar()` 的年份定位从 O(n) 逐年累减优化为 O(log n) 二分查找。对于 2100 年附近的日期，查找步数从 ~200 次降至 ~8 次。
+
+3. **`lunarToSolar()` 年份累计 O(1)**：利用前缀和直接获取目标年之前的总天数，替代原先的逐年循环累加。
+
+4. **位压缩存储**：每年一个 20-bit 整数，201 年仅占 ~800 字节，远小于逐天映射方案的 73,000+ 字节。
+
+5. **纯函数无状态设计**：所有方法线程安全，可无锁并发，适合虚拟线程环境。
+
+### 节假日查询内核优化
+
+1. **`HdayBundle` 预构建视图**：`DayInfo[]` 在 bundle 加载时一次性构建完毕，后续所有查询（单日、区间、月、年）均零分配复用。
+
+2. **LRU 缓存**：bundle 按 `(region, year)` 粒度缓存，避免重复 IO 与解析。
+
+3. **批量路径**：区间/年/月查询直接走 `getRange()` 切片，不逐日调用单日接口。
+
 ## 当前已知构建说明
 
 - TypeScript：`pnpm run build`、`pnpm run lint` 可通过
-- Java Gradle：`cd java && ./gradlew build` 可作为构建入口
-- Java Maven：`cd java && mvn test` 可通过（spec + core + lunar）
+- Java Maven：`cd java && mvn test` 可通过（spec + core + lunar + starter + api-j8）
+- Java Maven J25：`cd java && mvn test -Pj25`（需要 JDK 25+）
 
 ## 后续规划
 

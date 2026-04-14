@@ -75,6 +75,48 @@ public final class LunarCalendar {
     /** 闰月大月位掩码（bit 16）。 */
     private static final int LEAP_MONTH_BIG_MASK = 0x10000;
 
+    /** 年份总数。 */
+    private static final int YEAR_COUNT = END_YEAR - START_YEAR + 1;
+
+    /**
+     * 预计算每年天数缓存（初始化阶段一次性构建，运行期 O(1) 查询）。
+     * YEAR_DAYS_CACHE[i] = 农历第 (START_YEAR + i) 年的总天数。
+     */
+    private static final int[] YEAR_DAYS_CACHE = new int[YEAR_COUNT];
+
+    /**
+     * 前缀和数组（cumulative day offsets）。
+     * CUMULATIVE_DAYS[i] = 从基准日到农历第 (START_YEAR + i) 年正月初一的累计天数。
+     * CUMULATIVE_DAYS[0] = 0（基准年本身）。
+     *
+     * <p>利用该数组，{@link #solarToLunar} 的年份定位从 O(n) 线性扫描优化为 O(log n) 二分查找。</p>
+     */
+    private static final long[] CUMULATIVE_DAYS = new long[YEAR_COUNT + 1];
+
+    static {
+        // 一次性预计算所有年份天数和前缀和
+        CUMULATIVE_DAYS[0] = 0;
+        for (int i = 0; i < YEAR_COUNT; i++) {
+            YEAR_DAYS_CACHE[i] = computeYearDays(LUNAR_INFO[i]);
+            CUMULATIVE_DAYS[i + 1] = CUMULATIVE_DAYS[i] + YEAR_DAYS_CACHE[i];
+        }
+    }
+
+    /**
+     * 根据压缩整数计算某年总天数（内部方法，不做参数校验）。
+     */
+    private static int computeYearDays(int info) {
+        int total = 0;
+        for (int m = 1; m <= 12; m++) {
+            total += (info & (LEAP_MONTH_BIG_MASK >> m)) != 0 ? 30 : 29;
+        }
+        int leap = info & 0xf;
+        if (leap > 0) {
+            total += (info & LEAP_MONTH_BIG_MASK) != 0 ? 30 : 29;
+        }
+        return total;
+    }
+
     // ===================================================================
     // 数据查询
     // ===================================================================
@@ -112,27 +154,22 @@ public final class LunarCalendar {
 
     /**
      * 获取指定农历年的总天数。
+     * 使用预计算缓存，O(1) 时间复杂度。
      */
     public static int yearDays(int lunarYear) {
         validateYear(lunarYear);
-        int total = 0;
-        int info = LUNAR_INFO[lunarYear - START_YEAR];
-        for (int m = 1; m <= 12; m++) {
-            total += (info & (LEAP_MONTH_BIG_MASK >> m)) != 0 ? 30 : 29;
-        }
-        int leap = info & 0xf;
-        if (leap > 0) {
-            total += (info & LEAP_MONTH_BIG_MASK) != 0 ? 30 : 29;
-        }
-        return total;
+        return YEAR_DAYS_CACHE[lunarYear - START_YEAR];
     }
 
     // ===================================================================
-    // 公历→农历
+    // 公历→农历（二分查找优化）
     // ===================================================================
 
     /**
      * 公历日期转农历日期。
+     *
+     * <p>算法优化：使用前缀和数组 + 二分查找，年份定位时间复杂度从 O(n) 降至 O(log n)，
+     * 月份定位仍为 O(13)，整体 < 1μs。</p>
      *
      * @param solarDate 公历日期
      * @return 农历完整信息
@@ -143,18 +180,22 @@ public final class LunarCalendar {
             throw new IllegalArgumentException("日期早于 1900-01-31，超出农历转换范围");
         }
 
-        // 定位农历年
-        int lunarYear = START_YEAR;
-        int daysInYear;
-        while (lunarYear <= END_YEAR) {
-            daysInYear = yearDays(lunarYear);
-            if (offset < daysInYear) break;
-            offset -= daysInYear;
-            lunarYear++;
+        // 二分查找定位农历年：找到最大的 i 使得 CUMULATIVE_DAYS[i] <= offset
+        int lo = 0, hi = YEAR_COUNT;
+        while (lo < hi) {
+            int mid = (lo + hi + 1) >>> 1;
+            if (CUMULATIVE_DAYS[mid] <= offset) {
+                lo = mid;
+            } else {
+                hi = mid - 1;
+            }
         }
+
+        int lunarYear = START_YEAR + lo;
         if (lunarYear > END_YEAR) {
             throw new IllegalArgumentException("日期超出农历转换范围（" + START_YEAR + "-" + END_YEAR + "）");
         }
+        offset -= CUMULATIVE_DAYS[lo];
 
         // 定位农历月和日
         int leap = leapMonth(lunarYear);
@@ -194,11 +235,12 @@ public final class LunarCalendar {
     }
 
     // ===================================================================
-    // 农历→公历
+    // 农历→公历（前缀和优化）
     // ===================================================================
 
     /**
      * 农历日期转公历日期。
+     * 使用前缀和数组直接获取年份累计天数，避免逐年累加。
      */
     public static LocalDate lunarToSolar(int lunarYear, int lunarMonth, int lunarDay, boolean isLeapMonth) {
         validateYear(lunarYear);
@@ -209,10 +251,8 @@ public final class LunarCalendar {
             throw new IllegalArgumentException("农历日期超出范围: " + lunarDay);
         }
 
-        long offset = 0;
-        for (int y = START_YEAR; y < lunarYear; y++) {
-            offset += yearDays(y);
-        }
+        // 直接从前缀和获取到目标年份的累计天数（O(1) 替代 O(n) 逐年累加）
+        long offset = CUMULATIVE_DAYS[lunarYear - START_YEAR];
 
         int leap = leapMonth(lunarYear);
         for (int m = 1; m < lunarMonth; m++) {

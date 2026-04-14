@@ -82,6 +82,46 @@ const DAY_NAMES = [
 /** 闰月大月位掩码（bit 16）。 */
 const LEAP_MONTH_BIG_MASK = 0x10000;
 
+/** 年份总数。 */
+const YEAR_COUNT = LUNAR_END_YEAR - LUNAR_START_YEAR + 1;
+
+/**
+ * 根据压缩整数计算某年总天数（内部函数，不做参数校验）。
+ */
+function computeYearDays(info: number): number {
+  let total = 0;
+  for (let m = 1; m <= 12; m++) {
+    total += (info & (LEAP_MONTH_BIG_MASK >> m)) !== 0 ? 30 : 29;
+  }
+  const leap = info & 0xf;
+  if (leap > 0) {
+    total += (info & LEAP_MONTH_BIG_MASK) !== 0 ? 30 : 29;
+  }
+  return total;
+}
+
+/**
+ * 预计算每年天数缓存（模块加载时一次性构建，运行期 O(1) 查询）。
+ * YEAR_DAYS_CACHE[i] = 农历第 (LUNAR_START_YEAR + i) 年的总天数。
+ */
+const YEAR_DAYS_CACHE: number[] = new Array(YEAR_COUNT);
+
+/**
+ * 前缀和数组（cumulative day offsets）。
+ * CUMULATIVE_DAYS[i] = 从基准日到农历第 (LUNAR_START_YEAR + i) 年正月初一的累计天数。
+ * CUMULATIVE_DAYS[0] = 0（基准年本身）。
+ *
+ * 利用该数组，solarToLunar 的年份定位从 O(n) 线性扫描优化为 O(log n) 二分查找。
+ */
+const CUMULATIVE_DAYS: number[] = new Array(YEAR_COUNT + 1);
+
+// 一次性预计算所有年份天数和前缀和
+CUMULATIVE_DAYS[0] = 0;
+for (let i = 0; i < YEAR_COUNT; i++) {
+  YEAR_DAYS_CACHE[i] = computeYearDays(LUNAR_INFO[i]);
+  CUMULATIVE_DAYS[i + 1] = CUMULATIVE_DAYS[i] + YEAR_DAYS_CACHE[i];
+}
+
 // ===================================================================
 // 农历信息查询（位运算解码）
 // ===================================================================
@@ -119,24 +159,11 @@ export function monthDays(lunarYear: number, month: number): number {
 
 /**
  * 获取指定农历年的总天数。
+ * 使用预计算缓存，O(1) 时间复杂度。
  */
 export function yearDays(lunarYear: number): number {
   validateYear(lunarYear);
-  let total = 0;
-  const info = LUNAR_INFO[lunarYear - LUNAR_START_YEAR];
-
-  // 12 个正常月
-  for (let m = 1; m <= 12; m++) {
-    total += (info & (LEAP_MONTH_BIG_MASK >> m)) !== 0 ? 30 : 29;
-  }
-
-  // 闰月
-  const leap = info & 0xf;
-  if (leap > 0) {
-    total += (info & LEAP_MONTH_BIG_MASK) !== 0 ? 30 : 29;
-  }
-
-  return total;
+  return YEAR_DAYS_CACHE[lunarYear - LUNAR_START_YEAR];
 }
 
 // ===================================================================
@@ -180,8 +207,8 @@ export interface LunarInfo extends LunarDate {
 /**
  * 公历日期转农历日期。
  *
- * 算法：从 1900-01-31（基准日）开始，累加每年天数定位到目标农历年，
- * 再逐月累加定位到月和日，时间复杂度 O(年数 × 13)，实际 < 1μs。
+ * 算法优化：使用前缀和数组 + 二分查找，年份定位时间复杂度从 O(n) 降至 O(log n)，
+ * 月份定位仍为 O(13)，整体 < 1μs。
  *
  * @param solarYear 公历年
  * @param solarMonth 公历月（1-12）
@@ -196,19 +223,22 @@ export function solarToLunar(solarYear: number, solarMonth: number, solarDay: nu
     throw new RangeError(`日期早于 ${LUNAR_START_YEAR}-01-31，超出农历转换范围`);
   }
 
-  // 定位农历年
-  let lunarYear = LUNAR_START_YEAR;
-  let daysInYear: number;
-  while (lunarYear <= LUNAR_END_YEAR) {
-    daysInYear = yearDays(lunarYear);
-    if (offset < daysInYear) break;
-    offset -= daysInYear;
-    lunarYear++;
+  // 二分查找定位农历年：找到最大的 i 使得 CUMULATIVE_DAYS[i] <= offset
+  let lo = 0, hi = YEAR_COUNT;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >>> 1;
+    if (CUMULATIVE_DAYS[mid] <= offset) {
+      lo = mid;
+    } else {
+      hi = mid - 1;
+    }
   }
 
+  const lunarYear = LUNAR_START_YEAR + lo;
   if (lunarYear > LUNAR_END_YEAR) {
     throw new RangeError(`日期超出农历转换范围（${LUNAR_START_YEAR}-${LUNAR_END_YEAR}）`);
   }
+  offset -= CUMULATIVE_DAYS[lo];
 
   // 定位农历月和日
   const leap = leapMonth(lunarYear);
@@ -267,6 +297,7 @@ export function solarToLunarFromStr(dateStr: string): LunarInfo {
 
 /**
  * 农历日期转公历日期。
+ * 使用前缀和数组直接获取年份累计天数，避免逐年累加。
  *
  * @returns [公历年, 公历月, 公历日]
  */
@@ -285,13 +316,8 @@ export function lunarToSolar(
     throw new RangeError(`农历日期超出范围: ${lunarDay}`);
   }
 
-  // 累加从基准日到目标农历日期的天数
-  let offset = 0;
-
-  // 累加从 1900 到目标年之前的所有天数
-  for (let y = LUNAR_START_YEAR; y < lunarYear; y++) {
-    offset += yearDays(y);
-  }
+  // 直接从前缀和获取到目标年份的累计天数（O(1) 替代 O(n) 逐年累加）
+  let offset = CUMULATIVE_DAYS[lunarYear - LUNAR_START_YEAR];
 
   // 累加到目标月之前的所有月份天数
   const leap = leapMonth(lunarYear);
