@@ -131,12 +131,20 @@ final class HolidayServiceImpl implements HolidayService {
 
     @Override
     public int countWorkdays(String regionCode, LocalDate from, LocalDate to) {
-        List<DayInfo> days = getRange(regionCode, from, to);
+        if (from.isAfter(to)) {
+            return 0;
+        }
+
+        // 直接在 bundle 上计数，避免分配中间 List<DayInfo>
         int count = 0;
-        for (DayInfo day : days) {
-            if (day.isWorkday()) {
-                count++;
+        for (int year = from.getYear(); year <= to.getYear(); year++) {
+            HdayBundle bundle = resolveBundle(regionCode, year);
+            if (bundle == null) {
+                continue;
             }
+            int startIndex = year == from.getYear() ? from.getDayOfYear() - 1 : 0;
+            int endIndex = year == to.getYear() ? to.getDayOfYear() - 1 : bundle.getDayCount() - 1;
+            count += bundle.countWorkdays(startIndex, endIndex);
         }
         return count;
     }

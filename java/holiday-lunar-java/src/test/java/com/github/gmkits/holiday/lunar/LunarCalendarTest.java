@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -150,5 +151,53 @@ class LunarCalendarTest {
         LunarInfo info = LunarCalendar.solarToLunar(LocalDate.of(2025, 10, 6));
         assertEquals(8, info.getDate().getMonth());
         assertEquals(15, info.getDate().getDay());
+    }
+
+    // ===================================================================
+    // 朔日天文估算（Jean Meeus 算法）
+    // ===================================================================
+
+    @Test
+    void estimateNewMoonJDEReasonable() {
+        // k=0 对应 2000-01-06 附近的朔日
+        double jde = LunarCalendar.estimateNewMoonJDE(0);
+        assertTrue(jde > 2451549 && jde < 2451552,
+                "k=0 朔日 JDE=" + jde + " 不在预期范围");
+    }
+
+    @Test
+    void jdeToGregorianKnownDate() {
+        // 2000-01-01.5 的儒略日 = 2451545.0
+        LocalDate d = LunarCalendar.jdeToGregorian(2451545.0);
+        assertEquals(LocalDate.of(2000, 1, 1), d);
+    }
+
+    @Test
+    void estimateLunarNewYearAccuracy() {
+        // 验证 2020-2030 的春节估算精度（±2 天）
+        int[][] known = {
+            {2020, 1, 25}, {2021, 2, 12}, {2022, 2, 1}, {2023, 1, 22},
+            {2024, 2, 10}, {2025, 1, 29}, {2026, 2, 17}, {2027, 2, 6},
+            {2028, 1, 26}, {2029, 2, 13}, {2030, 2, 3},
+        };
+        for (int[] row : known) {
+            LocalDate estimated = LunarCalendar.estimateLunarNewYear(row[0]);
+            LocalDate actual = LocalDate.of(row[0], row[1], row[2]);
+            long diff = Math.abs(ChronoUnit.DAYS.between(estimated, actual));
+            assertTrue(diff <= 2,
+                    row[0] + " 年春节估算偏差 " + diff + " 天，超过允许的 2 天");
+        }
+    }
+
+    @Test
+    void adjacentNewMoonInterval() {
+        // 相邻朔日间隔应接近 29.53 天
+        for (int k = -100; k < 100; k++) {
+            double jde1 = LunarCalendar.estimateNewMoonJDE(k);
+            double jde2 = LunarCalendar.estimateNewMoonJDE(k + 1);
+            double interval = jde2 - jde1;
+            assertTrue(interval >= 29.2 && interval <= 29.9,
+                    "k=" + k + " 朔日间隔 " + interval + " 超出合理范围");
+        }
     }
 }

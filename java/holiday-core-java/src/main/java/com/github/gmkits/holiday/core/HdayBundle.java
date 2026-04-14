@@ -108,6 +108,25 @@ public final class HdayBundle {
         return new ArrayList<DayInfo>(yearView.subList(start, end + 1));
     }
 
+    /**
+     * 统计闭区间 dayIndex 范围内的工作日数量。
+     * 直接在预构建数组上计数，避免创建中间列表。
+     */
+    public int countWorkdays(int startDayIndex, int endDayIndex) {
+        int start = Math.max(0, startDayIndex);
+        int end = Math.min(dayCount - 1, endDayIndex);
+        if (start > end) {
+            return 0;
+        }
+        int count = 0;
+        for (int i = start; i <= end; i++) {
+            if (dayInfos[i].isWorkday()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private DayInfo[] buildDayInfos() {
         DayInfo[] result = new DayInfo[dayCount];
         LocalDate cursor = LocalDate.of(year, 1, 1);

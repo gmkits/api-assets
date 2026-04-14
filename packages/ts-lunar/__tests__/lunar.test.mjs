@@ -31,6 +31,9 @@ import {
   getShengXiao,
   getMonthName,
   getDayName,
+  estimateNewMoonJDE,
+  jdeToGregorian,
+  estimateLunarNewYear,
 } from '../dist/esm/index.js';
 
 describe('数据表完整性', () => {
@@ -251,5 +254,52 @@ describe('边界情况', () => {
     assert.equal(info.year, 1900);
     assert.equal(info.month, 1);
     assert.equal(info.day, 1);
+  });
+});
+
+describe('朔日天文估算（Jean Meeus 算法）', () => {
+  it('estimateNewMoonJDE 应返回合理的儒略日数', () => {
+    // k=0 对应 2000-01-06 附近的朔日
+    const jde = estimateNewMoonJDE(0);
+    // 2000-01-06 的儒略日约为 2451550
+    assert.ok(jde > 2451549 && jde < 2451552, `k=0 朔日 JDE=${jde} 不在预期范围`);
+  });
+
+  it('jdeToGregorian 应正确转换已知日期', () => {
+    // 2000-01-01.5 的儒略日 = 2451545.0
+    const [y, m, d] = jdeToGregorian(2451545.0);
+    assert.equal(y, 2000);
+    assert.equal(m, 1);
+    assert.equal(d, 1);
+  });
+
+  it('estimateLunarNewYear 应与数据表春节日期误差 ≤2 天', () => {
+    // 验证 2020-2030 的春节估算精度
+    const knownSpringFestivals = [
+      [2020, 1, 25], [2021, 2, 12], [2022, 2, 1], [2023, 1, 22],
+      [2024, 2, 10], [2025, 1, 29], [2026, 2, 17], [2027, 2, 6],
+      [2028, 1, 26], [2029, 2, 13], [2030, 2, 3],
+    ];
+    for (const [yr, em, ed] of knownSpringFestivals) {
+      const [ey, rm, rd] = estimateLunarNewYear(yr);
+      assert.equal(ey, yr, `${yr} 年估算结果年份不匹配`);
+      // 天文估算允许 ±2 天误差（简化公式精度限制）
+      const expectedMs = Date.UTC(yr, em - 1, ed);
+      const actualMs = Date.UTC(ey, rm - 1, rd);
+      const diffDays = Math.abs(expectedMs - actualMs) / 86400000;
+      assert.ok(diffDays <= 2, `${yr} 年春节估算偏差 ${diffDays} 天，超过允许的 2 天误差`);
+    }
+  });
+
+  it('相邻朔日间隔应接近 29.53 天', () => {
+    // 验证朔望月周期的数学正确性
+    for (let k = -100; k < 100; k++) {
+      const jde1 = estimateNewMoonJDE(k);
+      const jde2 = estimateNewMoonJDE(k + 1);
+      const interval = jde2 - jde1;
+      // 朔望月在 29.27-29.84 天之间波动
+      assert.ok(interval >= 29.2 && interval <= 29.9,
+        `k=${k} 到 k=${k+1} 朔日间隔 ${interval.toFixed(4)} 天超出合理范围`);
+    }
   });
 });
