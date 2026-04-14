@@ -5,3 +5,17 @@ dist/
 coverage/
 *.log
 .DS_Store
+
+# Java build artifacts
+java/**/build/
+java/**/.gradle/
+.gradle/
+
+# Admin web build
+apps/admin-web/dist/
+
+# Test outputs
+tests/cross-lang/output/
+
+# Vue tsc build info
+*.tsbuildinfo

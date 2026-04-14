@@ -11,16 +11,32 @@ defineProps<{
     <h3>{{ day.date }}</h3>
     <table class="detail-table">
       <tr>
-        <td class="label">Name</td>
-        <td>{{ day.name }}</td>
+        <td class="label">Holiday</td>
+        <td>{{ day.isHoliday ? 'Yes ✅' : 'No' }}</td>
       </tr>
       <tr>
-        <td class="label">Kind</td>
-        <td>{{ day.kind }}</td>
+        <td class="label">Workday</td>
+        <td>{{ day.isWorkday ? 'Yes' : 'No' }}</td>
       </tr>
       <tr>
-        <td class="label">Is Off</td>
-        <td>{{ day.isOff ? 'Yes ✅' : 'No' }}</td>
+        <td class="label">Statutory</td>
+        <td>{{ day.isStatutoryHoliday ? 'Yes ✅' : 'No' }}</td>
+      </tr>
+      <tr>
+        <td class="label">Adjusted</td>
+        <td>{{ day.isAdjustedWorkday ? 'Yes 💼' : 'No' }}</td>
+      </tr>
+      <tr>
+        <td class="label">Weekend</td>
+        <td>{{ day.isWeekend ? 'Yes' : 'No' }}</td>
+      </tr>
+      <tr>
+        <td class="label">Names</td>
+        <td>{{ day.holidayNames?.['zh-CN']?.join(', ') || '—' }}</td>
+      </tr>
+      <tr>
+        <td class="label">Labels</td>
+        <td>{{ day.labels?.join(', ') || '—' }}</td>
       </tr>
     </table>
   </div>
