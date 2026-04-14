@@ -11,14 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Default implementation of {@link HolidayService}.
+ * {@link HolidayService} 默认实现。
  *
- * <p>Bundles are lazily loaded per (region, year) pair. An {@link LRUCache}
- * keeps recently used bundles in memory. Resolution order:</p>
- * <ol>
- *   <li>Filesystem lookup under {@code dataPath}/{region}/{year}.hday</li>
- *   <li>Classpath lookup at {@code bundles/{region}/{year}.hday} (if enabled)</li>
- * </ol>
+ * <p>bundle 以 `(region, year)` 为粒度懒加载并放入 LRU 缓存；区间和整年查询会优先走 bundle 级批量路径，
+ * 避免逐日重复查单天。</p>
  */
 final class HolidayServiceImpl implements HolidayService {
 
@@ -33,8 +29,6 @@ final class HolidayServiceImpl implements HolidayService {
         this.classpathFallback = classpathFallback;
         this.cache = new LRUCache<String, HdayBundle>();
     }
-
-    // ---- HolidayService implementation ----
 
     @Override
     public DayInfo getDayInfo(LocalDate date) {
@@ -76,26 +70,41 @@ final class HolidayServiceImpl implements HolidayService {
 
     @Override
     public List<DayInfo> getRange(LocalDate from, LocalDate to) {
+        return getRange(defaultRegion, from, to);
+    }
+
+    @Override
+    public List<DayInfo> getRange(String regionCode, LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            return new ArrayList<DayInfo>();
+        }
+
         List<DayInfo> result = new ArrayList<DayInfo>();
-        LocalDate cursor = from;
-        while (!cursor.isAfter(to)) {
-            DayInfo info = getDayInfo(cursor);
-            if (info != null) {
-                result.add(info);
+        for (int year = from.getYear(); year <= to.getYear(); year++) {
+            HdayBundle bundle = resolveBundle(regionCode, year);
+            if (bundle == null) {
+                continue;
             }
-            cursor = cursor.plusDays(1);
+            int startIndex = year == from.getYear() ? from.getDayOfYear() - 1 : 0;
+            int endIndex = year == to.getYear() ? to.getDayOfYear() - 1 : bundle.getDayCount() - 1;
+            result.addAll(bundle.getRange(startIndex, endIndex));
         }
         return result;
     }
 
     @Override
     public List<DayInfo> getYear(int year) {
-        LocalDate start = LocalDate.of(year, 1, 1);
-        LocalDate end = LocalDate.of(year, 12, 31);
-        return getRange(start, end);
+        return getYear(defaultRegion, year);
     }
 
-    // ---- Bundle resolution ----
+    @Override
+    public List<DayInfo> getYear(String regionCode, int year) {
+        HdayBundle bundle = resolveBundle(regionCode, year);
+        if (bundle == null) {
+            return new ArrayList<DayInfo>();
+        }
+        return new ArrayList<DayInfo>(bundle.getDayInfos());
+    }
 
     private HdayBundle resolveBundle(String region, int year) {
         String key = region + "/" + year;
@@ -140,7 +149,11 @@ final class HolidayServiceImpl implements HolidayService {
         } catch (IOException e) {
             return null;
         } finally {
-            try { in.close(); } catch (IOException ignored) { }
+            try {
+                in.close();
+            } catch (IOException ignored) {
+                // ignore
+            }
         }
     }
 }

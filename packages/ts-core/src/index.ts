@@ -1,19 +1,11 @@
 /**
- * @holiday/core — Main Entry Point
+ * @holiday/core —— 包入口
  *
- * Re-exports the public API surface of the `@holiday/core` package:
- *
- * - {@link createHolidayService} — factory function for the SDK service
- * - {@link HolidayService} / {@link HolidayServiceOptions} — service types
- * - {@link parseHdayBundle} — low-level `.hday` binary parser
- * - {@link HdayBundle}, {@link HdayHeader}, etc. — parser result types
- * - Query-engine utilities and helpers
- * - {@link LRUCache} — generic LRU cache
- *
- * @module
+ * 对外导出 holiday 查询 SDK 的主要能力：服务工厂、二进制解析器、
+ * 查询引擎工具以及通用 LRU 缓存。
  */
 
-// Holiday service (primary API)
+// Holiday service（主查询 API）
 export {
   createHolidayService,
 } from './holiday-service.js';
@@ -23,7 +15,7 @@ export type {
   HolidayServiceOptions,
 } from './holiday-service.js';
 
-// Binary parser
+// Binary parser（二进制解析）
 export {
   parseHdayBundle,
 } from './hday-parser.js';
@@ -35,7 +27,7 @@ export type {
   NameListEntry,
 } from './hday-parser.js';
 
-// Query engine
+// Query engine（查询引擎）
 export {
   dayEntryToDayInfo,
   dayOfYear,
@@ -44,6 +36,7 @@ export {
   monthDayFromIndex,
   parseDate,
   queryDay,
+  queryRange,
   queryYear,
   resolveLabels,
   resolveNames,

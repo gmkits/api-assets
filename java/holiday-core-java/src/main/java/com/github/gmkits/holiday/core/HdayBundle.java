@@ -5,20 +5,21 @@ import com.github.gmkits.holiday.spec.DayInfo;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * A parsed {@code .hday} binary bundle containing header metadata,
- * day entries, a string table, and name-list tables.
+ * `.hday` bundle 的内存表示。
  *
- * <p>Instances are created by {@link HdayReader} and are immutable.</p>
+ * <p>对象在构造阶段就会把每日数据预组装为 {@link DayInfo} 数组，后续单日、区间、整年查询均直接复用，
+ * 避免热点路径上重复创建 {@link LocalDate}、名称映射和标签集合。</p>
  */
 public final class HdayBundle {
 
-    /** Sentinel value indicating "no index" in the binary format. */
+    /** 二进制格式中的“无索引”哨兵值。 */
     static final int NO_INDEX = 0xFFFF;
 
     private final int year;
@@ -30,6 +31,8 @@ public final class HdayBundle {
     private final DayEntry[] days;
     private final String[] strings;
     private final int[][][] nameLists;
+    private final DayInfo[] dayInfos;
+    private final List<DayInfo> yearView;
 
     HdayBundle(int year, String regionCode, CalendarSystem calendarSystem,
                int dayCount, int majorVersion, int minorVersion,
@@ -43,62 +46,34 @@ public final class HdayBundle {
         this.days = days;
         this.strings = strings;
         this.nameLists = nameLists;
+        this.dayInfos = buildDayInfos();
+        this.yearView = Collections.unmodifiableList(Arrays.asList(this.dayInfos));
     }
 
-    /** Returns the calendar year of this bundle. */
     public int getYear() { return year; }
 
-    /** Returns the region code. */
     public String getRegionCode() { return regionCode; }
 
-    /** Returns the calendar system. */
     public CalendarSystem getCalendarSystem() { return calendarSystem; }
 
-    /** Returns the number of days in this bundle. */
     public int getDayCount() { return dayCount; }
 
-    /** Returns the major version of the binary format. */
     public int getMajorVersion() { return majorVersion; }
 
-    /** Returns the minor version of the binary format. */
     public int getMinorVersion() { return minorVersion; }
 
     /**
-     * Constructs a {@link DayInfo} for the given zero-based day index.
-     *
-     * @param dayIndex zero-based day-of-year index (0 = Jan 1)
-     * @return the constructed {@link DayInfo}
-     * @throws IndexOutOfBoundsException if the index is out of range
+     * 按 dayIndex 直接返回预构建结果。
      */
     public DayInfo getDayInfo(int dayIndex) {
         if (dayIndex < 0 || dayIndex >= dayCount) {
             throw new IndexOutOfBoundsException("dayIndex=" + dayIndex + ", dayCount=" + dayCount);
         }
-        DayEntry entry = days[dayIndex];
-        LocalDate date = LocalDate.of(year, 1, 1).plusDays(dayIndex);
-
-        Map<String, List<String>> holidayNames = resolveNames(entry.nameListIndex);
-        List<String> labels = resolveLabels(entry.labelListIndex);
-
-        return new DayInfo.Builder()
-                .date(date)
-                .regionCode(regionCode)
-                .calendarSystem(calendarSystem)
-                .holiday(entry.isHoliday())
-                .workday(entry.isWorkday())
-                .weekend(entry.isWeekend())
-                .statutoryHoliday(entry.isStatutoryHoliday())
-                .adjustedWorkday(entry.isAdjustedWorkday())
-                .holidayNames(holidayNames)
-                .labels(labels)
-                .build();
+        return dayInfos[dayIndex];
     }
 
     /**
-     * Constructs a {@link DayInfo} for the given date.
-     *
-     * @param date the date (must fall within this bundle's year)
-     * @return the constructed {@link DayInfo}, or {@code null} if out of range
+     * 按日期查询，超出年份范围时返回 {@code null}。
      */
     public DayInfo getDayInfo(LocalDate date) {
         if (date.getYear() != year) {
@@ -108,7 +83,51 @@ public final class HdayBundle {
         if (dayIndex < 0 || dayIndex >= dayCount) {
             return null;
         }
-        return getDayInfo(dayIndex);
+        return dayInfos[dayIndex];
+    }
+
+    /**
+     * 返回整年视图。
+     */
+    public List<DayInfo> getDayInfos() {
+        return yearView;
+    }
+
+    /**
+     * 返回闭区间 dayIndex 范围。
+     */
+    public List<DayInfo> getRange(int startDayIndex, int endDayIndex) {
+        if (startDayIndex > endDayIndex) {
+            return Collections.emptyList();
+        }
+        int start = Math.max(0, startDayIndex);
+        int end = Math.min(dayCount - 1, endDayIndex);
+        if (start > end) {
+            return Collections.emptyList();
+        }
+        return new ArrayList<DayInfo>(yearView.subList(start, end + 1));
+    }
+
+    private DayInfo[] buildDayInfos() {
+        DayInfo[] result = new DayInfo[dayCount];
+        LocalDate cursor = LocalDate.of(year, 1, 1);
+        for (int i = 0; i < dayCount; i++) {
+            DayEntry entry = days[i];
+            result[i] = new DayInfo.Builder()
+                    .date(cursor)
+                    .regionCode(regionCode)
+                    .calendarSystem(calendarSystem)
+                    .holiday(entry.isHoliday())
+                    .workday(entry.isWorkday())
+                    .weekend(entry.isWeekend())
+                    .statutoryHoliday(entry.isStatutoryHoliday())
+                    .adjustedWorkday(entry.isAdjustedWorkday())
+                    .holidayNames(resolveNames(entry.nameListIndex))
+                    .labels(resolveLabels(entry.labelListIndex))
+                    .build();
+            cursor = cursor.plusDays(1);
+        }
+        return result;
     }
 
     private Map<String, List<String>> resolveNames(int listIndex) {
@@ -120,10 +139,10 @@ public final class HdayBundle {
         for (int[] pair : pairs) {
             int keyIdx = pair[0];
             int valIdx = pair[1];
-            if (valIdx == NO_INDEX || valIdx >= strings.length) {
+            if (keyIdx == NO_INDEX || valIdx == NO_INDEX || keyIdx >= strings.length || valIdx >= strings.length) {
                 continue;
             }
-            String key = (keyIdx == NO_INDEX || keyIdx >= strings.length) ? "" : strings[keyIdx];
+            String key = strings[keyIdx];
             String value = strings[valIdx];
             List<String> list = result.get(key);
             if (list == null) {
@@ -131,6 +150,9 @@ public final class HdayBundle {
                 result.put(key, list);
             }
             list.add(value);
+        }
+        if (result.isEmpty()) {
+            return Collections.emptyMap();
         }
         return result;
     }
@@ -142,25 +164,30 @@ public final class HdayBundle {
         int[][] pairs = nameLists[listIndex];
         List<String> result = new ArrayList<String>();
         for (int[] pair : pairs) {
+            int keyIdx = pair[0];
             int valIdx = pair[1];
-            if (valIdx != NO_INDEX && valIdx < strings.length) {
-                result.add(strings[valIdx]);
+            if (keyIdx != NO_INDEX || valIdx == NO_INDEX || valIdx >= strings.length) {
+                continue;
             }
+            result.add(strings[valIdx]);
+        }
+        if (result.isEmpty()) {
+            return Collections.emptyList();
         }
         return result;
     }
 
     /**
-     * A single day entry from the binary day table.
+     * 二进制 day table 中的单日记录。
      */
     static final class DayEntry {
-        static final int FLAG_IS_HOLIDAY           = 0x0001;
-        static final int FLAG_IS_WORKDAY            = 0x0002;
-        static final int FLAG_IS_WEEKEND            = 0x0004;
-        static final int FLAG_IS_STATUTORY_HOLIDAY  = 0x0008;
-        static final int FLAG_IS_ADJUSTED_WORKDAY   = 0x0010;
-        static final int FLAG_HAS_NAME              = 0x0020;
-        static final int FLAG_HAS_LABEL             = 0x0040;
+        static final int FLAG_IS_HOLIDAY = 0x0001;
+        static final int FLAG_IS_WORKDAY = 0x0002;
+        static final int FLAG_IS_WEEKEND = 0x0004;
+        static final int FLAG_IS_STATUTORY_HOLIDAY = 0x0008;
+        static final int FLAG_IS_ADJUSTED_WORKDAY = 0x0010;
+        static final int FLAG_HAS_NAME = 0x0020;
+        static final int FLAG_HAS_LABEL = 0x0040;
 
         final int flags;
         final int nameListIndex;
@@ -174,10 +201,14 @@ public final class HdayBundle {
             this.extIndex = extIndex;
         }
 
-        boolean isHoliday()          { return (flags & FLAG_IS_HOLIDAY) != 0; }
-        boolean isWorkday()          { return (flags & FLAG_IS_WORKDAY) != 0; }
-        boolean isWeekend()          { return (flags & FLAG_IS_WEEKEND) != 0; }
+        boolean isHoliday() { return (flags & FLAG_IS_HOLIDAY) != 0; }
+
+        boolean isWorkday() { return (flags & FLAG_IS_WORKDAY) != 0; }
+
+        boolean isWeekend() { return (flags & FLAG_IS_WEEKEND) != 0; }
+
         boolean isStatutoryHoliday() { return (flags & FLAG_IS_STATUTORY_HOLIDAY) != 0; }
-        boolean isAdjustedWorkday()  { return (flags & FLAG_IS_ADJUSTED_WORKDAY) != 0; }
+
+        boolean isAdjustedWorkday() { return (flags & FLAG_IS_ADJUSTED_WORKDAY) != 0; }
     }
 }

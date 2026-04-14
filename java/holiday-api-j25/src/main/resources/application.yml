@@ -1,0 +1,35 @@
+server:
+  port: 18080
+spring:
+  application:
+    name: holiday-api-j25
+  cache:
+    type: caffeine
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,caches
+  endpoint:
+    health:
+      probes:
+        enabled: true
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+holiday:
+  api:
+    api-version: 2.0.0
+    default-region: CN
+    data-path: ${HOLIDAY_DATA_PATH:}
+    classpath-fallback: true
+    manifest-location: ${HOLIDAY_MANIFEST_LOCATION:classpath:manifest.json}
+    preload-current-and-next-year: true
+    preload-regions:
+      - CN
+    preload-years: []
+    cache:
+      day-maximum-size: 4096
+      year-maximum-size: 128
+      metadata-maximum-size: 256
+      expire-after-write: PT30M

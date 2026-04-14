@@ -11,10 +11,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 对外提供基础查询接口的控制器。
+ */
 @RestController
 @RequestMapping("/api/v1")
 public class DayController {
@@ -41,15 +43,7 @@ public class DayController {
             @RequestParam(defaultValue = "CN") String regionCode,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        List<DayInfo> result = new ArrayList<DayInfo>();
-        LocalDate cursor = from;
-        while (!cursor.isAfter(to)) {
-            DayInfo info = holidayService.getDayInfo(regionCode, cursor);
-            if (info != null) {
-                result.add(info);
-            }
-            cursor = cursor.plusDays(1);
-        }
+        List<DayInfo> result = holidayService.getRange(regionCode, from, to);
         if (result.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -60,17 +54,7 @@ public class DayController {
     public ResponseEntity<List<DayInfo>> getYear(
             @RequestParam(defaultValue = "CN") String regionCode,
             @RequestParam int year) {
-        LocalDate from = LocalDate.of(year, 1, 1);
-        LocalDate to = LocalDate.of(year, 12, 31);
-        List<DayInfo> result = new ArrayList<DayInfo>();
-        LocalDate cursor = from;
-        while (!cursor.isAfter(to)) {
-            DayInfo info = holidayService.getDayInfo(regionCode, cursor);
-            if (info != null) {
-                result.add(info);
-            }
-            cursor = cursor.plusDays(1);
-        }
+        List<DayInfo> result = holidayService.getYear(regionCode, year);
         if (result.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

@@ -6,77 +6,59 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Primary service interface for querying holiday information.
+ * 节假日查询服务主接口。
  *
- * <p>Implementations resolve day data from pre-compiled {@code .hday} bundles
- * for a given region and year.</p>
+ * <p>实现类会从预编译的 {@code .hday} bundle 中解析指定地区、指定年份的节假日数据。</p>
  */
 public interface HolidayService {
 
     /**
-     * Returns day information for the given date using the default region.
-     *
-     * @param date the date to query
-     * @return day information, or {@code null} if no data is available
+     * 使用默认地区查询单日信息。
      */
     DayInfo getDayInfo(LocalDate date);
 
     /**
-     * Returns day information for the given date and region.
-     *
-     * @param regionCode the region code (e.g. "CN")
-     * @param date       the date to query
-     * @return day information, or {@code null} if no data is available
+     * 查询指定地区的单日信息。
      */
     DayInfo getDayInfo(String regionCode, LocalDate date);
 
     /**
-     * Checks whether the given date is a holiday in the default region.
-     *
-     * @param date the date to check
-     * @return {@code true} if the date is a holiday
+     * 使用默认地区判断是否休息日。
      */
     boolean isHoliday(LocalDate date);
 
     /**
-     * Checks whether the given date is a workday in the default region.
-     *
-     * @param date the date to check
-     * @return {@code true} if the date is a workday
+     * 使用默认地区判断是否工作日。
      */
     boolean isWorkday(LocalDate date);
 
     /**
-     * Checks whether the given date is a statutory holiday in the default region.
-     *
-     * @param date the date to check
-     * @return {@code true} if the date is a statutory holiday
+     * 使用默认地区判断是否法定节假日。
      */
     boolean isStatutoryHoliday(LocalDate date);
 
     /**
-     * Checks whether the given date is an adjusted (makeup) workday in the default region.
-     *
-     * @param date the date to check
-     * @return {@code true} if the date is an adjusted workday
+     * 使用默认地区判断是否调休补班。
      */
     boolean isAdjustedWorkday(LocalDate date);
 
     /**
-     * Returns day information for every day in the given date range (inclusive)
-     * using the default region.
-     *
-     * @param from range start (inclusive)
-     * @param to   range end (inclusive)
-     * @return list of {@link DayInfo} for each day in the range
+     * 使用默认地区查询闭区间范围内的日期。
      */
     List<DayInfo> getRange(LocalDate from, LocalDate to);
 
     /**
-     * Returns day information for every day in the given year using the default region.
-     *
-     * @param year the calendar year
-     * @return list of {@link DayInfo} for the entire year
+     * 查询指定地区的闭区间范围。
+     */
+    List<DayInfo> getRange(String regionCode, LocalDate from, LocalDate to);
+
+    /**
+     * 使用默认地区查询整年。
      */
     List<DayInfo> getYear(int year);
+
+    /**
+     * 查询指定地区的整年数据。
+     */
+    List<DayInfo> getYear(String regionCode, int year);
 }
