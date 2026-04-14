@@ -1,0 +1,4 @@
+dependencies {
+    api project(':holiday-core-java')
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure:2.7.18'
+}

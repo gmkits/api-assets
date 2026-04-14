@@ -1,0 +1,5 @@
+rootProject.name = 'cn-holiday-kit-java'
+
+include 'holiday-spec-java'
+include 'holiday-core-java'
+include 'holiday-spring-starter'
