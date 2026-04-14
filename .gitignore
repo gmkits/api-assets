@@ -9,6 +9,7 @@ coverage/
 # Java build artifacts
 java/**/build/
 java/**/.gradle/
+java/**/target/
 .gradle/
 
 # Admin web build
@@ -24,3 +25,4 @@ tests/cross-lang/output/
 apps/admin-web/src/**/*.vue.js
 apps/admin-web/src/**/*.js
 !apps/admin-web/src/**/*.test.js
+packages/ts-lunar/dist/

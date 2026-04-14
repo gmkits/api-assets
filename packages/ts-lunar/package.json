@@ -1,0 +1,31 @@
+{
+  "name": "@holiday/lunar",
+  "version": "1.0.0",
+  "description": "中国农历转换模块 —— 覆盖 1900-2100，位压缩存储，~800B 数据",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/esm/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "node --test __tests__/lunar.test.mjs",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

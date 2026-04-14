@@ -61,4 +61,34 @@ public interface HolidayService {
      * 查询指定地区的整年数据。
      */
     List<DayInfo> getYear(String regionCode, int year);
+
+    /**
+     * 查询指定月份的所有日期信息（默认地区）。
+     */
+    List<DayInfo> getMonth(int year, int month);
+
+    /**
+     * 查询指定地区指定月份的所有日期信息。
+     */
+    List<DayInfo> getMonth(String regionCode, int year, int month);
+
+    /**
+     * 统计闭区间内的工作日天数（默认地区）。
+     */
+    int countWorkdays(LocalDate from, LocalDate to);
+
+    /**
+     * 统计指定地区闭区间内的工作日天数。
+     */
+    int countWorkdays(String regionCode, LocalDate from, LocalDate to);
+
+    /**
+     * 从指定日期（含）起查找下一个法定节假日（默认地区）。
+     */
+    DayInfo getNextHoliday(LocalDate from);
+
+    /**
+     * 从指定日期（含）起查找指定地区的下一个法定节假日。
+     */
+    DayInfo getNextHoliday(String regionCode, LocalDate from);
 }

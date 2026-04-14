@@ -2,6 +2,7 @@ rootProject.name = 'cn-holiday-kit-java'
 
 include 'holiday-spec-java'
 include 'holiday-core-java'
+include 'holiday-lunar-java'
 include 'holiday-spring-starter'
 include 'holiday-api-j8'
 include 'holiday-api-j25'

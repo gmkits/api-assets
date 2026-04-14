@@ -5,6 +5,7 @@ import com.github.gmkits.holiday.api25.config.HolidayApi25Properties;
 import com.github.gmkits.holiday.api25.dto.BundleMetadataPayload;
 import com.github.gmkits.holiday.api25.dto.RegionInfo;
 import com.github.gmkits.holiday.api25.dto.VersionPayload;
+import com.github.gmkits.holiday.api25.dto.WorkdayCountPayload;
 import com.github.gmkits.holiday.api25.exception.ApiException;
 import com.github.gmkits.holiday.api25.repository.ManifestRepository;
 import com.github.gmkits.holiday.core.HolidayService;
@@ -114,5 +115,52 @@ public class CachedHolidayQueryService {
             return names;
         }
         return Collections.singletonMap("zh-CN", regionCode);
+    }
+
+    /**
+     * 查询指定月份。
+     */
+    public List<DayInfo> getMonth(String regionCode, int year, int month) {
+        List<DayInfo> days = holidayService.getMonth(regionCode, year, month);
+        if (days.isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "MONTH_NOT_FOUND",
+                    "未找到 " + year + "-" + month + " 的节假日数据");
+        }
+        return days;
+    }
+
+    /**
+     * 统计工作日。
+     */
+    public WorkdayCountPayload countWorkdays(String regionCode, LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_RANGE", "from 不能晚于 to");
+        }
+        List<DayInfo> days = holidayService.getRange(regionCode, from, to);
+        int workdays = 0;
+        for (DayInfo day : days) {
+            if (day.isWorkday()) {
+                workdays++;
+            }
+        }
+        return WorkdayCountPayload.builder()
+                .from(from.toString())
+                .to(to.toString())
+                .workdays(workdays)
+                .totalDays(days.size())
+                .holidays(days.size() - workdays)
+                .build();
+    }
+
+    /**
+     * 查找下一个法定节假日。
+     */
+    public DayInfo getNextHoliday(String regionCode, LocalDate from) {
+        DayInfo info = holidayService.getNextHoliday(regionCode, from);
+        if (info == null) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "HOLIDAY_NOT_FOUND",
+                    "从 " + from + " 起未找到下一个法定节假日");
+        }
+        return info;
     }
 }
