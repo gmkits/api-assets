@@ -72,6 +72,9 @@ public final class LunarCalendar {
         // 工具类不可实例化
     }
 
+    /** 闰月大月位掩码（bit 16）。 */
+    private static final int LEAP_MONTH_BIG_MASK = 0x10000;
+
     // ===================================================================
     // 数据查询
     // ===================================================================
@@ -91,7 +94,7 @@ public final class LunarCalendar {
      */
     public static int leapMonthDays(int lunarYear) {
         if (leapMonth(lunarYear) == 0) return 0;
-        return (LUNAR_INFO[lunarYear - START_YEAR] & 0x10000) != 0 ? 30 : 29;
+        return (LUNAR_INFO[lunarYear - START_YEAR] & LEAP_MONTH_BIG_MASK) != 0 ? 30 : 29;
     }
 
     /**
@@ -104,7 +107,7 @@ public final class LunarCalendar {
         if (month < 1 || month > 12) {
             throw new IllegalArgumentException("月份超出范围: " + month + "，应为 1-12");
         }
-        return (LUNAR_INFO[lunarYear - START_YEAR] & (0x10000 >> month)) != 0 ? 30 : 29;
+        return (LUNAR_INFO[lunarYear - START_YEAR] & (LEAP_MONTH_BIG_MASK >> month)) != 0 ? 30 : 29;
     }
 
     /**
@@ -115,11 +118,11 @@ public final class LunarCalendar {
         int total = 0;
         int info = LUNAR_INFO[lunarYear - START_YEAR];
         for (int m = 1; m <= 12; m++) {
-            total += (info & (0x10000 >> m)) != 0 ? 30 : 29;
+            total += (info & (LEAP_MONTH_BIG_MASK >> m)) != 0 ? 30 : 29;
         }
         int leap = info & 0xf;
         if (leap > 0) {
-            total += (info & 0x10000) != 0 ? 30 : 29;
+            total += (info & LEAP_MONTH_BIG_MASK) != 0 ? 30 : 29;
         }
         return total;
     }
@@ -158,11 +161,13 @@ public final class LunarCalendar {
         int lunarMonth = 1;
         boolean isLeapMonth = false;
         int daysInMonth;
+        boolean found = false;
 
         for (int m = 1; m <= 12; m++) {
             daysInMonth = monthDays(lunarYear, m);
             if (offset < daysInMonth) {
                 lunarMonth = m;
+                found = true;
                 break;
             }
             offset -= daysInMonth;
@@ -172,15 +177,16 @@ public final class LunarCalendar {
                 if (offset < daysInMonth) {
                     lunarMonth = m;
                     isLeapMonth = true;
+                    found = true;
                     break;
                 }
                 offset -= daysInMonth;
             }
-            if (m == 12) {
-                lunarMonth = 12;
-            } else {
-                lunarMonth = m + 1;
-            }
+        }
+
+        // 若循环结束仍未定位，说明 offset 落在最后一月
+        if (!found) {
+            lunarMonth = 12;
         }
 
         int lunarDay = (int) offset + 1;
