@@ -1,16 +1,8 @@
 /**
- * @holiday/core — Query Engine
+ * @holiday/core —— 查询引擎
  *
- * Converts the low-level binary structures produced by the `.hday` parser
- * into high-level {@link DayInfo} DTOs suitable for API consumers.
- *
- * Key responsibilities:
- * - Interpret {@link DayEntry} flag bits using `DAY_FLAGS` from `@holiday/spec`
- * - Resolve holiday names from the name-list table, grouped by locale
- * - Resolve label strings from the name-list table
- * - Compute calendar metadata (date string, day-of-year index, leap year)
- *
- * @module
+ * 负责把 `.hday` 解析后的低层结构转换成对外可用的 `DayInfo`，
+ * 并为单日、区间、整年查询提供可复用的高性能查询视图。
  */
 
 import type {
@@ -30,66 +22,75 @@ import type {
   NameListEntry,
 } from './hday-parser.js';
 
-// ---------------------------------------------------------------------------
-// Calendar utilities
-// ---------------------------------------------------------------------------
+/** 平年每月开始前累计天数。 */
+const MONTH_OFFSETS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+/** 闰年每月开始前累计天数。 */
+const LEAP_MONTH_OFFSETS = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+/** 平年 dayIndex -> [month, day] 预计算表。 */
+const NON_LEAP_MONTH_DAY_TABLE = buildMonthDayTable(false);
+/** 闰年 dayIndex -> [month, day] 预计算表。 */
+const LEAP_MONTH_DAY_TABLE = buildMonthDayTable(true);
+/** 空扩展对象可安全复用。 */
+const EMPTY_EXTENSIONS: Record<string, never> = {};
+
+interface BundleQueryView {
+  dayInfos: DayInfo[];
+}
+
+const bundleViewCache = new WeakMap<HdayBundle, BundleQueryView>();
+const resolvedNameCache = new WeakMap<NameListEntry, MultiLangNames>();
+const resolvedLabelCache = new WeakMap<NameListEntry, string[]>();
 
 /**
- * Determine whether a Gregorian year is a leap year.
- *
- * @param year - The calendar year.
- * @returns `true` if `year` is a leap year.
+ * 判断公历年份是否为闰年。
  */
 export function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
 
-/** Cumulative day counts up to (but not including) each month — non-leap. */
-const MONTH_OFFSETS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+function buildMonthDayTable(leap: boolean): Array<[number, number]> {
+  const monthLengths = leap
+    ? [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    : [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const table: Array<[number, number]> = [];
 
-/**
- * Compute the 0-based day-of-year index for a Gregorian date.
- *
- * January 1 = 0, February 1 = 31, etc.
- *
- * @param year  - Calendar year (used only for leap-year adjustment).
- * @param month - Month number (1–12).
- * @param day   - Day of month (1–31).
- * @returns 0-based day-of-year index.
- */
-export function dayOfYear(year: number, month: number, day: number): number {
-  let doy = MONTH_OFFSETS[month - 1] + (day - 1);
-  // Add one day for months after February in leap years
-  if (month > 2 && isLeapYear(year)) {
-    doy += 1;
+  for (let month = 1; month <= 12; month++) {
+    for (let day = 1; day <= monthLengths[month - 1]; day++) {
+      table.push([month, day]);
+    }
   }
-  return doy;
+
+  return table;
+}
+
+function getMonthOffsets(year: number): number[] {
+  return isLeapYear(year) ? LEAP_MONTH_OFFSETS : MONTH_OFFSETS;
+}
+
+function getMonthDayTable(year: number): Array<[number, number]> {
+  return isLeapYear(year) ? LEAP_MONTH_DAY_TABLE : NON_LEAP_MONTH_DAY_TABLE;
 }
 
 /**
- * Parse an ISO 8601 date string (`YYYY-MM-DD`) into its numeric components.
- *
- * @param dateStr - Date string in `YYYY-MM-DD` format.
- * @returns Tuple of `[year, month, day]`.
- * @throws {Error} If the string does not match the expected format.
+ * 计算日期在当年的 0 基序号。
+ */
+export function dayOfYear(year: number, month: number, day: number): number {
+  return getMonthOffsets(year)[month - 1] + (day - 1);
+}
+
+/**
+ * 解析 `YYYY-MM-DD` 格式日期。
  */
 export function parseDate(dateStr: string): [number, number, number] {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
   if (!match) {
-    throw new Error(
-      `Invalid date format: "${dateStr}" — expected YYYY-MM-DD`,
-    );
+    throw new Error(`Invalid date format: "${dateStr}" — expected YYYY-MM-DD`);
   }
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
 /**
- * Format year / month / day into an ISO `YYYY-MM-DD` string.
- *
- * @param year  - Calendar year.
- * @param month - Month (1–12).
- * @param day   - Day of month (1–31).
- * @returns Formatted date string.
+ * 格式化为 `YYYY-MM-DD`。
  */
 export function formatDate(year: number, month: number, day: number): string {
   const y = String(year).padStart(4, '0');
@@ -99,48 +100,19 @@ export function formatDate(year: number, month: number, day: number): string {
 }
 
 /**
- * Compute (month, day) from a 0-based day-of-year index.
- *
- * @param year     - Calendar year.
- * @param dayIndex - 0-based day-of-year index (0 = Jan 1).
- * @returns Tuple of `[month, day]` (month is 1-based).
+ * 根据当年 0 基序号还原月份和日期。
  */
 export function monthDayFromIndex(
   year: number,
   dayIndex: number,
 ): [number, number] {
-  const leap = isLeapYear(year);
-  const offsets = [...MONTH_OFFSETS];
-  // Adjust for leap year: months after Feb shift by one day
-  if (leap) {
-    for (let i = 2; i < 12; i++) {
-      offsets[i] += 1;
-    }
+  const result = getMonthDayTable(year)[dayIndex];
+  if (!result) {
+    throw new RangeError(`Invalid dayIndex: ${dayIndex}`);
   }
-
-  // Find the last month whose cumulative offset is ≤ dayIndex
-  let month = 1;
-  for (let i = 11; i >= 0; i--) {
-    if (dayIndex >= offsets[i]) {
-      month = i + 1;
-      break;
-    }
-  }
-
-  const day = dayIndex - offsets[month - 1] + 1;
-  return [month, day];
+  return result;
 }
 
-// ---------------------------------------------------------------------------
-// Name / label resolution
-// ---------------------------------------------------------------------------
-
-/**
- * Resolve the calendar-system string from a numeric code.
- *
- * @param code - Numeric calendar system code from the header.
- * @returns The matching {@link CalendarSystem}, or `"GREGORIAN"` as default.
- */
 function resolveCalendarSystem(code: number): CalendarSystem {
   if (code === CALENDAR_SYSTEM_CODES.CHINESE_LUNAR) {
     return 'CHINESE_LUNAR';
@@ -149,24 +121,23 @@ function resolveCalendarSystem(code: number): CalendarSystem {
 }
 
 /**
- * Resolve holiday names from a name-list entry.
- *
- * Each pair in the name list maps a locale key → localised name. Pairs whose
- * `keyIndex` is `NO_INDEX` (0xFFFF) are labels, not names, and are skipped.
- *
- * @param entry   - The name-list entry (or `undefined` if no names).
- * @param strings - The string pool.
- * @returns A {@link MultiLangNames} map (locale → names array).
+ * 把名称列表解析为 `locale -> 名称数组`。
  */
 export function resolveNames(
   entry: NameListEntry | undefined,
   strings: string[],
 ): MultiLangNames {
-  const result: MultiLangNames = {};
-  if (!entry) return result;
+  if (!entry) {
+    return {};
+  }
 
+  const cached = resolvedNameCache.get(entry);
+  if (cached) {
+    return cached;
+  }
+
+  const result: MultiLangNames = {};
   for (const { keyIndex, valueIndex } of entry.pairs) {
-    // Skip label entries (key = 0xFFFF)
     if (keyIndex === NO_INDEX) continue;
 
     const locale = strings[keyIndex];
@@ -179,51 +150,42 @@ export function resolveNames(
     result[locale].push(name);
   }
 
+  resolvedNameCache.set(entry, result);
   return result;
 }
 
 /**
- * Resolve label strings from a name-list entry.
- *
- * Label pairs have `keyIndex === 0xFFFF`; the value index points to the
- * label string (e.g. `"NEW_YEAR"`, `"STATUTORY"`).
- *
- * @param entry   - The name-list entry (or `undefined` if no labels).
- * @param strings - The string pool.
- * @returns An array of label strings.
+ * 把标签列表解析为字符串数组。
  */
 export function resolveLabels(
   entry: NameListEntry | undefined,
   strings: string[],
 ): string[] {
-  if (!entry) return [];
+  if (!entry) {
+    return [];
+  }
+
+  const cached = resolvedLabelCache.get(entry);
+  if (cached) {
+    return cached;
+  }
 
   const labels: string[] = [];
   for (const { keyIndex, valueIndex } of entry.pairs) {
-    if (keyIndex !== NO_INDEX) continue; // only labels
+    if (keyIndex !== NO_INDEX) continue;
+
     const label = strings[valueIndex];
     if (label !== undefined) {
       labels.push(label);
     }
   }
+
+  resolvedLabelCache.set(entry, labels);
   return labels;
 }
 
-// ---------------------------------------------------------------------------
-// DayInfo construction
-// ---------------------------------------------------------------------------
-
 /**
- * Convert a single {@link DayEntry} (plus its associated string / name-list
- * tables) into a {@link DayInfo} DTO.
- *
- * @param entry       - The raw day entry from the DAY_TABLE.
- * @param dateStr     - The date string in `YYYY-MM-DD` format.
- * @param regionCode  - The region code (e.g. `"CN"`).
- * @param calSystem   - Numeric calendar system code from the header.
- * @param strings     - The string pool.
- * @param nameLists   - The name-list table.
- * @returns A fully-populated {@link DayInfo} object.
+ * 将单条 day entry 转换为 `DayInfo`。
  */
 export function dayEntryToDayInfo(
   entry: DayEntry,
@@ -255,21 +217,46 @@ export function dayEntryToDayInfo(
     holidayNames: resolveNames(nameList, strings),
     labels: resolveLabels(labelList, strings),
     sourceVersion: '',
-    extensions: {},
+    extensions: EMPTY_EXTENSIONS,
   };
 }
 
+function buildBundleQueryView(bundle: HdayBundle): BundleQueryView {
+  const { year, regionCode, calendarSystem } = bundle.header;
+  const monthDayTable = getMonthDayTable(year);
+  const dayInfos = new Array<DayInfo>(bundle.days.length);
+
+  for (let index = 0; index < bundle.days.length; index++) {
+    const [month, day] = monthDayTable[index];
+    dayInfos[index] = dayEntryToDayInfo(
+      bundle.days[index],
+      formatDate(year, month, day),
+      regionCode,
+      calendarSystem,
+      bundle.strings,
+      bundle.nameLists,
+    );
+  }
+
+  return { dayInfos };
+}
+
+function getBundleQueryView(bundle: HdayBundle): BundleQueryView {
+  const cached = bundleViewCache.get(bundle);
+  if (cached) {
+    return cached;
+  }
+
+  const view = buildBundleQueryView(bundle);
+  bundleViewCache.set(bundle, view);
+  return view;
+}
+
 /**
- * Query a single date from a parsed bundle.
- *
- * @param bundle  - Parsed `.hday` bundle.
- * @param dateStr - Date in `YYYY-MM-DD` format.
- * @returns The {@link DayInfo} for the date, or `null` if the date falls
- *   outside the bundle's year.
+ * 查询单日。
  */
 export function queryDay(bundle: HdayBundle, dateStr: string): DayInfo | null {
   const [year, month, day] = parseDate(dateStr);
-
   if (year !== bundle.header.year) {
     return null;
   }
@@ -279,40 +266,33 @@ export function queryDay(bundle: HdayBundle, dateStr: string): DayInfo | null {
     return null;
   }
 
-  return dayEntryToDayInfo(
-    bundle.days[index],
-    dateStr,
-    bundle.header.regionCode,
-    bundle.header.calendarSystem,
-    bundle.strings,
-    bundle.nameLists,
-  );
+  return getBundleQueryView(bundle).dayInfos[index];
 }
 
 /**
- * Query all days in a bundle and return them as a {@link DayInfo} array.
- *
- * @param bundle - Parsed `.hday` bundle.
- * @returns Array of {@link DayInfo} for every day in the year (365 or 366).
+ * 查询整年。
  */
 export function queryYear(bundle: HdayBundle): DayInfo[] {
-  const { year } = bundle.header;
-  const results: DayInfo[] = [];
+  return getBundleQueryView(bundle).dayInfos.slice();
+}
 
-  for (let i = 0; i < bundle.days.length; i++) {
-    const [month, day] = monthDayFromIndex(year, i);
-    const dateStr = formatDate(year, month, day);
-    results.push(
-      dayEntryToDayInfo(
-        bundle.days[i],
-        dateStr,
-        bundle.header.regionCode,
-        bundle.header.calendarSystem,
-        bundle.strings,
-        bundle.nameLists,
-      ),
-    );
+/**
+ * 查询同一年内的连续区间。
+ */
+export function queryRange(
+  bundle: HdayBundle,
+  startDayIndex = 0,
+  endDayIndex = bundle.days.length - 1,
+): DayInfo[] {
+  if (startDayIndex > endDayIndex) {
+    return [];
   }
 
-  return results;
+  const start = Math.max(0, startDayIndex);
+  const end = Math.min(bundle.days.length - 1, endDayIndex);
+  if (start > end) {
+    return [];
+  }
+
+  return getBundleQueryView(bundle).dayInfos.slice(start, end + 1);
 }

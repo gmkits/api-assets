@@ -1,27 +1,20 @@
-package com.github.gmkits.holiday.spring;
+package com.github.gmkits.holiday.api25.config;
 
 import com.github.gmkits.holiday.core.HolidayService;
 import com.github.gmkits.holiday.core.HolidayServiceBuilder;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.nio.file.Paths;
 
 /**
- * HolidayService 的 Spring Boot 自动配置。
+ * 组装底层 holiday core 查询服务。
  */
 @Configuration
-@EnableConfigurationProperties(HolidayProperties.class)
-public class HolidayAutoConfiguration {
+public class HolidayCoreConfiguration {
 
-    /**
-     * 当用户未自定义 {@link HolidayService} Bean 时，按配置创建默认实现。
-     */
     @Bean
-    @ConditionalOnMissingBean
-    public HolidayService holidayService(HolidayProperties properties) {
+    public HolidayService holidayService(HolidayApi25Properties properties) {
         HolidayServiceBuilder builder = new HolidayServiceBuilder()
                 .defaultRegion(properties.getDefaultRegion())
                 .enableClasspathFallback(properties.isClasspathFallback());

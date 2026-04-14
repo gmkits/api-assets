@@ -3,16 +3,7 @@ package com.github.gmkits.holiday.core;
 import java.nio.file.Path;
 
 /**
- * Builder for constructing {@link HolidayService} instances.
- *
- * <p>Example usage:</p>
- * <pre>{@code
- * HolidayService svc = new HolidayServiceBuilder()
- *         .defaultRegion("CN")
- *         .dataPath(Paths.get("/data/bundles"))
- *         .enableClasspathFallback(true)
- *         .build();
- * }</pre>
+ * {@link HolidayService} 构建器。
  */
 public final class HolidayServiceBuilder {
 
@@ -21,10 +12,7 @@ public final class HolidayServiceBuilder {
     private boolean classpathFallback = true;
 
     /**
-     * Sets the default region code used when no region is specified.
-     *
-     * @param region the region code (e.g. "CN")
-     * @return this builder
+     * 设置默认地区代码。
      */
     public HolidayServiceBuilder defaultRegion(String region) {
         this.defaultRegion = region;
@@ -32,12 +20,7 @@ public final class HolidayServiceBuilder {
     }
 
     /**
-     * Sets the filesystem directory containing {@code .hday} bundle files.
-     *
-     * <p>Expected layout: {@code {dataPath}/{regionCode}/{year}.hday}</p>
-     *
-     * @param path the data directory path
-     * @return this builder
+     * 设置 bundle 数据目录，目录结构应为 {@code {dataPath}/{regionCode}/{year}.hday}。
      */
     public HolidayServiceBuilder dataPath(Path path) {
         this.dataPath = path;
@@ -45,14 +28,7 @@ public final class HolidayServiceBuilder {
     }
 
     /**
-     * Enables or disables classpath fallback for loading bundles.
-     *
-     * <p>When enabled the service will attempt to load bundles from the
-     * classpath at {@code bundles/{regionCode}/{year}.hday} if they are
-     * not found on the filesystem.</p>
-     *
-     * @param enabled {@code true} to enable classpath fallback
-     * @return this builder
+     * 设置找不到文件系统 bundle 时是否回退到 classpath。
      */
     public HolidayServiceBuilder enableClasspathFallback(boolean enabled) {
         this.classpathFallback = enabled;
@@ -60,9 +36,7 @@ public final class HolidayServiceBuilder {
     }
 
     /**
-     * Builds and returns a new {@link HolidayService}.
-     *
-     * @return the constructed service instance
+     * 构建服务实例。
      */
     public HolidayService build() {
         return new HolidayServiceImpl(defaultRegion, dataPath, classpathFallback);
