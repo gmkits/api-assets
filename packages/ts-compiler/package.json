@@ -1,0 +1,38 @@
+{
+  "name": "@holiday/compiler",
+  "version": "1.0.0",
+  "description": "Holiday Data Platform — compiler pipeline (import, validate, materialize, compile)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "bin": {
+    "holiday-compiler": "./dist/esm/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/esm/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "node --test dist/esm/__tests__/*.test.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@holiday/spec": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
