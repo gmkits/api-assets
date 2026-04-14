@@ -129,7 +129,7 @@ Upload and import a raw source file.
 | Field | Type | Description |
 |---|---|---|
 | `file` | file | Raw source file |
-| `sourceType` | string | One of: GOV_NOTICE, ICS_FEED, THIRD_PARTY_JSON, CSV_IMPORT, MANUAL_ENTRY, ENTERPRISE_PATCH |
+| `sourceType` | string | One of: `GOV_NOTICE`, `ICS_FEED`, `THIRD_PARTY_JSON`, `CSV_IMPORT`, `MANUAL_ENTRY`, `ENTERPRISE_PATCH` |
 | `regionCode` | string | Target region |
 | `year` | number | Target year |
 
