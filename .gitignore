@@ -1,3 +1,4 @@
+.idea/
 node_modules/
 dist/
 *.tgz
@@ -26,3 +27,6 @@ apps/admin-web/src/**/*.vue.js
 apps/admin-web/src/**/*.js
 !apps/admin-web/src/**/*.test.js
 packages/ts-lunar/dist/
+
+# HKO download cache
+.hko-cache/
