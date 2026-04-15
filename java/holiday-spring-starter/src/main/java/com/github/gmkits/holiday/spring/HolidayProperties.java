@@ -1,10 +1,12 @@
 package com.github.gmkits.holiday.spring;
 
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Holiday Starter 配置属性，绑定到 {@code holiday.*} 命名空间。
  */
+@Data
 @ConfigurationProperties(prefix = "holiday")
 public class HolidayProperties {
 
@@ -16,16 +18,4 @@ public class HolidayProperties {
 
     /** 找不到文件系统 bundle 时是否回退到 classpath。 */
     private boolean classpathFallback = true;
-
-    public String getDefaultRegion() { return defaultRegion; }
-
-    public void setDefaultRegion(String defaultRegion) { this.defaultRegion = defaultRegion; }
-
-    public String getDataPath() { return dataPath; }
-
-    public void setDataPath(String dataPath) { this.dataPath = dataPath; }
-
-    public boolean isClasspathFallback() { return classpathFallback; }
-
-    public void setClasspathFallback(boolean classpathFallback) { this.classpathFallback = classpathFallback; }
 }

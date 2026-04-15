@@ -2,6 +2,8 @@ package com.github.gmkits.holiday.core;
 
 import com.github.gmkits.holiday.spec.DayInfo;
 
+import com.google.common.collect.ImmutableList;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -27,7 +29,7 @@ final class HolidayServiceImpl implements HolidayService {
         this.defaultRegion = defaultRegion;
         this.dataPath = dataPath;
         this.classpathFallback = classpathFallback;
-        this.cache = new LRUCache<String, HdayBundle>();
+        this.cache = new LRUCache<>();
     }
 
     @Override
@@ -76,10 +78,10 @@ final class HolidayServiceImpl implements HolidayService {
     @Override
     public List<DayInfo> getRange(String regionCode, LocalDate from, LocalDate to) {
         if (from.isAfter(to)) {
-            return new ArrayList<DayInfo>();
+            return ImmutableList.of();
         }
 
-        List<DayInfo> result = new ArrayList<DayInfo>();
+        List<DayInfo> result = new ArrayList<>();
         for (int year = from.getYear(); year <= to.getYear(); year++) {
             HdayBundle bundle = resolveBundle(regionCode, year);
             if (bundle == null) {
@@ -101,9 +103,9 @@ final class HolidayServiceImpl implements HolidayService {
     public List<DayInfo> getYear(String regionCode, int year) {
         HdayBundle bundle = resolveBundle(regionCode, year);
         if (bundle == null) {
-            return new ArrayList<DayInfo>();
+            return ImmutableList.of();
         }
-        return new ArrayList<DayInfo>(bundle.getDayInfos());
+        return new ArrayList<>(bundle.getDayInfos());
     }
 
     @Override
@@ -115,7 +117,7 @@ final class HolidayServiceImpl implements HolidayService {
     public List<DayInfo> getMonth(String regionCode, int year, int month) {
         HdayBundle bundle = resolveBundle(regionCode, year);
         if (bundle == null) {
-            return new ArrayList<DayInfo>();
+            return ImmutableList.of();
         }
         LocalDate first = LocalDate.of(year, month, 1);
         LocalDate last = first.withDayOfMonth(first.lengthOfMonth());
@@ -213,20 +215,13 @@ final class HolidayServiceImpl implements HolidayService {
 
     private HdayBundle loadFromClasspath(String region, int year) {
         String resource = "bundles/" + region + "/" + year + ".hday";
-        InputStream in = getClass().getClassLoader().getResourceAsStream(resource);
-        if (in == null) {
-            return null;
-        }
-        try {
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream(resource)) {
+            if (in == null) {
+                return null;
+            }
             return HdayReader.read(in);
         } catch (IOException e) {
             return null;
-        } finally {
-            try {
-                in.close();
-            } catch (IOException ignored) {
-                // ignore
-            }
         }
     }
 }

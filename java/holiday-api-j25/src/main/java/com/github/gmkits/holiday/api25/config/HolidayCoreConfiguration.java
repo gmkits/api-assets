@@ -2,6 +2,7 @@ package com.github.gmkits.holiday.api25.config;
 
 import com.github.gmkits.holiday.core.HolidayService;
 import com.github.gmkits.holiday.core.HolidayServiceBuilder;
+import com.google.common.base.Strings;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,7 +19,7 @@ public class HolidayCoreConfiguration {
         HolidayServiceBuilder builder = new HolidayServiceBuilder()
                 .defaultRegion(properties.getDefaultRegion())
                 .enableClasspathFallback(properties.isClasspathFallback());
-        if (properties.getDataPath() != null && !properties.getDataPath().isEmpty()) {
+        if (!Strings.isNullOrEmpty(properties.getDataPath())) {
             builder.dataPath(Paths.get(properties.getDataPath()));
         }
         return builder.build();

@@ -1,8 +1,11 @@
 package com.github.gmkits.holiday.spec;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import lombok.Getter;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +17,7 @@ import java.util.Objects;
  * <p>All boolean fields are always present (never {@code null}).
  * Instances are immutable once constructed via the {@link Builder}.</p>
  */
+@Getter
 public final class DayInfo {
 
     private final LocalDate date;
@@ -39,67 +43,23 @@ public final class DayInfo {
         this.statutoryHoliday = b.statutoryHoliday;
         this.adjustedWorkday = b.adjustedWorkday;
         this.holidayNames = freezeNames(b.holidayNames);
-        this.labels = b.labels == null ? Collections.<String>emptyList()
-                : Collections.unmodifiableList(new ArrayList<String>(b.labels));
+        this.labels = b.labels == null ? ImmutableList.of()
+                : ImmutableList.copyOf(b.labels);
         this.sourceVersion = b.sourceVersion;
-        this.extensions = b.extensions == null ? Collections.<String, Object>emptyMap()
-                : Collections.unmodifiableMap(new LinkedHashMap<String, Object>(b.extensions));
+        this.extensions = b.extensions == null ? ImmutableMap.of()
+                : ImmutableMap.copyOf(b.extensions);
     }
 
     private static Map<String, List<String>> freezeNames(Map<String, List<String>> src) {
         if (src == null || src.isEmpty()) {
-            return Collections.emptyMap();
+            return ImmutableMap.of();
         }
-        Map<String, List<String>> copy = new LinkedHashMap<String, List<String>>();
+        ImmutableMap.Builder<String, List<String>> copy = ImmutableMap.builder();
         for (Map.Entry<String, List<String>> e : src.entrySet()) {
-            copy.put(e.getKey(), Collections.unmodifiableList(new ArrayList<String>(e.getValue())));
+            copy.put(e.getKey(), ImmutableList.copyOf(e.getValue()));
         }
-        return Collections.unmodifiableMap(copy);
+        return copy.build();
     }
-
-    /** Returns the calendar date. */
-    public LocalDate getDate() { return date; }
-
-    /** Returns the region code. */
-    public String getRegionCode() { return regionCode; }
-
-    /** Returns the calendar system. */
-    public CalendarSystem getCalendarSystem() { return calendarSystem; }
-
-    /** Returns {@code true} if this day is a holiday. */
-    public boolean isHoliday() { return holiday; }
-
-    /** Returns {@code true} if this day is a workday. */
-    public boolean isWorkday() { return workday; }
-
-    /** Returns {@code true} if this day falls on a weekend. */
-    public boolean isWeekend() { return weekend; }
-
-    /** Returns {@code true} if this day is a statutory holiday. */
-    public boolean isStatutoryHoliday() { return statutoryHoliday; }
-
-    /** Returns {@code true} if this day is an adjusted (makeup) workday. */
-    public boolean isAdjustedWorkday() { return adjustedWorkday; }
-
-    /**
-     * Returns the holiday names keyed by locale tag.
-     *
-     * @return an unmodifiable map; empty if the day has no holiday name
-     */
-    public Map<String, List<String>> getHolidayNames() { return holidayNames; }
-
-    /**
-     * Returns the labels associated with this day.
-     *
-     * @return an unmodifiable list; empty if no labels
-     */
-    public List<String> getLabels() { return labels; }
-
-    /** Returns the source data version, or {@code null}. */
-    public String getSourceVersion() { return sourceVersion; }
-
-    /** Returns the extension map. */
-    public Map<String, Object> getExtensions() { return extensions; }
 
     @Override
     public String toString() {

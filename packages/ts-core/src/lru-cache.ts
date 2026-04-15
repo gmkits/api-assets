@@ -41,7 +41,7 @@ export class LRUCache<K, V> {
    */
   constructor(maxSize: number) {
     if (maxSize < 1) {
-      throw new RangeError(`LRUCache maxSize must be >= 1, got ${maxSize}`);
+        throw new RangeError(`LRUCache maxSize 必须 >= 1，当前值: ${maxSize}`);
     }
     this.maxSize = maxSize;
     this.map = new Map<K, V>();

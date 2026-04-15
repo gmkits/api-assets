@@ -13,4 +13,11 @@
     <artifactId>holiday-lunar-java</artifactId>
     <name>holiday-lunar-java</name>
     <description>节假日数据平台 —— 农历转换模块（1900-2100，位压缩存储）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
 </project>

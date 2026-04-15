@@ -39,7 +39,7 @@ function findHdayFiles(
 function parseHdayHeader(buf: Buffer): { regionCode: string; year: number } {
   const magic = buf.subarray(0, 4).toString('ascii');
   if (magic !== HDAY_MAGIC) {
-    throw new Error('Invalid .hday file');
+      throw new Error('.hday 文件无效');
   }
   const year = buf.readUInt16LE(8);
   const regionCodeLen = buf.readUInt8(10);

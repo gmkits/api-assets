@@ -89,7 +89,7 @@ export class HolidayApiClient {
     const url = `${this.baseUrl}/api/v1/bundle?region=${encodeURIComponent(region)}&year=${encodeURIComponent(String(year))}`;
     const response = await this.fetchFn(url);
     if (!response.ok) {
-      throw new Error(`Holiday API request failed: ${response.status} ${response.statusText}`);
+        throw new Error(`节假日 API 请求失败: ${response.status} ${response.statusText}`);
     }
     return response.arrayBuffer();
   }
@@ -97,7 +97,7 @@ export class HolidayApiClient {
   private async fetchJson<T>(url: string): Promise<T> {
     const response = await this.fetchFn(url);
     if (!response.ok) {
-      throw new Error(`Holiday API request failed: ${response.status} ${response.statusText}`);
+        throw new Error(`节假日 API 请求失败: ${response.status} ${response.statusText}`);
     }
     return response.json() as Promise<T>;
   }

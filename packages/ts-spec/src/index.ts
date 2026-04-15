@@ -318,3 +318,16 @@ export interface LunarDateInfo {
   /** 日期中文名（如"初一"）。 */
   dayName: string;
 }
+
+// --- 公历日期工具 ---
+
+/** 平年每月开始前累计天数。 */
+export const MONTH_OFFSETS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334] as const;
+
+/** 闰年每月开始前累计天数。 */
+export const LEAP_MONTH_OFFSETS = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335] as const;
+
+/** 判断公历年份是否为闰年。 */
+export function isLeapYear(year: number): boolean {
+    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}

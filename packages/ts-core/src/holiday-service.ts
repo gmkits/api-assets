@@ -114,7 +114,7 @@ class HolidayServiceImpl implements HolidayService {
 
     if (!this.dataPath) {
       throw new Error(
-        `No bundle available for ${key}: no preloaded data and no dataPath configured`,
+          `${key} 的数据包不可用：没有预加载数据且未配置 dataPath`,
       );
     }
 
@@ -151,14 +151,14 @@ class HolidayServiceImpl implements HolidayService {
       const response = await fetch(filePath);
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch bundle ${filePath}: HTTP ${response.status}`,
+            `获取数据包失败 ${filePath}: HTTP ${response.status}`,
         );
       }
       return response.arrayBuffer();
     }
 
     throw new Error(
-      `Cannot load bundle ${filePath}: neither fs nor fetch is available`,
+        `无法加载数据包 ${filePath}：fs 和 fetch 均不可用`,
     );
   }
 

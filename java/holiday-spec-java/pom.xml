@@ -13,4 +13,15 @@
     <artifactId>holiday-spec-java</artifactId>
     <name>holiday-spec-java</name>
     <description>节假日数据平台 —— Java 类型定义</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
 </project>

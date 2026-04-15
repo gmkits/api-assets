@@ -10,15 +10,11 @@ import type {
   MultiLangNames,
   WeekDay,
 } from '@holiday/spec';
+import {isLeapYear, MONTH_OFFSETS, LEAP_MONTH_OFFSETS} from '@holiday/spec';
+
+export {isLeapYear};
 
 // --- Date Helpers ---
-
-/**
- * Check if a year is a leap year.
- */
-export function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
 
 /**
  * Get the number of days in a year (365 or 366).
@@ -34,28 +30,22 @@ export function dateToIndex(dateStr: string): number {
   const year = parseInt(dateStr.slice(0, 4), 10);
   const month = parseInt(dateStr.slice(5, 7), 10);
   const day = parseInt(dateStr.slice(8, 10), 10);
-
-  const daysInMonth = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  let index = 0;
-  for (let m = 0; m < month - 1; m++) {
-    index += daysInMonth[m];
-  }
-  return index + day - 1;
+    const offsets = isLeapYear(year) ? LEAP_MONTH_OFFSETS : MONTH_OFFSETS;
+    return offsets[month - 1] + day - 1;
 }
 
 /**
  * Convert a 0-based day-of-year index back to a YYYY-MM-DD string.
  */
 export function indexToDate(year: number, index: number): string {
-  const daysInMonth = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  let remaining = index;
-  let month = 0;
-  while (month < 12 && remaining >= daysInMonth[month]) {
-    remaining -= daysInMonth[month];
-    month++;
+    const offsets = isLeapYear(year) ? LEAP_MONTH_OFFSETS : MONTH_OFFSETS;
+    let month = 11;
+    while (month > 0 && offsets[month] > index) {
+        month--;
   }
+    const day = index - offsets[month] + 1;
   const mm = String(month + 1).padStart(2, '0');
-  const dd = String(remaining + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
   return `${year}-${mm}-${dd}`;
 }
 

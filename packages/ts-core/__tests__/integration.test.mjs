@@ -230,6 +230,6 @@ describe('parseHdayBundle — error cases', () => {
     view.setUint8(1, 0x41); // 'A'
     view.setUint8(2, 0x44); // 'D'
     view.setUint8(3, 0x21); // '!'
-    assert.throws(() => parseHdayBundle(buf), /magic/i);
+      assert.throws(() => parseHdayBundle(buf), /魔数/i);
   });
 });

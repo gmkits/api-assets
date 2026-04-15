@@ -1,5 +1,6 @@
 package com.github.gmkits.holiday.api25.config;
 
+import com.google.common.base.Strings;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,7 +33,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String requestId = request.getHeader(REQUEST_ID_HEADER);
-        if (requestId == null || requestId.trim().isEmpty()) {
+        if (Strings.isNullOrEmpty(requestId)) {
             requestId = UUID.randomUUID().toString();
         }
         request.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);

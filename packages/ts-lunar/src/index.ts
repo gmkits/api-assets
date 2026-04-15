@@ -50,7 +50,7 @@ const LUNAR_INFO: number[] = [
   0x092e0, 0x0d2e3, 0x0c960, 0x0d557, 0x0d4a0, 0x0da50, 0x05d55, 0x056a0, 0x0a6d0, 0x055d4,
   0x052d0, 0x0a9b8, 0x0a950, 0x0b4a0, 0x0b6a6, 0x0ad50, 0x055a0, 0x0aba4, 0x0a5b0, 0x052b0,
   0x0b273, 0x06930, 0x07337, 0x06aa0, 0x0ad50, 0x14b55, 0x04b60, 0x0a570, 0x054e4, 0x0d160,
-  0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a4d0, 0x0d150, 0x0f252,
+    0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
   0x0d520,
 ];
 
@@ -367,7 +367,7 @@ export function lunarToSolar(
   const offsets = MONTH_OFFSETS[yi];
   const slotCount = offsets.length - 1;
 
-  // 查找目标月份在月槽表中的位置（O(13) 最坏，通常 O(月份号)）
+    // 查找目标月份在月槽表中的位置
   const targetMeta = (lunarMonth & 0xF) | (isLeapMonth ? 0x10 : 0);
   let slotIdx = -1;
   for (let s = 0; s < slotCount; s++) {
@@ -377,19 +377,18 @@ export function lunarToSolar(
     }
   }
 
-  // 若未找到闰月，回退到正常月
   if (slotIdx < 0) {
-    const fallback = lunarMonth & 0xF;
-    for (let s = 0; s < slotCount; s++) {
-      if (meta[s] === fallback) {
-        slotIdx = s;
-        break;
-      }
-    }
+      throw new RangeError(
+          `农历 ${lunarYear} 年不存在${isLeapMonth ? '闰' : ''}${lunarMonth} 月`,
+      );
   }
 
-  if (slotIdx < 0) {
-    throw new RangeError(`无法定位农历 ${lunarYear} 年 ${isLeapMonth ? '闰' : ''}${lunarMonth} 月`);
+    // 校验日期不超过该月实际天数
+    const slotDays = offsets[slotIdx + 1] - offsets[slotIdx];
+    if (lunarDay > slotDays) {
+        throw new RangeError(
+            `农历 ${lunarYear} 年${isLeapMonth ? '闰' : ''}${lunarMonth} 月仅有 ${slotDays} 天，日期 ${lunarDay} 超出范围`,
+        );
   }
 
   // 年前缀和 + 月内偏移 + 日偏移 → 总天数偏移

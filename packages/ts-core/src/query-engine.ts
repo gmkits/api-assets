@@ -13,7 +13,10 @@ import type {
 import {
   CALENDAR_SYSTEM_CODES,
   DAY_FLAGS,
+    LEAP_MONTH_OFFSETS,
+    MONTH_OFFSETS,
   NO_INDEX,
+    isLeapYear,
 } from '@holiday/spec';
 
 import type {
@@ -22,10 +25,6 @@ import type {
   NameListEntry,
 } from './hday-parser.js';
 
-/** 平年每月开始前累计天数。 */
-const MONTH_OFFSETS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-/** 闰年每月开始前累计天数。 */
-const LEAP_MONTH_OFFSETS = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
 /** 平年 dayIndex -> [month, day] 预计算表。 */
 const NON_LEAP_MONTH_DAY_TABLE = buildMonthDayTable(false);
 /** 闰年 dayIndex -> [month, day] 预计算表。 */
@@ -41,12 +40,7 @@ const bundleViewCache = new WeakMap<HdayBundle, BundleQueryView>();
 const resolvedNameCache = new WeakMap<NameListEntry, MultiLangNames>();
 const resolvedLabelCache = new WeakMap<NameListEntry, string[]>();
 
-/**
- * 判断公历年份是否为闰年。
- */
-export function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
+export {isLeapYear};
 
 function buildMonthDayTable(leap: boolean): Array<[number, number]> {
   const monthLengths = leap
@@ -63,7 +57,7 @@ function buildMonthDayTable(leap: boolean): Array<[number, number]> {
   return table;
 }
 
-function getMonthOffsets(year: number): number[] {
+function getMonthOffsets(year: number): readonly number[] {
   return isLeapYear(year) ? LEAP_MONTH_OFFSETS : MONTH_OFFSETS;
 }
 
@@ -84,7 +78,7 @@ export function dayOfYear(year: number, month: number, day: number): number {
 export function parseDate(dateStr: string): [number, number, number] {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
   if (!match) {
-    throw new Error(`Invalid date format: "${dateStr}" — expected YYYY-MM-DD`);
+      throw new Error(`日期格式错误: "${dateStr}"，应为 YYYY-MM-DD`);
   }
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
@@ -108,7 +102,7 @@ export function monthDayFromIndex(
 ): [number, number] {
   const result = getMonthDayTable(year)[dayIndex];
   if (!result) {
-    throw new RangeError(`Invalid dayIndex: ${dayIndex}`);
+      throw new RangeError(`dayIndex 超出范围: ${dayIndex}`);
   }
   return result;
 }

@@ -130,14 +130,14 @@ function readAscii(view: DataView, offset: number, length: number): string {
 function parseHeader(view: DataView): HdayHeader {
   if (view.byteLength < HDAY_HEADER_SIZE) {
     throw new Error(
-      `Invalid .hday file: expected at least ${HDAY_HEADER_SIZE} bytes, got ${view.byteLength}`,
+        `.hday 文件无效：至少需要 ${HDAY_HEADER_SIZE} 字节，实际 ${view.byteLength} 字节`,
     );
   }
 
   const magic = readAscii(view, 0x00, 4);
   if (magic !== HDAY_MAGIC) {
     throw new Error(
-      `Invalid .hday magic: expected "${HDAY_MAGIC}", got "${magic}"`,
+        `.hday 魔数无效：期望 "${HDAY_MAGIC}"，实际 "${magic}"`,
     );
   }
 
@@ -343,7 +343,7 @@ export function parseHdayBundle(data: ArrayBuffer): HdayBundle {
   const header = parseHeader(view);
   if (header.majorVersion !== 1) {
     throw new Error(
-      `Unsupported .hday major version: ${header.majorVersion} (expected 1)`,
+        `不支持的 .hday 主版本号: ${header.majorVersion}（期望 1）`,
     );
   }
 
@@ -353,17 +353,17 @@ export function parseHdayBundle(data: ArrayBuffer): HdayBundle {
   // 3. Locate required sections
   const daySection = findSection(sections, SECTION_TYPES.DAY_TABLE);
   if (!daySection) {
-    throw new Error('Missing required DAY_TABLE section in .hday file');
+      throw new Error('.hday 文件缺少必需的 DAY_TABLE 段');
   }
 
   const stringSection = findSection(sections, SECTION_TYPES.STRING_TABLE);
   if (!stringSection) {
-    throw new Error('Missing required STRING_TABLE section in .hday file');
+      throw new Error('.hday 文件缺少必需的 STRING_TABLE 段');
   }
 
   const nameListSection = findSection(sections, SECTION_TYPES.NAME_LIST_TABLE);
   if (!nameListSection) {
-    throw new Error('Missing required NAME_LIST_TABLE section in .hday file');
+      throw new Error('.hday 文件缺少必需的 NAME_LIST_TABLE 段');
   }
 
   // 4. Parse each section

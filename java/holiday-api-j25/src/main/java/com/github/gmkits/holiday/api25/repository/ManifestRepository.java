@@ -10,10 +10,10 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
+import com.google.common.collect.ImmutableList;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -64,11 +64,11 @@ public class ManifestRepository {
 
     public List<String> getSupportedRegions() {
         JsonNode bundlesNode = getManifest().path("bundles");
-        List<String> regions = new ArrayList<>();
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
         for (String name : bundlesNode.propertyNames()) {
-            regions.add(name);
+            builder.add(name);
         }
-        return regions;
+        return builder.build();
     }
 
     private JsonNode loadManifest() {

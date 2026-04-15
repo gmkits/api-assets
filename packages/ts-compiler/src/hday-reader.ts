@@ -105,14 +105,14 @@ export function readHday(buf: Buffer): MaterializedYearData {
   // --- Validate magic ---
   const magic = buf.subarray(0, 4).toString('ascii');
   if (magic !== HDAY_MAGIC) {
-    throw new Error(`Invalid .hday file: expected magic "${HDAY_MAGIC}", got "${magic}"`);
+      throw new Error(`.hday 文件无效：期望魔数 "${HDAY_MAGIC}"，实际 "${magic}"`);
   }
 
   // --- Parse header (32 bytes per spec) ---
   const majorVersion = buf.readUInt8(4);
   const minorVersion = buf.readUInt8(5);
   if (majorVersion !== 1) {
-    throw new Error(`Unsupported .hday major version: ${majorVersion}`);
+      throw new Error(`不支持的 .hday 主版本号: ${majorVersion}`);
   }
 
   // const flags = buf.readUInt16LE(6); // reserved
@@ -131,7 +131,7 @@ export function readHday(buf: Buffer): MaterializedYearData {
   const computedCrc = crc32(buf.subarray(0, crcOffset));
   if (storedCrc !== computedCrc) {
     throw new Error(
-      `CRC32 mismatch: stored=0x${storedCrc.toString(16)}, computed=0x${computedCrc.toString(16)}`
+        `CRC32 校验失败：存储值=0x${storedCrc.toString(16)}，计算值=0x${computedCrc.toString(16)}`
     );
   }
 
@@ -150,7 +150,7 @@ export function readHday(buf: Buffer): MaterializedYearData {
   const nameListSection = sections.find(s => s.type === SECTION_TYPES.NAME_LIST_TABLE);
 
   if (!dayTableSection || !strTableSection || !nameListSection) {
-    throw new Error('Missing required sections in .hday file');
+      throw new Error('.hday 文件缺少必需的段');
   }
 
   // --- Parse string table ---

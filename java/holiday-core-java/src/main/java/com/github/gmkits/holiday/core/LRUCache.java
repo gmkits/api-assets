@@ -1,5 +1,7 @@
 package com.github.gmkits.holiday.core;
 
+import com.google.common.base.Preconditions;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -33,9 +35,7 @@ public final class LRUCache<K, V> {
      * @throws IllegalArgumentException 若 {@code maxSize} 不为正数
      */
     public LRUCache(int maxSize) {
-        if (maxSize <= 0) {
-            throw new IllegalArgumentException("maxSize 必须为正数: " + maxSize);
-        }
+        Preconditions.checkArgument(maxSize > 0, "maxSize 必须为正数: %s", maxSize);
         this.maxSize = maxSize;
         this.map = new LinkedHashMap<K, V>(maxSize + 1, 0.75f, true) {
             private static final long serialVersionUID = 1L;

@@ -2,6 +2,7 @@ package com.github.gmkits.holiday.lunar;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalDate;
@@ -10,9 +11,19 @@ import java.time.temporal.ChronoUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 农历模块单元测试。
+ * 农历模块测试。
+ *
+ * - 数据表完整性
+ * - 闰月编解码
+ * - 公历↔农历互转（已知日期 + CSV 全量）
+ * - 闰月互转 / 无效闰月报错 / 小月溢出
+ * - 天干地支 / 生肖
+ * - 边界与异常
+ * - 朔日天文估算
  */
 class LunarCalendarTest {
+
+    // ─── 数据表完整性 ───
 
     @Test
     void yearRange() {
@@ -21,98 +32,189 @@ class LunarCalendarTest {
     }
 
     @Test
-    void everyYearDaysBetween353And385() {
+    void everyYearAndMonthValid() {
         for (int y = LunarCalendar.START_YEAR; y <= LunarCalendar.END_YEAR; y++) {
-            int days = LunarCalendar.yearDays(y);
-            assertTrue(days >= 353 && days <= 385,
-                    y + " 年天数 " + days + " 超出合理范围 [353, 385]");
-        }
-    }
-
-    @Test
-    void everyMonthDays29Or30() {
-        for (int y = LunarCalendar.START_YEAR; y <= LunarCalendar.END_YEAR; y++) {
+            int yd = LunarCalendar.yearDays(y);
+            assertTrue(yd >= 353 && yd <= 385, y + "年 " + yd + "天");
             for (int m = 1; m <= 12; m++) {
-                int days = LunarCalendar.monthDays(y, m);
-                assertTrue(days == 29 || days == 30,
-                        y + "-" + m + " 天数 " + days + " 不是 29 或 30");
+                int md = LunarCalendar.monthDays(y, m);
+                assertTrue(md == 29 || md == 30, y + "-" + m + " " + md + "天");
             }
         }
     }
 
-    @Test
-    void leapMonthRange() {
-        for (int y = LunarCalendar.START_YEAR; y <= LunarCalendar.END_YEAR; y++) {
-            int lm = LunarCalendar.leapMonth(y);
-            assertTrue(lm >= 0 && lm <= 12, y + " 年闰月 " + lm + " 超出范围");
-        }
-    }
+    // ─── 闰月 ───
 
     @Test
-    void noLeapMonthMeansZeroDays() {
+    void leapMonthConsistency() {
         for (int y = LunarCalendar.START_YEAR; y <= LunarCalendar.END_YEAR; y++) {
-            if (LunarCalendar.leapMonth(y) == 0) {
-                assertEquals(0, LunarCalendar.leapMonthDays(y));
+            int lm = LunarCalendar.leapMonth(y);
+            assertTrue(lm >= 0 && lm <= 12, y + "年闰月=" + lm);
+            int ld = LunarCalendar.leapMonthDays(y);
+            if (lm == 0) {
+                assertEquals(0, ld, y + "年无闰月但天数=" + ld);
+            } else {
+                assertTrue(ld == 29 || ld == 30, y + "年闰月天数=" + ld);
             }
         }
     }
 
     @Test
     void knownLeapMonths() {
-        assertEquals(6, LunarCalendar.leapMonth(2025)); // 2025 闰六月
-        assertEquals(2, LunarCalendar.leapMonth(2023)); // 2023 闰二月
-        assertEquals(0, LunarCalendar.leapMonth(2024)); // 2024 无闰月
+        assertEquals(6, LunarCalendar.leapMonth(2025));
+        assertEquals(2, LunarCalendar.leapMonth(2023));
+        assertEquals(0, LunarCalendar.leapMonth(2024));
     }
+
+    // ─── 闰月互转 ───
+
+    @Test
+    void leapMonthConversion() {
+        // 2025 闰六月：闰月和非闰月转到不同公历日
+        LocalDate leapM6 = LunarCalendar.lunarToSolar(2025, 6, 1, true);
+        LocalDate normalM6 = LunarCalendar.lunarToSolar(2025, 6, 1, false);
+        assertNotEquals(leapM6, normalM6);
+
+        // 反查
+        LunarInfo backLeap = LunarCalendar.solarToLunar(leapM6);
+        assertEquals(6, backLeap.getDate().getMonth());
+        assertTrue(backLeap.getDate().isLeapMonth());
+
+        LunarInfo backNormal = LunarCalendar.solarToLunar(normalM6);
+        assertEquals(6, backNormal.getDate().getMonth());
+        assertFalse(backNormal.getDate().isLeapMonth());
+    }
+
+    @Test
+    void leapMonth2023RoundTrip() {
+        LocalDate solar = LunarCalendar.lunarToSolar(2023, 2, 15, true);
+        LunarInfo back = LunarCalendar.solarToLunar(solar);
+        assertEquals(2, back.getDate().getMonth());
+        assertEquals(15, back.getDate().getDay());
+        assertTrue(back.getDate().isLeapMonth());
+    }
+
+    // ─── 错误处理 ───
+
+    @Test
+    void noLeapMonthWithLeapFlagThrows() {
+        // 2024 无闰月
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2024, 6, 1, true));
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2024, 1, 1, true));
+    }
+
+    @Test
+    void wrongLeapMonthThrows() {
+        // 2025 闰六月，传闰三月应报错
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2025, 3, 1, true));
+    }
+
+    @Test
+    void smallMonthDay30Throws() {
+        // 找到一个 29 天月
+        for (int m = 1; m <= 12; m++) {
+            if (LunarCalendar.monthDays(2025, m) == 29) {
+                final int month = m;
+                assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2025, month, 30));
+                return;
+            }
+        }
+        fail("未找到 29 天月");
+    }
+
+    @Test
+    void outOfRangeThrows() {
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.yearDays(1899));
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.yearDays(2101));
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.solarToLunar(LocalDate.of(1899, 1, 1)));
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(1899, 1, 1));
+    }
+
+    @Test
+    void invalidMonthOrDayThrows() {
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.monthDays(2025, 0));
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.monthDays(2025, 13));
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2025, 0, 1));
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2025, 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2025, 1, 31));
+    }
+
+    // ─── 已知日期 ───
 
     @ParameterizedTest
     @CsvSource({
-        "2025, 1, 29, 2025, 1, 1, false",   // 乙巳年正月初一
-        "2024, 2, 10, 2024, 1, 1, false",   // 甲辰年正月初一
-        "2023, 1, 22, 2023, 1, 1, false",   // 癸卯年正月初一
-        "1900, 1, 31, 1900, 1, 1, false",   // 基准日
+            "2025,1,29, 2025,1,1,false, 乙巳年,蛇",
+            "2024,2,10, 2024,1,1,false, 甲辰年,龙",
+            "2023,1,22, 2023,1,1,false, 癸卯年,兔",
+            "1900,1,31, 1900,1,1,false, 庚子年,鼠",
+            "2025,10,6, 2025,8,15,false, 乙巳年,蛇",
     })
-    void solarToLunarKnownDates(int sy, int sm, int sd, int ly, int lm, int ld, boolean leap) {
+    void knownDates(int sy, int sm, int sd, int ly, int lm, int ld, boolean leap,
+                    String ganZhi, String shengXiao) {
         LunarInfo info = LunarCalendar.solarToLunar(LocalDate.of(sy, sm, sd));
         assertEquals(ly, info.getDate().getYear());
         assertEquals(lm, info.getDate().getMonth());
         assertEquals(ld, info.getDate().getDay());
         assertEquals(leap, info.getDate().isLeapMonth());
+        assertEquals(ganZhi, info.getGanZhiYear());
+        assertEquals(shengXiao, info.getShengXiao());
+    }
+
+    // ─── 边界日期 ───
+
+    @Test
+    void baseDate() {
+        LunarInfo info = LunarCalendar.solarToLunar(LocalDate.of(1900, 1, 31));
+        assertEquals(1900, info.getDate().getYear());
+        assertEquals(1, info.getDate().getMonth());
+        assertEquals(1, info.getDate().getDay());
     }
 
     @Test
-    void springFestival2025Info() {
-        LunarInfo info = LunarCalendar.solarToLunar(LocalDate.of(2025, 1, 29));
-        assertEquals("乙巳年", info.getGanZhiYear());
-        assertEquals("蛇", info.getShengXiao());
-        assertEquals("正月", info.getMonthName());
-        assertEquals("初一", info.getDayName());
+    void nearEndOf2100() {
+        // 能转换到 2100 年末附近
+        LunarInfo info = LunarCalendar.solarToLunar(LocalDate.of(2101, 1, 28));
+        assertEquals(2100, info.getDate().getYear());
     }
 
-    @Test
-    void lunarToSolarRoundTrip() {
-        LocalDate result = LunarCalendar.lunarToSolar(2025, 1, 1);
-        assertEquals(LocalDate.of(2025, 1, 29), result);
+    // ─── CSV 全量验证 ───
 
-        result = LunarCalendar.lunarToSolar(2024, 1, 1);
-        assertEquals(LocalDate.of(2024, 2, 10), result);
+    @ParameterizedTest
+    @CsvFileSource(resources = "/lunar-golden.csv", numLinesToSkip = 1)
+    void csvSolarToLunar(String solarDate, int ly, int lm, int ld, int isLeapMonth) {
+        String[] parts = solarDate.split("-");
+        int sy = Integer.parseInt(parts[0]);
+        int sm = Integer.parseInt(parts[1]);
+        int sd = Integer.parseInt(parts[2]);
+        boolean leap = isLeapMonth == 1;
+        LunarInfo info = LunarCalendar.solarToLunar(LocalDate.of(sy, sm, sd));
+        assertEquals(ly, info.getDate().getYear(), sy + "-" + sm + "-" + sd + " year");
+        assertEquals(lm, info.getDate().getMonth(), sy + "-" + sm + "-" + sd + " month");
+        assertEquals(ld, info.getDate().getDay(), sy + "-" + sm + "-" + sd + " day");
+        assertEquals(leap, info.getDate().isLeapMonth(), sy + "-" + sm + "-" + sd + " leap");
     }
 
-    @Test
-    void roundTripConsistency2000to2050() {
-        for (int year = 2000; year <= 2050; year++) {
-            LunarInfo info = LunarCalendar.solarToLunar(LocalDate.of(year, 2, 1));
-            LocalDate back = LunarCalendar.lunarToSolar(
-                    info.getDate().getYear(), info.getDate().getMonth(),
-                    info.getDate().getDay(), info.getDate().isLeapMonth());
-            assertEquals(LocalDate.of(year, 2, 1), back, year + " 年往返失败");
-        }
+    @ParameterizedTest
+    @CsvFileSource(resources = "/lunar-golden.csv", numLinesToSkip = 1)
+    void csvLunarToSolar(String solarDate, int ly, int lm, int ld, int isLeapMonth) {
+        String[] parts = solarDate.split("-");
+        int sy = Integer.parseInt(parts[0]);
+        int sm = Integer.parseInt(parts[1]);
+        int sd = Integer.parseInt(parts[2]);
+        boolean leap = isLeapMonth == 1;
+        LocalDate result = LunarCalendar.lunarToSolar(ly, lm, ld, leap);
+        assertEquals(LocalDate.of(sy, sm, sd), result,
+                "lunar(" + ly + "," + lm + "," + ld + "," + leap + ")");
     }
+
+    // ─── 天干地支 ───
 
     @Test
     void ganZhiCycle() {
         assertEquals("甲子", LunarCalendar.getGanZhi(1984));
-        assertEquals("甲子", LunarCalendar.getGanZhi(1984 + 60));
         assertEquals("鼠", LunarCalendar.getShengXiao(1984));
+        assertEquals("甲子", LunarCalendar.getGanZhi(2044));
+        assertEquals("甲子", LunarCalendar.getGanZhi(2104));
     }
 
     @Test
@@ -123,8 +225,10 @@ class LunarCalendarTest {
         assertEquals("蛇", LunarCalendar.getShengXiao(2025));
     }
 
+    // ─── 名称 ───
+
     @Test
-    void monthAndDayNames() {
+    void names() {
         assertEquals("正月", LunarCalendar.getMonthName(1, false));
         assertEquals("腊月", LunarCalendar.getMonthName(12, false));
         assertEquals("闰四月", LunarCalendar.getMonthName(4, true));
@@ -133,71 +237,38 @@ class LunarCalendarTest {
         assertEquals("三十", LunarCalendar.getDayName(30));
     }
 
-    @Test
-    void outOfRangeThrows() {
-        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.yearDays(1899));
-        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.yearDays(2101));
-        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.monthDays(2025, 0));
-        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.monthDays(2025, 13));
-        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2025, 0, 1));
-        assertThrows(IllegalArgumentException.class, () -> LunarCalendar.lunarToSolar(2025, 1, 31));
-        assertThrows(IllegalArgumentException.class,
-                () -> LunarCalendar.solarToLunar(LocalDate.of(1899, 1, 1)));
-    }
+    // ─── 朔日估算 ───
 
     @Test
-    void midAutumn2025() {
-        // 2025 中秋：农历八月十五
-        LunarInfo info = LunarCalendar.solarToLunar(LocalDate.of(2025, 10, 6));
-        assertEquals(8, info.getDate().getMonth());
-        assertEquals(15, info.getDate().getDay());
-    }
-
-    // ===================================================================
-    // 朔日天文估算（Jean Meeus 算法）
-    // ===================================================================
-
-    @Test
-    void estimateNewMoonJDEReasonable() {
-        // k=0 对应 2000-01-06 附近的朔日
+    void newMoonJDE() {
         double jde = LunarCalendar.estimateNewMoonJDE(0);
-        assertTrue(jde > 2451549 && jde < 2451552,
-                "k=0 朔日 JDE=" + jde + " 不在预期范围");
+        assertTrue(jde > 2451549 && jde < 2451552);
     }
 
     @Test
-    void jdeToGregorianKnownDate() {
-        // 2000-01-01.5 的儒略日 = 2451545.0
-        LocalDate d = LunarCalendar.jdeToGregorian(2451545.0);
-        assertEquals(LocalDate.of(2000, 1, 1), d);
+    void jdeToGregorianKnown() {
+        assertEquals(LocalDate.of(2000, 1, 1), LunarCalendar.jdeToGregorian(2451545.0));
     }
 
     @Test
-    void estimateLunarNewYearAccuracy() {
-        // 验证 2020-2030 的春节估算精度（±2 天）
+    void springFestivalEstimate() {
         int[][] known = {
             {2020, 1, 25}, {2021, 2, 12}, {2022, 2, 1}, {2023, 1, 22},
             {2024, 2, 10}, {2025, 1, 29}, {2026, 2, 17}, {2027, 2, 6},
             {2028, 1, 26}, {2029, 2, 13}, {2030, 2, 3},
         };
         for (int[] row : known) {
-            LocalDate estimated = LunarCalendar.estimateLunarNewYear(row[0]);
-            LocalDate actual = LocalDate.of(row[0], row[1], row[2]);
-            long diff = Math.abs(ChronoUnit.DAYS.between(estimated, actual));
-            assertTrue(diff <= 2,
-                    row[0] + " 年春节估算偏差 " + diff + " 天，超过允许的 2 天");
+            LocalDate est = LunarCalendar.estimateLunarNewYear(row[0]);
+            long diff = Math.abs(ChronoUnit.DAYS.between(est, LocalDate.of(row[0], row[1], row[2])));
+            assertTrue(diff <= 2, row[0] + "年偏差" + diff + "天");
         }
     }
 
     @Test
     void adjacentNewMoonInterval() {
-        // 相邻朔日间隔应接近 29.53 天
         for (int k = -100; k < 100; k++) {
-            double jde1 = LunarCalendar.estimateNewMoonJDE(k);
-            double jde2 = LunarCalendar.estimateNewMoonJDE(k + 1);
-            double interval = jde2 - jde1;
-            assertTrue(interval >= 29.2 && interval <= 29.9,
-                    "k=" + k + " 朔日间隔 " + interval + " 超出合理范围");
+            double interval = LunarCalendar.estimateNewMoonJDE(k + 1) - LunarCalendar.estimateNewMoonJDE(k);
+            assertTrue(interval >= 29.2 && interval <= 29.9, "k=" + k + " 间隔" + interval);
         }
     }
 }

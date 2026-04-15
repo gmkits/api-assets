@@ -15,10 +15,10 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,7 +72,7 @@ public class CachedHolidayQueryService {
     }
 
     public List<RegionInfo> getRegions() {
-        List<RegionInfo> result = new ArrayList<RegionInfo>();
+        List<RegionInfo> result = new ArrayList<>();
         for (String region : manifestRepository.getSupportedRegions()) {
             result.add(RegionInfo.builder()
                     .code(region)
@@ -107,14 +107,15 @@ public class CachedHolidayQueryService {
                 .build();
     }
 
-    private Map<String, String> resolveRegionName(String regionCode) {
+    private static final ImmutableMap<String, String> CN_REGION_NAMES = ImmutableMap.of(
+            "zh-CN", "中国大陆",
+            "en-US", "Mainland China");
+
+    private static Map<String, String> resolveRegionName(String regionCode) {
         if ("CN".equals(regionCode)) {
-            Map<String, String> names = new LinkedHashMap<String, String>();
-            names.put("zh-CN", "中国大陆");
-            names.put("en-US", "Mainland China");
-            return names;
+            return CN_REGION_NAMES;
         }
-        return Collections.singletonMap("zh-CN", regionCode);
+        return ImmutableMap.of("zh-CN", regionCode);
     }
 
     /**
@@ -136,19 +137,14 @@ public class CachedHolidayQueryService {
         if (from.isAfter(to)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_RANGE", "from 不能晚于 to");
         }
-        List<DayInfo> days = holidayService.getRange(regionCode, from, to);
-        int workdays = 0;
-        for (DayInfo day : days) {
-            if (day.isWorkday()) {
-                workdays++;
-            }
-        }
+        int workdays = holidayService.countWorkdays(regionCode, from, to);
+        int totalDays = (int) (to.toEpochDay() - from.toEpochDay()) + 1;
         return WorkdayCountPayload.builder()
                 .from(from.toString())
                 .to(to.toString())
                 .workdays(workdays)
-                .totalDays(days.size())
-                .holidays(days.size() - workdays)
+                .totalDays(totalDays)
+                .holidays(totalDays - workdays)
                 .build();
     }
 

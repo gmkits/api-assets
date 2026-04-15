@@ -1,7 +1,11 @@
 package com.github.gmkits.holiday.spec;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import lombok.Getter;
+import lombok.ToString;
+
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +15,8 @@ import java.util.Map;
  * <p>All fields follow the cn-holiday-kit specification. This class is
  * immutable once constructed.</p>
  */
+@Getter
+@ToString
 public final class CommonMeta {
 
     private final String specVersion;
@@ -61,58 +67,11 @@ public final class CommonMeta {
         this.calendarSystem = calendarSystem;
         this.timezone = timezone;
         this.weekendMask = weekendMask;
-        this.locales = locales == null ? Collections.<String>emptyList()
-                : Collections.unmodifiableList(locales);
+        this.locales = locales == null ? ImmutableList.of()
+                : ImmutableList.copyOf(locales);
         this.sourceVersion = sourceVersion;
         this.generatedAt = generatedAt;
-        this.extensions = extensions == null ? Collections.<String, Object>emptyMap()
-                : Collections.unmodifiableMap(extensions);
-    }
-
-    /** Returns the specification version. */
-    public String getSpecVersion() { return specVersion; }
-
-    /** Returns the unique bundle identifier. */
-    public String getBundleId() { return bundleId; }
-
-    /** Returns the primary region code. */
-    public RegionCode getRegionCode() { return regionCode; }
-
-    /** Returns the parent region code, or {@code null} if none. */
-    public RegionCode getParentRegionCode() { return parentRegionCode; }
-
-    /** Returns the calendar year. */
-    public int getYear() { return year; }
-
-    /** Returns the start of the valid date range. */
-    public LocalDate getValidFrom() { return validFrom; }
-
-    /** Returns the end of the valid date range. */
-    public LocalDate getValidTo() { return validTo; }
-
-    /** Returns the calendar system. */
-    public CalendarSystem getCalendarSystem() { return calendarSystem; }
-
-    /** Returns the IANA timezone identifier. */
-    public String getTimezone() { return timezone; }
-
-    /** Returns the weekend bitmask. */
-    public int getWeekendMask() { return weekendMask; }
-
-    /** Returns the list of supported locales. */
-    public List<String> getLocales() { return locales; }
-
-    /** Returns the source data version string. */
-    public String getSourceVersion() { return sourceVersion; }
-
-    /** Returns the ISO-8601 generation timestamp. */
-    public String getGeneratedAt() { return generatedAt; }
-
-    /** Returns the extension map. */
-    public Map<String, Object> getExtensions() { return extensions; }
-
-    @Override
-    public String toString() {
-        return "CommonMeta{region=" + regionCode + ", year=" + year + "}";
+        this.extensions = extensions == null ? ImmutableMap.of()
+                : ImmutableMap.copyOf(extensions);
     }
 }

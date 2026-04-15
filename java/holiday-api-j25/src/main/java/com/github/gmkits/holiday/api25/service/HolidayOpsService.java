@@ -9,6 +9,8 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
+import com.google.common.collect.ImmutableList;
+
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -41,7 +43,7 @@ public class HolidayOpsService {
         return OperationResult.builder()
                 .operation("clearCaches")
                 .message(reloadManifest ? "缓存已清空并重载 manifest" : "缓存已清空")
-                .warmedKeys(new ArrayList<String>())
+                .warmedKeys(ImmutableList.of())
                 .build();
     }
 
@@ -50,12 +52,12 @@ public class HolidayOpsService {
         return OperationResult.builder()
                 .operation("reloadManifest")
                 .message("manifest 已重新加载")
-                .warmedKeys(new ArrayList<String>())
+                .warmedKeys(ImmutableList.of())
                 .build();
     }
 
     public OperationResult warmUp(List<String> regions, List<Integer> years, boolean includeCurrentAndNextYear) {
-        Set<String> effectiveRegions = new LinkedHashSet<String>();
+        Set<String> effectiveRegions = new LinkedHashSet<>();
         if (regions != null && !regions.isEmpty()) {
             effectiveRegions.addAll(regions);
         } else if (properties.getPreloadRegions() != null && !properties.getPreloadRegions().isEmpty()) {
@@ -64,7 +66,7 @@ public class HolidayOpsService {
             effectiveRegions.add(properties.getDefaultRegion());
         }
 
-        Set<Integer> effectiveYears = new LinkedHashSet<Integer>();
+        Set<Integer> effectiveYears = new LinkedHashSet<>();
         if (years != null && !years.isEmpty()) {
             effectiveYears.addAll(years);
         }
@@ -78,7 +80,7 @@ public class HolidayOpsService {
             effectiveYears.add(currentYear + 1);
         }
 
-        List<String> warmedKeys = new ArrayList<String>();
+        List<String> warmedKeys = new ArrayList<>();
         CachedHolidayQueryService proxy = selfProvider.getObject();
         for (String region : effectiveRegions) {
             for (Integer year : effectiveYears) {

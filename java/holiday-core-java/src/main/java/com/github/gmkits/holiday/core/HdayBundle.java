@@ -3,10 +3,11 @@ package com.github.gmkits.holiday.core;
 import com.github.gmkits.holiday.spec.CalendarSystem;
 import com.github.gmkits.holiday.spec.DayInfo;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public final class HdayBundle {
         this.strings = strings;
         this.nameLists = nameLists;
         this.dayInfos = buildDayInfos();
-        this.yearView = Collections.unmodifiableList(Arrays.asList(this.dayInfos));
+        this.yearView = ImmutableList.copyOf(this.dayInfos);
     }
 
     public int getYear() { return year; }
@@ -98,14 +99,14 @@ public final class HdayBundle {
      */
     public List<DayInfo> getRange(int startDayIndex, int endDayIndex) {
         if (startDayIndex > endDayIndex) {
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         int start = Math.max(0, startDayIndex);
         int end = Math.min(dayCount - 1, endDayIndex);
         if (start > end) {
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
-        return new ArrayList<DayInfo>(yearView.subList(start, end + 1));
+        return new ArrayList<>(yearView.subList(start, end + 1));
     }
 
     /**
@@ -151,10 +152,10 @@ public final class HdayBundle {
 
     private Map<String, List<String>> resolveNames(int listIndex) {
         if (listIndex == NO_INDEX || nameLists == null || listIndex >= nameLists.length) {
-            return Collections.emptyMap();
+            return ImmutableMap.of();
         }
         int[][] pairs = nameLists[listIndex];
-        Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
+        Map<String, List<String>> result = new LinkedHashMap<>();
         for (int[] pair : pairs) {
             int keyIdx = pair[0];
             int valIdx = pair[1];
@@ -171,23 +172,23 @@ public final class HdayBundle {
             String value = strings[valIdx];
             List<String> list = result.get(key);
             if (list == null) {
-                list = new ArrayList<String>();
+                list = new ArrayList<>();
                 result.put(key, list);
             }
             list.add(value);
         }
         if (result.isEmpty()) {
-            return Collections.emptyMap();
+            return ImmutableMap.of();
         }
         return result;
     }
 
     private List<String> resolveLabels(int listIndex) {
         if (listIndex == NO_INDEX || nameLists == null || listIndex >= nameLists.length) {
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         int[][] pairs = nameLists[listIndex];
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         for (int[] pair : pairs) {
             int keyIdx = pair[0];
             int valIdx = pair[1];
@@ -200,7 +201,7 @@ public final class HdayBundle {
             result.add(strings[valIdx]);
         }
         if (result.isEmpty()) {
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         return result;
     }
