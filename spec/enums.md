@@ -1,110 +1,109 @@
-# Holiday Data Platform — Enumeration Dictionary v1.0.0
+# cn-holiday-kit 枚举与常量字典
 
-## DayKind
+本文档整理仓库中已经使用的核心枚举、`.hday` 二进制常量与位标记。
 
-Values used in rules and materialized data to classify each day:
+## 1. DayKind
 
-| Value | Description (EN) | Description (ZH) |
-|---|---|---|
-| `STATUTORY_HOLIDAY` | A day that is a statutory holiday per law | 法定节假日 |
-| `OFFICIAL_HOLIDAY` | A day designated as holiday in the annual arrangement | 放假日（含调休形成的假期） |
-| `ADJUSTED_WORKDAY` | A weekend day reclassified as workday due to holiday swap | 调休补班日 |
-| `NORMAL_WORKDAY` | A regular workday (Mon-Fri, not overridden) | 正常工作日 |
-| `NORMAL_WEEKEND` | A regular weekend day (Sat/Sun, not overridden) | 正常周末 |
+| 值 | 含义 |
+| --- | --- |
+| `STATUTORY_HOLIDAY` | 法定节假日 |
+| `OFFICIAL_HOLIDAY` | 当年放假安排中的休假日 |
+| `ADJUSTED_WORKDAY` | 调休补班日 |
+| `NORMAL_WORKDAY` | 普通工作日 |
+| `NORMAL_WEEKEND` | 普通周末 |
 
-## RuleType
+## 2. RuleType
 
-Values for rules in canonical spec:
+| 值 | 含义 |
+| --- | --- |
+| `FIXED_DATE` | 固定日期 |
+| `DATE_RANGE` | 连续日期区间 |
+| `WEEKDAY_OVERRIDE` | 指定星期覆盖规则 |
+| `LUNAR_DATE` | 农历日期规则 |
+| `RECURRENCE` | 周期性规则 |
+| `PATCH` | 组织内部补丁规则 |
 
-| Value | Description |
-|---|---|
-| `FIXED_DATE` | A single specific date |
-| `DATE_RANGE` | A contiguous range of dates (from/to) |
-| `WEEKDAY_OVERRIDE` | Override a specific weekday pattern |
-| `LUNAR_DATE` | A date in a non-Gregorian calendar (e.g., Chinese lunar) |
-| `RECURRENCE` | A recurring pattern (e.g., every year on same date) |
-| `PATCH` | An enterprise/organizational patch override |
+## 3. SourceType
 
-## SourceType
+| 值 | 含义 |
+| --- | --- |
+| `GOV_NOTICE` | 政府公告 |
+| `ICS_FEED` | iCalendar/ICS 数据源 |
+| `THIRD_PARTY_JSON` | 第三方 JSON 数据 |
+| `CSV_IMPORT` | CSV/Excel 导入 |
+| `MANUAL_ENTRY` | 人工录入 |
+| `ENTERPRISE_PATCH` | 企业自定义补丁 |
 
-Values for data source provenance:
+## 4. CalendarSystem
 
-| Value | Description |
-|---|---|
-| `GOV_NOTICE` | Official government holiday notice |
-| `ICS_FEED` | iCalendar (RFC 5545) feed |
-| `THIRD_PARTY_JSON` | Third-party JSON data source |
-| `CSV_IMPORT` | CSV/Excel import |
-| `MANUAL_ENTRY` | Manual human entry |
-| `ENTERPRISE_PATCH` | Enterprise-specific patch |
+| 值 | 含义 |
+| --- | --- |
+| `GREGORIAN` | 公历 |
+| `CHINESE_LUNAR` | 农历 |
 
-## CalendarSystem
+## 5. HolidayLabel
 
-| Value | Description |
-|---|---|
-| `GREGORIAN` | Standard Gregorian calendar |
-| `CHINESE_LUNAR` | Chinese traditional lunar calendar (农历) |
+| 值 | 含义 |
+| --- | --- |
+| `NEW_YEAR` | 元旦 |
+| `SPRING_FESTIVAL` | 春节 |
+| `TOMB_SWEEPING` | 清明节 |
+| `LABOUR_DAY` | 劳动节 |
+| `DRAGON_BOAT` | 端午节 |
+| `MID_AUTUMN` | 中秋节 |
+| `NATIONAL_DAY` | 国庆节 |
+| `STATUTORY` | 法定节假日标记 |
+| `ADJUSTED_WORKDAY` | 调休补班标记 |
+| `BRIDGE_DAY` | 桥接假日 |
 
-## HolidayLabel
+## 6. WeekDay
 
-Standard labels that can be applied to days. These are not exhaustive — custom labels are allowed.
+| 值 | 含义 |
+| --- | --- |
+| `MON` | 星期一 |
+| `TUE` | 星期二 |
+| `WED` | 星期三 |
+| `THU` | 星期四 |
+| `FRI` | 星期五 |
+| `SAT` | 星期六 |
+| `SUN` | 星期日 |
 
-| Value | Description (EN) | Description (ZH) |
-|---|---|---|
-| `NEW_YEAR` | New Year's Day | 元旦 |
-| `SPRING_FESTIVAL` | Spring Festival (Chinese New Year) | 春节 |
-| `TOMB_SWEEPING` | Tomb-Sweeping Day (Qingming) | 清明节 |
-| `LABOUR_DAY` | International Labour Day | 劳动节 |
-| `DRAGON_BOAT` | Dragon Boat Festival (Duanwu) | 端午节 |
-| `MID_AUTUMN` | Mid-Autumn Festival | 中秋节 |
-| `NATIONAL_DAY` | National Day | 国庆节 |
-| `STATUTORY` | Marks a statutory holiday proper | 法定节假日标记 |
-| `ADJUSTED_WORKDAY` | Marks an adjusted workday | 调休补班标记 |
-| `BRIDGE_DAY` | A bridge day connecting holidays | 桥接假日 |
+## 7. `.hday` 二进制常量
 
-## WeekDay
+### 7.1 CalendarSystem 数值编码
 
-Values used in `weekendMask`:
-
-| Value | Meaning |
-|---|---|
-| `MON` | Monday |
-| `TUE` | Tuesday |
-| `WED` | Wednesday |
-| `THU` | Thursday |
-| `FRI` | Friday |
-| `SAT` | Saturday |
-| `SUN` | Sunday |
-
-## CalendarSystem Numeric Codes (for .hday binary)
-
-Used in the binary bundle header:
-
-| Code | CalendarSystem |
-|---|---|
+| 编码 | 枚举值 |
+| --- | --- |
 | `0x00` | `GREGORIAN` |
 | `0x01` | `CHINESE_LUNAR` |
-| `0x02`–`0xFF` | Reserved |
+| `0x02` - `0xFF` | 预留 |
 
-## Section Types (for .hday binary)
+### 7.2 Section 类型
 
-| Code | Section |
-|---|---|
-| `0x0001` | `DAY_TABLE` |
-| `0x0002` | `STRING_TABLE` |
-| `0x0003` | `NAME_LIST_TABLE` |
-| `0x0004` | `EXT_JSON` |
-| `0x0005`–`0xFFFF` | Reserved for future use |
+| 编码 | 名称 | 说明 |
+| --- | --- | --- |
+| `0x0001` | `DAY_TABLE` | 每日主表 |
+| `0x0002` | `STRING_TABLE` | 字符串池 |
+| `0x0003` | `NAME_LIST_TABLE` | 名称/标签列表 |
+| `0x0004` | `EXT_JSON` | 年级扩展 JSON |
+| `0x0005` - `0xFFFF` | 预留 | 未来扩展 |
 
-## Flag Bits (DAY_TABLE entry)
+### 7.3 DAY_TABLE 标志位
 
-| Bit | Name | Meaning |
-|---|---|---|
-| 0 | `IS_HOLIDAY` | Day off |
-| 1 | `IS_WORKDAY` | Working day |
-| 2 | `IS_WEEKEND` | Default weekend |
-| 3 | `IS_STATUTORY_HOLIDAY` | Statutory holiday |
-| 4 | `IS_ADJUSTED_WORKDAY` | Adjusted workday |
-| 5 | `HAS_NAME` | Has associated name(s) |
-| 6 | `HAS_LABEL` | Has associated label(s) |
-| 7–15 | Reserved | Reserved for future use |
+| 位 | 掩码 | 名称 | 说明 |
+| --- | --- | --- | --- |
+| 0 | `0x0001` | `IS_HOLIDAY` | 休息日 |
+| 1 | `0x0002` | `IS_WORKDAY` | 工作日 |
+| 2 | `0x0004` | `IS_WEEKEND` | 默认周末 |
+| 3 | `0x0008` | `IS_STATUTORY_HOLIDAY` | 法定节假日 |
+| 4 | `0x0010` | `IS_ADJUSTED_WORKDAY` | 调休补班 |
+| 5 | `0x0020` | `HAS_NAME` | 存在名称列表 |
+| 6 | `0x0040` | `HAS_LABEL` | 存在标签列表 |
+| 7 - 15 | `0xFF80` | 预留 | 当前必须为 0 |
+
+## 8. 扩展字段
+
+| 键名 | 结构 | 说明 |
+| --- | --- | --- |
+| `extensions.lunar` | `LunarDateInfo` | 农历日期、干支年、生肖、月名、日名 |
+| `extensions.solarTerm` | `SolarTermInfo` | 节气索引与中文名 |

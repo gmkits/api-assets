@@ -13,30 +13,30 @@ import java.nio.file.Path;
 import java.util.zip.CRC32;
 
 /**
- * Reads {@code .hday} binary bundle files and produces {@link HdayBundle} instances.
+ * 读取 {@code .hday} 二进制数据包文件并生成 {@link HdayBundle} 实例。
  *
- * <h3>Binary layout</h3>
+ * <h3>二进制布局</h3>
  * <pre>
- * Header (32 bytes)
- *   magic          : 4B  "HDAY"
+ * 文件头（32 字节）
+ *   magic          : 4B，固定为 "HDAY"
  *   majorVersion   : u8
  *   minorVersion   : u8
- *   flags          : u16 LE
- *   year           : u16 LE
+ *   flags          : u16，小端
+ *   year           : u16，小端
  *   regionCodeLen  : u8
- *   regionCode     : 16B  UTF-8 zero-padded
+ *   regionCode     : 16B，UTF-8，尾部补零
  *   calendarSystem : u8
- *   dayCount       : u16 LE
- *   sectionCount   : u16 LE
+ *   dayCount       : u16，小端
+ *   sectionCount   : u16，小端
  *
- * Section table    : sectionCount × 8B
- *   type   : u16 LE
- *   offset : u32 LE
- *   length : u16 LE
+ * 分段表          : sectionCount × 8B
+ *   type   : u16，小端
+ *   offset : u32，小端
+ *   length : u16，小端
  *
- * Sections (DAY_TABLE, STRING_TABLE, NAME_LIST_TABLE)
+ * 数据分段（DAY_TABLE、STRING_TABLE、NAME_LIST_TABLE）
  *
- * CRC32            : 4B  LE (over all preceding bytes)
+ * CRC32           : 4B，小端，覆盖前面所有字节
  * </pre>
  */
 public final class HdayReader {
@@ -53,11 +53,11 @@ public final class HdayReader {
     private HdayReader() { }
 
     /**
-     * Reads a {@code .hday} bundle from the given filesystem path.
+     * 从给定文件路径读取 {@code .hday} 数据包。
      *
-     * @param path path to the {@code .hday} file
-     * @return the parsed bundle
-     * @throws IOException if the file cannot be read or is malformed
+     * @param path {@code .hday} 文件路径
+     * @return 解析后的数据包
+     * @throws IOException 当文件无法读取或内容格式非法时抛出
      */
     public static HdayBundle read(Path path) throws IOException {
         byte[] data = Files.readAllBytes(path);
@@ -65,11 +65,11 @@ public final class HdayReader {
     }
 
     /**
-     * Reads a {@code .hday} bundle from an {@link InputStream}.
+     * 从 {@link InputStream} 读取 {@code .hday} 数据包。
      *
-     * @param in the input stream (fully consumed but not closed)
-     * @return the parsed bundle
-     * @throws IOException if the stream cannot be read or data is malformed
+     * @param in 输入流；会被完整读取，但不会在此处关闭
+     * @return 解析后的数据包
+     * @throws IOException 当流无法读取或数据格式非法时抛出
      */
     public static HdayBundle read(InputStream in) throws IOException {
         byte[] data = readAllBytes(in);
@@ -81,7 +81,7 @@ public final class HdayReader {
             throw new IOException("File too small to be a valid .hday bundle");
         }
 
-        // Verify CRC32
+        // 校验 CRC32。
         CRC32 crc = new CRC32();
         crc.update(data, 0, data.length - 4);
         long computed = crc.getValue();
@@ -94,7 +94,7 @@ public final class HdayReader {
 
         ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
 
-        // --- Header ---
+        // 读取文件头。
         byte[] magic = new byte[4];
         buf.get(magic);
         if (magic[0] != MAGIC[0] || magic[1] != MAGIC[1]
@@ -102,21 +102,27 @@ public final class HdayReader {
             throw new IOException("Invalid magic bytes");
         }
 
-        int majorVersion = Byte.toUnsignedInt(buf.get());      // offset 4  (u8)
-        int minorVersion = Byte.toUnsignedInt(buf.get());       // offset 5  (u8)
-        buf.getShort();                                          // offset 6-7  flags (u16), reserved
-        int year = Short.toUnsignedInt(buf.getShort());          // offset 8-9  (u16)
-        int regionCodeLen = Byte.toUnsignedInt(buf.get());       // offset 10   (u8)
+        /*
+         * 文件头偏移说明：
+         * 4/5 为主次版本号，6-7 为预留 flags，
+         * 8-10 为年份和区域代码长度，11-26 为区域代码，
+         * 27-31 为历法、日期数量和分段数量。
+         */
+        int majorVersion = Byte.toUnsignedInt(buf.get());
+        int minorVersion = Byte.toUnsignedInt(buf.get());
+        buf.getShort();
+        int year = Short.toUnsignedInt(buf.getShort());
+        int regionCodeLen = Byte.toUnsignedInt(buf.get());
         byte[] regionBytes = new byte[16];
-        buf.get(regionBytes);                                    // offset 11-26 (16B)
+        buf.get(regionBytes);
         String regionCode = new String(regionBytes, 0, regionCodeLen, StandardCharsets.UTF_8);
-        int calSys = Byte.toUnsignedInt(buf.get());              // offset 27   (u8)
+        int calSys = Byte.toUnsignedInt(buf.get());
         CalendarSystem calendarSystem = calSys < CalendarSystem.values().length
                 ? CalendarSystem.values()[calSys] : CalendarSystem.GREGORIAN;
-        int dayCount = Short.toUnsignedInt(buf.getShort());      // offset 28
-        int sectionCount = Short.toUnsignedInt(buf.getShort());  // offset 30
+        int dayCount = Short.toUnsignedInt(buf.getShort());
+        int sectionCount = Short.toUnsignedInt(buf.getShort());
 
-        // --- Section table ---
+        // 读取分段表。
         int[] secTypes   = new int[sectionCount];
         int[] secOffsets = new int[sectionCount];
         int[] secLengths = new int[sectionCount];
@@ -126,7 +132,7 @@ public final class HdayReader {
             secLengths[i] = Short.toUnsignedInt(buf.getShort());
         }
 
-        // Locate sections by type
+        // 按类型定位各个分段。
         int dayTableOff = -1, dayTableLen = 0;
         int strTableOff = -1, strTableLen = 0;
         int nameListOff = -1, nameListLen = 0;
@@ -139,11 +145,12 @@ public final class HdayReader {
                 case SECTION_NAME_LIST_TABLE:
                     nameListOff = secOffsets[i]; nameListLen = secLengths[i]; break;
                 default:
-                    break; // unknown section, skip
+                    // 忽略未知分段类型。
+                    break;
             }
         }
 
-        // --- Day table ---
+        // 读取日期表分段。
         HdayBundle.DayEntry[] days = new HdayBundle.DayEntry[dayCount];
         if (dayTableOff >= 0) {
             buf.position(dayTableOff);
@@ -156,7 +163,7 @@ public final class HdayReader {
             }
         }
 
-        // --- String table ---
+        // 读取字符串表分段。
         String[] strings = new String[0];
         if (strTableOff >= 0) {
             buf.position(strTableOff);
@@ -170,7 +177,7 @@ public final class HdayReader {
             }
         }
 
-        // --- Name list table ---
+        // 读取名称列表分段。
         int[][][] nameLists = new int[0][][];
         if (nameListOff >= 0) {
             buf.position(nameListOff);

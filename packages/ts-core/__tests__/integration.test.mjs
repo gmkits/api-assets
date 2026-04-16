@@ -73,6 +73,22 @@ describe('queryDay — CN 2025 holidays', () => {
     assert.equal(info.isWorkday, false);
   });
 
+  it('should expose lunar extension fields', () => {
+    assert.ok(bundle2025);
+    const info = queryDay(bundle2025, '2025-01-01');
+    assert.ok(info);
+    assert.deepEqual(info.extensions.lunar, {
+      year: 2024,
+      month: 12,
+      day: 2,
+      isLeapMonth: false,
+      ganZhiYear: '甲辰年',
+      shengXiao: '龙',
+      monthName: '腊月',
+      dayName: '初二',
+    });
+  });
+
   it('should return Jan 2 as normal workday', () => {
     assert.ok(bundle2025);
     const info = queryDay(bundle2025, '2025-01-02');
@@ -154,6 +170,13 @@ describe('queryYear — CN 2025', () => {
     const b = queryYear(bundle2025);
     assert.notEqual(a, b);
     assert.deepEqual(a[0], b[0]);
+  });
+
+  it('should keep lunar extension on year view entries', () => {
+    assert.ok(bundle2025);
+    const days = queryYear(bundle2025);
+    assert.equal(days[0].extensions.lunar.monthName, '腊月');
+    assert.equal(days[0].extensions.lunar.dayName, '初二');
   });
 });
 

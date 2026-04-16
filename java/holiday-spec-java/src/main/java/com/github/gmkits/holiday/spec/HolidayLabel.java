@@ -1,28 +1,28 @@
 package com.github.gmkits.holiday.spec;
 
 /**
- * Well-known holiday labels for Chinese public holidays.
+ * 中国节假日数据中使用的常见节日标签。
  */
 public enum HolidayLabel {
 
-    /** New Year's Day (January 1). */
+    /** 元旦（1 月 1 日）。 */
     NEW_YEAR,
 
-    /** Spring Festival (Chinese New Year). */
+    /** 春节。 */
     SPRING_FESTIVAL,
 
-    /** Tomb-Sweeping Day (Qingming Festival). */
+    /** 清明节。 */
     TOMB_SWEEPING,
 
-    /** International Labour Day (May 1). */
+    /** 劳动节（5 月 1 日）。 */
     LABOUR_DAY,
 
-    /** Dragon Boat Festival (Duanwu). */
+    /** 端午节。 */
     DRAGON_BOAT,
 
-    /** Mid-Autumn Festival. */
+    /** 中秋节。 */
     MID_AUTUMN,
 
-    /** National Day (October 1). */
+    /** 国庆节（10 月 1 日）。 */
     NATIONAL_DAY
 }

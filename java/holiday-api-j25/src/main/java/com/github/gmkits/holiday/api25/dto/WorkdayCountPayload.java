@@ -1,22 +1,22 @@
 package com.github.gmkits.holiday.api25.dto;
 
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Value;
 
 /**
  * 工作日统计结果。
  */
-@Getter
+@Value
 @Builder
 public class WorkdayCountPayload {
     /** 起始日期。 */
-    private final String from;
+    String from;
     /** 结束日期。 */
-    private final String to;
+    String to;
     /** 区间内工作日天数。 */
-    private final int workdays;
+    int workdays;
     /** 区间内总天数。 */
-    private final int totalDays;
+    int totalDays;
     /** 区间内假日天数（休息日 + 节假日）。 */
-    private final int holidays;
+    int holidays;
 }

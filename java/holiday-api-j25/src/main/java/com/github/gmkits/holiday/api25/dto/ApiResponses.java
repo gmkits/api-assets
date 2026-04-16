@@ -3,8 +3,6 @@ package com.github.gmkits.holiday.api25.dto;
 import com.github.gmkits.holiday.api25.config.RequestIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.time.Instant;
 import java.util.Map;
 
@@ -45,7 +43,7 @@ public final class ApiResponses {
                 .error(ApiError.builder()
                         .code(code)
                         .message(message)
-                        .details(details == null ? ImmutableMap.of() : details)
+                        .details(details)
                         .build())
                 .build();
     }

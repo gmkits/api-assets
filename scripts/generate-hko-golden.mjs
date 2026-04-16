@@ -10,97 +10,16 @@
  *   node scripts/generate-hko-golden.mjs --output path/to/out.csv  # CSV → file
  */
 
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { parseArgs } from 'node:util';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = join(__dirname, '..', '.hko-cache');
+import { START_YEAR, END_YEAR, downloadAll, iterateCalendarRows } from './lib/hko-calendar.mjs';
 
-const START_YEAR = 1901;
-const END_YEAR = 2100;
-const CONCURRENCY = 10;
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000;
-
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
 const { values: cliArgs } = parseArgs({
   options: { output: { type: 'string', short: 'o' } },
   strict: false,
 });
-
-// ---------------------------------------------------------------------------
-// Download helpers
-// ---------------------------------------------------------------------------
-function hkoUrl(year) {
-  return `https://www.hko.gov.hk/tc/gts/time/calendar/text/files/T${year}c.txt`;
-}
-
-function cachePath(year) {
-  return join(CACHE_DIR, `T${year}c.txt`);
-}
-
-async function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-async function fetchWithRetry(year) {
-  const cached = cachePath(year);
-  if (existsSync(cached)) {
-    return readFileSync(cached, 'utf-8');
-  }
-
-  let lastErr;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const res = await fetch(hkoUrl(year));
-      if (!res.ok) throw new Error(`HTTP ${res.status} for year ${year}`);
-      const buf = await res.arrayBuffer();
-      // Files are Big5 or UTF-8; try UTF-8 first, fall back to Big5
-      let text;
-      try {
-        text = new TextDecoder('utf-8', { fatal: true }).decode(buf);
-      } catch {
-        text = new TextDecoder('big5').decode(buf);
-      }
-      writeFileSync(cached, text, 'utf-8');
-      return text;
-    } catch (err) {
-      lastErr = err;
-      if (attempt < MAX_RETRIES) {
-        process.stderr.write(`  ⚠ year ${year} attempt ${attempt} failed: ${err.message}, retrying…\n`);
-        await sleep(RETRY_DELAY_MS * attempt);
-      }
-    }
-  }
-  throw new Error(`Failed to download year ${year} after ${MAX_RETRIES} retries: ${lastErr.message}`);
-}
-
-async function downloadAll() {
-  mkdirSync(CACHE_DIR, { recursive: true });
-  const years = [];
-  for (let y = START_YEAR; y <= END_YEAR; y++) years.push(y);
-
-  const results = new Map();
-  let done = 0;
-
-  for (let i = 0; i < years.length; i += CONCURRENCY) {
-    const batch = years.slice(i, i + CONCURRENCY);
-    const texts = await Promise.all(batch.map((y) => fetchWithRetry(y)));
-    batch.forEach((y, idx) => results.set(y, texts[idx]));
-    done += batch.length;
-    process.stderr.write(`\r  Downloaded ${done}/${years.length} files`);
-  }
-  process.stderr.write('\n');
-  return results;
-}
-
-// ---------------------------------------------------------------------------
-// Lunar date parsing
-// ---------------------------------------------------------------------------
 
 const MONTH_NAMES = new Map([
   ['正月', 1],
@@ -126,100 +45,62 @@ const DAY_NAMES = new Map([
   ['廿六', 26], ['廿七', 27], ['廿八', 28], ['廿九', 29], ['三十', 30],
 ]);
 
-/**
- * Parse the lunar column value.
- * Returns { month, day, isLeapMonth, isNewMonth }.
- *  - isNewMonth: true when the column is a month name (this row is 初一 of that month)
- */
 function parseLunarColumn(raw) {
   const s = raw.trim();
 
-  // Leap month: "閏X月"
   const leapMatch = s.match(/^閏(.+)月$/);
   if (leapMatch) {
-    const inner = leapMatch[1] + '月';
-    const m = MONTH_NAMES.get(inner);
-    if (m == null) throw new Error(`Unknown leap month: "${s}"`);
-    return { month: m, day: 1, isLeapMonth: true, isNewMonth: true };
+    const inner = `${leapMatch[1]}月`;
+    const month = MONTH_NAMES.get(inner);
+    if (month == null) throw new Error(`Unknown leap month: "${s}"`);
+    return { month, day: 1, isLeapMonth: true, isNewMonth: true };
   }
 
-  // Regular month name ending with 月
   if (s.endsWith('月')) {
-    const m = MONTH_NAMES.get(s);
-    if (m == null) throw new Error(`Unknown month: "${s}"`);
-    return { month: m, day: 1, isLeapMonth: false, isNewMonth: true };
+    const month = MONTH_NAMES.get(s);
+    if (month == null) throw new Error(`Unknown month: "${s}"`);
+    return { month, day: 1, isLeapMonth: false, isNewMonth: true };
   }
 
-  // Day name
-  const d = DAY_NAMES.get(s);
-  if (d == null) throw new Error(`Unknown day: "${s}"`);
-  return { month: null, day: d, isLeapMonth: false, isNewMonth: false };
+  const day = DAY_NAMES.get(s);
+  if (day == null) throw new Error(`Unknown day: "${s}"`);
+  return { month: null, day, isLeapMonth: false, isNewMonth: false };
 }
 
-// Regex that matches both old format (2010年01月01日) and new format (2025年1月1日)
-const DATE_RE = /^(\d{4})年(\d{1,2})月(\d{1,2})日/;
-
-/**
- * Infer the starting month for the FIRST file (1901) by pre-scanning.
- */
 function inferInitialMonth(text) {
-  const lines = text.split(/\r?\n/);
-  for (const line of lines) {
-    const dm = line.match(DATE_RE);
-    if (!dm) continue;
-    const xqi = line.indexOf('星期');
-    if (xqi === -1) continue;
-    const raw = line.slice(dm.index + dm[0].length, xqi).trim();
-    if (!raw) continue;
-    const p = parseLunarColumn(raw);
-    if (p.isNewMonth) {
-      if (p.isLeapMonth) {
-        return { month: p.month, isLeapMonth: false };
-      } else if (p.month === 1) {
-        return { month: 12, isLeapMonth: false };
-      } else {
-        return { month: p.month - 1, isLeapMonth: false };
-      }
+  for (const row of iterateCalendarRows(text)) {
+    const parsed = parseLunarColumn(row.lunarRaw);
+    if (!parsed.isNewMonth) continue;
+
+    if (parsed.isLeapMonth) {
+      return { month: parsed.month, isLeapMonth: false };
     }
+
+    if (parsed.month === 1) {
+      return { month: 12, isLeapMonth: false };
+    }
+
+    return { month: parsed.month - 1, isLeapMonth: false };
   }
+
   throw new Error('Could not determine starting month');
 }
 
-/**
- * Parse a single year file.
- * `prevState` carries over from the previous file for correct cross-year tracking.
- * Returns { rows, endState } where endState can seed the next file.
- */
 function parseFile(year, text, prevState) {
-  const lines = text.split(/\r?\n/);
   const rows = [];
-
   let lunarYear = prevState?.lunarYear ?? year - 1;
   let currentMonth = prevState?.month ?? null;
   let isLeapMonth = prevState?.isLeapMonth ?? false;
   let seenZhengYue = prevState?.seenZhengYue ?? false;
 
-  // For the very first file, infer from pre-scan if no prevState
   if (currentMonth == null) {
     const init = inferInitialMonth(text);
     currentMonth = init.month;
     isLeapMonth = init.isLeapMonth;
   }
 
-  for (const line of lines) {
-    const dateMatch = line.match(DATE_RE);
-    if (!dateMatch) continue;
-
-    const solarYear = parseInt(dateMatch[1], 10);
-    const solarMonth = parseInt(dateMatch[2], 10);
-    const solarDay = parseInt(dateMatch[3], 10);
-
-    const xingqiIdx = line.indexOf('星期');
-    if (xingqiIdx === -1) continue;
-    const lunarRaw = line.slice(dateMatch.index + dateMatch[0].length, xingqiIdx).trim();
-    if (!lunarRaw) continue;
-
-    const parsed = parseLunarColumn(lunarRaw);
+  for (const row of iterateCalendarRows(text)) {
+    const parsed = parseLunarColumn(row.lunarRaw);
 
     if (parsed.isNewMonth) {
       currentMonth = parsed.month;
@@ -231,45 +112,38 @@ function parseFile(year, text, prevState) {
       }
     }
 
-    const lunarDay = parsed.day;
-    const lunarMonth = parsed.isNewMonth ? parsed.month : currentMonth;
-    const leap = parsed.isNewMonth ? parsed.isLeapMonth : isLeapMonth;
-
     rows.push({
-      solarDate: `${solarYear}-${String(solarMonth).padStart(2, '0')}-${String(solarDay).padStart(2, '0')}`,
+      solarDate: row.solarDate,
       lunarYear,
-      lunarMonth,
-      lunarDay,
-      isLeapMonth: leap ? 1 : 0,
+      lunarMonth: parsed.isNewMonth ? parsed.month : currentMonth,
+      lunarDay: parsed.day,
+      isLeapMonth: (parsed.isNewMonth ? parsed.isLeapMonth : isLeapMonth) ? 1 : 0,
     });
   }
 
-  const endState = { lunarYear, month: currentMonth, isLeapMonth, seenZhengYue: false };
-  return { rows, endState };
+  return {
+    rows,
+    endState: { lunarYear, month: currentMonth, isLeapMonth, seenZhengYue: false },
+  };
 }
 
-// ---------------------------------------------------------------------------
-// Validation
-// ---------------------------------------------------------------------------
 function validate(allRows) {
   const errors = [];
   let leapMonthCount = 0;
 
-  // Group by (lunarYear, lunarMonth, isLeapMonth)
   const monthGroups = new Map();
-  for (const r of allRows) {
-    const key = `${r.lunarYear}-${r.lunarMonth}-${r.isLeapMonth}`;
+  for (const row of allRows) {
+    const key = `${row.lunarYear}-${row.lunarMonth}-${row.isLeapMonth}`;
     if (!monthGroups.has(key)) monthGroups.set(key, []);
-    monthGroups.get(key).push(r);
+    monthGroups.get(key).push(row);
   }
 
-  // Identify first and last month keys (boundary months with partial data)
   const keys = [...monthGroups.keys()];
   const firstKey = keys[0];
   const lastKey = keys[keys.length - 1];
 
   for (const [key, rows] of monthGroups) {
-    const days = rows.map((r) => r.lunarDay);
+    const days = rows.map((row) => row.lunarDay);
     const maxDay = Math.max(...days);
     const minDay = Math.min(...days);
     const isBoundary = key === firstKey || key === lastKey;
@@ -283,10 +157,9 @@ function validate(allRows) {
       }
     }
 
-    // Check sequential
-    for (let i = 1; i < days.length; i++) {
-      if (days[i] !== days[i - 1] + 1) {
-        errors.push(`Month ${key}: non-sequential days at position ${i}: ${days[i - 1]} → ${days[i]}`);
+    for (let index = 1; index < days.length; index++) {
+      if (days[index] !== days[index - 1] + 1) {
+        errors.push(`Month ${key}: non-sequential days at position ${index}: ${days[index - 1]} → ${days[index]}`);
       }
     }
 
@@ -296,9 +169,6 @@ function validate(allRows) {
   return { errors, leapMonthCount, totalMonths: monthGroups.size };
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 async function main() {
   process.stderr.write(`Downloading HKO data for ${START_YEAR}–${END_YEAR}…\n`);
   const fileTexts = await downloadAll();
@@ -306,22 +176,20 @@ async function main() {
   process.stderr.write('Parsing…\n');
   let allRows = [];
   let prevState = null;
-  for (let y = START_YEAR; y <= END_YEAR; y++) {
-    const text = fileTexts.get(y);
-    const { rows, endState } = parseFile(y, text, prevState);
+
+  for (let year = START_YEAR; year <= END_YEAR; year++) {
+    const text = fileTexts.get(year);
+    const { rows, endState } = parseFile(year, text, prevState);
     allRows.push(...rows);
     prevState = endState;
   }
 
-  // Deduplicate: consecutive year files may overlap at boundaries—shouldn't happen
-  // since each file covers exactly Jan 1 – Dec 31, but just in case
   const seen = new Set();
   const uniqueRows = [];
-  for (const r of allRows) {
-    if (!seen.has(r.solarDate)) {
-      seen.add(r.solarDate);
-      uniqueRows.push(r);
-    }
+  for (const row of allRows) {
+    if (seen.has(row.solarDate)) continue;
+    seen.add(row.solarDate);
+    uniqueRows.push(row);
   }
   allRows = uniqueRows;
 
@@ -330,14 +198,19 @@ async function main() {
 
   if (errors.length > 0) {
     process.stderr.write(`\n⚠ Validation issues (${errors.length}):\n`);
-    for (const e of errors.slice(0, 20)) process.stderr.write(`  - ${e}\n`);
-    if (errors.length > 20) process.stderr.write(`  … and ${errors.length - 20} more\n`);
+    for (const error of errors.slice(0, 20)) {
+      process.stderr.write(`  - ${error}\n`);
+    }
+    if (errors.length > 20) {
+      process.stderr.write(`  … and ${errors.length - 20} more\n`);
+    }
   }
 
-  // Build CSV
   const header = 'solarDate,lunarYear,lunarMonth,lunarDay,isLeapMonth\n';
-  const body = allRows.map((r) => `${r.solarDate},${r.lunarYear},${r.lunarMonth},${r.lunarDay},${r.isLeapMonth}`).join('\n') + '\n';
-  const csv = header + body;
+  const body = allRows
+    .map((row) => `${row.solarDate},${row.lunarYear},${row.lunarMonth},${row.lunarDay},${row.isLeapMonth}`)
+    .join('\n');
+  const csv = `${header}${body}\n`;
 
   if (cliArgs.output) {
     mkdirSync(dirname(cliArgs.output), { recursive: true });
@@ -347,10 +220,9 @@ async function main() {
     process.stdout.write(csv);
   }
 
-  // Summary
   const firstDate = allRows[0]?.solarDate;
   const lastDate = allRows[allRows.length - 1]?.solarDate;
-  process.stderr.write(`\n=== Summary ===\n`);
+  process.stderr.write('\n=== Summary ===\n');
   process.stderr.write(`Total rows:    ${allRows.length}\n`);
   process.stderr.write(`Date range:    ${firstDate} → ${lastDate}\n`);
   process.stderr.write(`Total months:  ${totalMonths}\n`);

@@ -1,10 +1,10 @@
 // ============================================================
-// Holiday Data Platform — Shared Type Definitions
+// 节假日平台 —— 共享类型定义
 // ============================================================
 
-// --- Enums ---
+// --- 枚举 ---
 
-/** Classification of a day's status */
+/** 单日状态分类。 */
 export type DayKind =
   | 'STATUTORY_HOLIDAY'
   | 'OFFICIAL_HOLIDAY'
@@ -12,7 +12,7 @@ export type DayKind =
   | 'NORMAL_WORKDAY'
   | 'NORMAL_WEEKEND';
 
-/** Type of rule in canonical spec */
+/** Canonical 规则类型。 */
 export type RuleType =
   | 'FIXED_DATE'
   | 'DATE_RANGE'
@@ -21,7 +21,7 @@ export type RuleType =
   | 'RECURRENCE'
   | 'PATCH';
 
-/** Type of data source */
+/** 数据来源类型。 */
 export type SourceType =
   | 'GOV_NOTICE'
   | 'ICS_FEED'
@@ -30,10 +30,10 @@ export type SourceType =
   | 'MANUAL_ENTRY'
   | 'ENTERPRISE_PATCH';
 
-/** Calendar system */
+/** 历法体系。 */
 export type CalendarSystem = 'GREGORIAN' | 'CHINESE_LUNAR';
 
-/** Standard holiday labels */
+/** 标准节假日标签。 */
 export type HolidayLabel =
   | 'NEW_YEAR'
   | 'SPRING_FESTIVAL'
@@ -46,12 +46,15 @@ export type HolidayLabel =
   | 'ADJUSTED_WORKDAY'
   | 'BRIDGE_DAY';
 
-/** Day of week values */
+/** 星期枚举。 */
 export type WeekDay = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 
-// --- Constants ---
+/** 中文 locale：简体（默认）或繁体。 */
+export type ChineseLocale = 'zh-CN' | 'zh-TW';
 
-/** Day flag bit positions for .hday binary format */
+// --- 常量 ---
+
+/** `.hday` 二进制格式中的日期位标记。 */
 export const DAY_FLAGS = {
   IS_HOLIDAY: 1 << 0,
   IS_WORKDAY: 1 << 1,
@@ -62,7 +65,7 @@ export const DAY_FLAGS = {
   HAS_LABEL: 1 << 6,
 } as const;
 
-/** Section type codes for .hday binary format */
+/** `.hday` 二进制格式中的 section 类型编码。 */
 export const SECTION_TYPES = {
   DAY_TABLE: 0x0001,
   STRING_TABLE: 0x0002,
@@ -70,109 +73,112 @@ export const SECTION_TYPES = {
   EXT_JSON: 0x0004,
 } as const;
 
-/** Calendar system numeric codes for .hday binary format */
+/** `.hday` 二进制格式中的历法数值编码。 */
 export const CALENDAR_SYSTEM_CODES: Record<CalendarSystem, number> = {
   GREGORIAN: 0x00,
   CHINESE_LUNAR: 0x01,
 };
 
-/** .hday file magic bytes */
+/** `.hday` 文件魔数。 */
 export const HDAY_MAGIC = 'HDAY';
 
-/** .hday header size in bytes */
+/** `.hday` 头部字节长度。 */
 export const HDAY_HEADER_SIZE = 32;
 
-/** .hday section table entry size in bytes */
+/** `.hday` section 表项字节长度。 */
 export const HDAY_SECTION_ENTRY_SIZE = 8;
 
-/** .hday day table entry size in bytes */
+/** `.hday` day table 表项字节长度。 */
 export const HDAY_DAY_ENTRY_SIZE = 8;
 
-/** No-index sentinel for .hday name/label/ext indices */
+/** `.hday` 名称/标签/扩展索引中的空值哨兵。 */
 export const NO_INDEX = 0xFFFF;
 
-// --- DTOs ---
+// --- DTO ---
 
-/** Multi-language string map: locale → string array */
+/** 多语言字符串映射：`locale -> 字符串数组`。 */
 export interface MultiLangNames {
   [locale: string]: string[];
 }
 
 /**
- * Generator information embedded in CommonMeta.
+ * `CommonMeta` 中的生成器信息。
  */
 export interface GeneratorInfo {
-  /** Generator tool name */
+  /** 生成工具名称。 */
   name: string;
-  /** Generator tool version */
+  /** 生成工具版本。 */
   version: string;
 }
 
 /**
- * CommonMeta — shared metadata structure used across all data layers.
- * Present in canonical, materialized, and manifest files.
+ * `CommonMeta` 是多种数据层共用的元数据头。
+ *
+ * <p>可出现在 canonical、materialized 与 manifest 等结构中。</p>
  */
 export interface CommonMeta {
-  /** Specification version (semver) */
+  /** 规范版本号。 */
   specVersion: string;
-  /** Unique bundle identifier, e.g., "CN-2026" */
+  /** 唯一 bundle 标识，例如 `CN-2026`。 */
   bundleId: string;
-  /** Region code (e.g., "CN", "CN-SH") */
+  /** 地区代码，例如 `CN`、`CN-SH`。 */
   regionCode: string;
-  /** Parent region code for inheritance, null if top-level */
+  /** 继承用父地区代码；顶级地区为 `null`。 */
   parentRegionCode: string | null;
-  /** Calendar year */
+  /** 公历年份。 */
   year: number;
-  /** Start of validity period (YYYY-MM-DD) */
+  /** 生效起始日期。 */
   validFrom: string;
-  /** End of validity period (YYYY-MM-DD) */
+  /** 生效结束日期。 */
   validTo: string;
-  /** Primary calendar system */
+  /** 主历法体系。 */
   calendarSystem: CalendarSystem;
-  /** IANA timezone identifier */
+  /** IANA 时区标识。 */
   timezone: string;
-  /** Default weekend days */
+  /** 默认周末掩码。 */
   weekendMask: WeekDay[];
-  /** Supported locales */
+  /** 支持的语言列表。 */
   locales: string[];
-  /** Data source version (CalVer: YYYY.MM.DD) */
+  /** 数据源版本（CalVer）。 */
   sourceVersion: string;
-  /** ISO 8601 timestamp when data was generated */
+  /** 生成时间。 */
   generatedAt: string;
-  /** Generator tool information */
+  /** 生成工具信息。 */
   generator: GeneratorInfo;
-  /** Extension data */
+  /** 扩展数据。 */
   extensions: Record<string, unknown>;
 }
 
 /**
- * DayInfoDTO — the unified day information transfer object.
- * Identical structure across Java, TypeScript, and HTTP API responses.
+ * TypeScript 侧统一日信息对象。
+ *
+ * <p>它与 Java/HTTP 侧保持语义对齐，但字段命名采用
+ * `isHoliday/isWorkday/...` 这一 TypeScript 风格。</p>
  */
 export interface DayInfo {
-  /** Date in YYYY-MM-DD format */
+  /** 日期，格式为 `YYYY-MM-DD`。 */
   date: string;
-  /** Region code */
+  /** 地区代码。 */
   regionCode: string;
-  /** Calendar system */
+  /** 历法体系。 */
   calendarSystem: CalendarSystem;
-  /** Whether this day is a holiday (day off) */
+  /** 是否为休息日。 */
   isHoliday: boolean;
-  /** Whether this day is a working day */
+  /** 是否为工作日。 */
   isWorkday: boolean;
-  /** Whether this day falls on a default weekend (Sat/Sun) */
+  /** 是否为默认周末。 */
   isWeekend: boolean;
-  /** Whether this day is a statutory holiday proper (法定节假日) */
+  /** 是否为法定节假日。 */
   isStatutoryHoliday: boolean;
-  /** Whether this day is an adjusted workday (调休补班) */
+  /** 是否为调休补班。 */
   isAdjustedWorkday: boolean;
-  /** Multi-language holiday names */
+  /** 多语言节假日名称。 */
   holidayNames: MultiLangNames;
-  /** Label tags */
+  /** 标签列表。 */
   labels: string[];
-  /** Data source version */
+  /** 数据版本。 */
   sourceVersion: string;
-  /** Extension data */
+  /** 扩展数据。 */
   extensions: Record<string, unknown>;
 }
 
@@ -317,6 +323,19 @@ export interface LunarDateInfo {
   monthName: string;
   /** 日期中文名（如"初一"）。 */
   dayName: string;
+}
+
+/**
+ * 节气信息。
+ *
+ * <p>用于 DayInfo.extensions 中的 "solarTerm" 字段，
+ * 提供命中日期对应的稳定索引和中文名。</p>
+ */
+export interface SolarTermInfo {
+  /** 稳定节气索引（0-23）。 */
+  index: number;
+  /** 节气中文名。 */
+  name: string;
 }
 
 // --- 公历日期工具 ---

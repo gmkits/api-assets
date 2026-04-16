@@ -7,16 +7,25 @@
 
 import type {
   CalendarSystem,
+  ChineseLocale,
   DayInfo,
+  LunarDateInfo,
   MultiLangNames,
 } from '@holiday/spec';
 import {
+  LUNAR_END_YEAR,
+  LUNAR_START_YEAR,
+  lunarToSolar,
+  monthDays,
+  solarToLunar,
+} from '@holiday/lunar';
+import {
   CALENDAR_SYSTEM_CODES,
   DAY_FLAGS,
-    LEAP_MONTH_OFFSETS,
-    MONTH_OFFSETS,
+  LEAP_MONTH_OFFSETS,
   NO_INDEX,
-    isLeapYear,
+  MONTH_OFFSETS,
+  isLeapYear,
 } from '@holiday/spec';
 
 import type {
@@ -24,19 +33,29 @@ import type {
   HdayBundle,
   NameListEntry,
 } from './hday-parser.js';
+import { lookupSolarTerm } from './solar-terms.js';
 
 /** 平年 dayIndex -> [month, day] 预计算表。 */
 const NON_LEAP_MONTH_DAY_TABLE = buildMonthDayTable(false);
 /** 闰年 dayIndex -> [month, day] 预计算表。 */
 const LEAP_MONTH_DAY_TABLE = buildMonthDayTable(true);
+/** `YYYY-MM-DD` 日期格式校验。 */
+const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 /** 空扩展对象可安全复用。 */
 const EMPTY_EXTENSIONS: Record<string, never> = {};
+/** 农历支持的最早公历日期。 */
+const LUNAR_MIN_SOLAR_MONTH = 1;
+/** 农历支持的最早公历日期。 */
+const LUNAR_MIN_SOLAR_DAY = 31;
+/** 农历支持的最晚公历日期。 */
+const [LUNAR_MAX_SOLAR_YEAR, LUNAR_MAX_SOLAR_MONTH, LUNAR_MAX_SOLAR_DAY] =
+  lunarToSolar(LUNAR_END_YEAR, 12, monthDays(LUNAR_END_YEAR, 12));
 
 interface BundleQueryView {
   dayInfos: DayInfo[];
 }
 
-const bundleViewCache = new WeakMap<HdayBundle, BundleQueryView>();
+const bundleViewCache = new WeakMap<HdayBundle, Map<string, BundleQueryView>>();
 const resolvedNameCache = new WeakMap<NameListEntry, MultiLangNames>();
 const resolvedLabelCache = new WeakMap<NameListEntry, string[]>();
 
@@ -46,11 +65,12 @@ function buildMonthDayTable(leap: boolean): Array<[number, number]> {
   const monthLengths = leap
     ? [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     : [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  const table: Array<[number, number]> = [];
+  const table = new Array<[number, number]>(leap ? 366 : 365);
+  let index = 0;
 
   for (let month = 1; month <= 12; month++) {
     for (let day = 1; day <= monthLengths[month - 1]; day++) {
-      table.push([month, day]);
+      table[index++] = [month, day];
     }
   }
 
@@ -76,7 +96,7 @@ export function dayOfYear(year: number, month: number, day: number): number {
  * 解析 `YYYY-MM-DD` 格式日期。
  */
 export function parseDate(dateStr: string): [number, number, number] {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  const match = DATE_PATTERN.exec(dateStr);
   if (!match) {
     throw new Error(`日期格式错误: "${dateStr}"，应为 YYYY-MM-DD`);
   }
@@ -112,6 +132,74 @@ function resolveCalendarSystem(code: number): CalendarSystem {
     return 'CHINESE_LUNAR';
   }
   return 'GREGORIAN';
+}
+
+function isSolarDateWithinLunarRange(
+  year: number,
+  month: number,
+  day: number,
+): boolean {
+  if (year < LUNAR_START_YEAR || year > LUNAR_MAX_SOLAR_YEAR) {
+    return false;
+  }
+  if (
+    year === LUNAR_START_YEAR &&
+    (month < LUNAR_MIN_SOLAR_MONTH ||
+      (month === LUNAR_MIN_SOLAR_MONTH && day < LUNAR_MIN_SOLAR_DAY))
+  ) {
+    return false;
+  }
+  if (
+    year === LUNAR_MAX_SOLAR_YEAR &&
+    (month > LUNAR_MAX_SOLAR_MONTH ||
+      (month === LUNAR_MAX_SOLAR_MONTH && day > LUNAR_MAX_SOLAR_DAY))
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function buildLunarExtension(
+  year: number,
+  month: number,
+  day: number,
+  locale: ChineseLocale,
+): LunarDateInfo | null {
+  if (!isSolarDateWithinLunarRange(year, month, day)) {
+    return null;
+  }
+  const lunar = solarToLunar(year, month, day, locale);
+  return {
+    year: lunar.year,
+    month: lunar.month,
+    day: lunar.day,
+    isLeapMonth: lunar.isLeapMonth,
+    ganZhiYear: lunar.ganZhiYear,
+    shengXiao: lunar.shengXiao,
+    monthName: lunar.monthName,
+    dayName: lunar.dayName,
+  };
+}
+
+function buildDayExtensions(
+  year: number,
+  month: number,
+  day: number,
+  dayIndex: number,
+  locale: ChineseLocale = 'zh-CN',
+): DayInfo['extensions'] {
+  const lunar = buildLunarExtension(year, month, day, locale);
+  const solarTerm = lookupSolarTerm(year, dayIndex, locale);
+  if (!lunar && !solarTerm) {
+    return EMPTY_EXTENSIONS;
+  }
+  if (!lunar) {
+    return { solarTerm };
+  }
+  if (!solarTerm) {
+    return { lunar };
+  }
+  return { lunar, solarTerm };
 }
 
 /**
@@ -188,6 +276,7 @@ export function dayEntryToDayInfo(
   calSystem: number,
   strings: string[],
   nameLists: NameListEntry[],
+  extensions: DayInfo['extensions'] = EMPTY_EXTENSIONS,
 ): DayInfo {
   const nameList =
     entry.nameListIndex !== NO_INDEX
@@ -211,11 +300,11 @@ export function dayEntryToDayInfo(
     holidayNames: resolveNames(nameList, strings),
     labels: resolveLabels(labelList, strings),
     sourceVersion: '',
-    extensions: EMPTY_EXTENSIONS,
+    extensions,
   };
 }
 
-function buildBundleQueryView(bundle: HdayBundle): BundleQueryView {
+function buildBundleQueryView(bundle: HdayBundle, locale: ChineseLocale): BundleQueryView {
   const { year, regionCode, calendarSystem } = bundle.header;
   const monthDayTable = getMonthDayTable(year);
   const dayInfos = new Array<DayInfo>(bundle.days.length);
@@ -229,45 +318,43 @@ function buildBundleQueryView(bundle: HdayBundle): BundleQueryView {
       calendarSystem,
       bundle.strings,
       bundle.nameLists,
+      buildDayExtensions(year, month, day, index, locale),
     );
   }
 
   return { dayInfos };
 }
 
-function getBundleQueryView(bundle: HdayBundle): BundleQueryView {
-  const cached = bundleViewCache.get(bundle);
-  if (cached) {
-    return cached;
+function getBundleQueryView(bundle: HdayBundle, locale: ChineseLocale = 'zh-CN'): BundleQueryView {
+  let localeMap = bundleViewCache.get(bundle);
+  if (!localeMap) {
+    localeMap = new Map();
+    bundleViewCache.set(bundle, localeMap);
   }
-
-  const view = buildBundleQueryView(bundle);
-  bundleViewCache.set(bundle, view);
+  let view = localeMap.get(locale);
+  if (!view) {
+    view = buildBundleQueryView(bundle, locale);
+    localeMap.set(locale, view);
+  }
   return view;
 }
 
 /**
  * 查询单日。
  */
-export function queryDay(bundle: HdayBundle, dateStr: string): DayInfo | null {
+export function queryDay(bundle: HdayBundle, dateStr: string, locale?: ChineseLocale): DayInfo | null {
   const [year, month, day] = parseDate(dateStr);
-  if (year !== bundle.header.year) {
-    return null;
-  }
-
+  if (year !== bundle.header.year) return null;
   const index = dayOfYear(year, month, day);
-  if (index < 0 || index >= bundle.days.length) {
-    return null;
-  }
-
-  return getBundleQueryView(bundle).dayInfos[index];
+  if (index < 0 || index >= bundle.days.length) return null;
+  return getBundleQueryView(bundle, locale).dayInfos[index];
 }
 
 /**
  * 查询整年。
  */
-export function queryYear(bundle: HdayBundle): DayInfo[] {
-  return getBundleQueryView(bundle).dayInfos.slice();
+export function queryYear(bundle: HdayBundle, locale?: ChineseLocale): DayInfo[] {
+  return getBundleQueryView(bundle, locale).dayInfos.slice();
 }
 
 /**
@@ -277,16 +364,10 @@ export function queryRange(
   bundle: HdayBundle,
   startDayIndex = 0,
   endDayIndex = bundle.days.length - 1,
+  locale?: ChineseLocale,
 ): DayInfo[] {
-  if (startDayIndex > endDayIndex) {
-    return [];
-  }
-
   const start = Math.max(0, startDayIndex);
   const end = Math.min(bundle.days.length - 1, endDayIndex);
-  if (start > end) {
-    return [];
-  }
-
-  return getBundleQueryView(bundle).dayInfos.slice(start, end + 1);
+  if (start > end) return [];
+  return getBundleQueryView(bundle, locale).dayInfos.slice(start, end + 1);
 }

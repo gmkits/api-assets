@@ -1,6 +1,8 @@
 package com.github.gmkits.holiday.core;
 
 import com.github.gmkits.holiday.spec.DayInfo;
+import com.github.gmkits.holiday.spec.LunarDateInfo;
+import com.github.gmkits.holiday.spec.SolarTermInfo;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +12,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -52,6 +55,42 @@ class HolidayServiceTest {
         assertNotNull(info);
         assertFalse(info.getLabels().isEmpty(), "Jan 1 should have labels");
         assertTrue(info.getLabels().contains("NEW_YEAR"), "Labels should include NEW_YEAR");
+    }
+
+    @Test
+    void newYearsDay_hasLunarExtension() {
+        DayInfo info = service.getDayInfo(LocalDate.of(2025, 1, 1));
+        assertNotNull(info);
+        Object lunar = info.getExtensions().get("lunar");
+        assertTrue(lunar instanceof LunarDateInfo, "Jan 1 should expose lunar extension");
+
+        LunarDateInfo lunarInfo = (LunarDateInfo) lunar;
+        assertEquals(2024, lunarInfo.getYear());
+        assertEquals(12, lunarInfo.getMonth());
+        assertEquals(2, lunarInfo.getDay());
+        assertEquals("甲辰年", lunarInfo.getGanZhiYear());
+        assertEquals("龙", lunarInfo.getShengXiao());
+        assertEquals("腊月", lunarInfo.getMonthName());
+        assertEquals("初二", lunarInfo.getDayName());
+    }
+
+    @Test
+    void liChun_hasSolarTermExtension() {
+        DayInfo info = service.getDayInfo(LocalDate.of(2025, 2, 3));
+        assertNotNull(info);
+        Object solarTerm = info.getExtensions().get("solarTerm");
+        assertTrue(solarTerm instanceof SolarTermInfo, "Feb 3 should expose solarTerm extension");
+
+        SolarTermInfo solarTermInfo = (SolarTermInfo) solarTerm;
+        assertEquals(2, solarTermInfo.getIndex());
+        assertEquals("立春", solarTermInfo.getName());
+    }
+
+    @Test
+    void nonSolarTermDay_omitsSolarTermExtension() {
+        DayInfo info = service.getDayInfo(LocalDate.of(2025, 2, 4));
+        assertNotNull(info);
+        assertFalse(info.getExtensions().containsKey("solarTerm"));
     }
 
     @Test
@@ -118,6 +157,7 @@ class HolidayServiceTest {
     void getYear_returns365Days() {
         List<DayInfo> year = service.getYear(2025);
         assertEquals(365, year.size(), "2025 has 365 days");
+        assertThrows(UnsupportedOperationException.class, () -> year.remove(0));
     }
 
     @Test

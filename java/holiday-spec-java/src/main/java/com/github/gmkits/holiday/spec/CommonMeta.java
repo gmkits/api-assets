@@ -10,10 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Common metadata describing a holiday data bundle.
+ * 描述节假日数据包通用元数据的不可变对象。
  *
- * <p>All fields follow the cn-holiday-kit specification. This class is
- * immutable once constructed.</p>
+ * <p>所有字段均遵循 cn-holiday-kit 规范，构造完成后不可变。</p>
  */
 @Getter
 @ToString
@@ -35,22 +34,22 @@ public final class CommonMeta {
     private final Map<String, Object> extensions;
 
     /**
-     * Constructs a new {@code CommonMeta} instance.
+     * 创建新的 {@code CommonMeta} 实例。
      *
-     * @param specVersion      specification version (e.g. "1.0")
-     * @param bundleId         unique bundle identifier
-     * @param regionCode       primary region code
-     * @param parentRegionCode parent region code, or {@code null}
-     * @param year             calendar year
-     * @param validFrom        start of the valid date range
-     * @param validTo          end of the valid date range
-     * @param calendarSystem   calendar system used
-     * @param timezone         IANA timezone identifier
-     * @param weekendMask      bitmask encoding weekend days
-     * @param locales          supported locale tags
-     * @param sourceVersion    source data version
-     * @param generatedAt      ISO-8601 generation timestamp
-     * @param extensions       extra key-value extensions
+     * @param specVersion      规范版本（如 {@code "1.0"}）
+     * @param bundleId         数据包唯一标识
+     * @param regionCode       主区域代码
+     * @param parentRegionCode 上级区域代码；如无则为 {@code null}
+     * @param year             数据所属年份
+     * @param validFrom        有效日期区间起点
+     * @param validTo          有效日期区间终点
+     * @param calendarSystem   使用的历法体系
+     * @param timezone         IANA 时区标识
+     * @param weekendMask      表示周末日的位掩码
+     * @param locales          支持的语言区域标签
+     * @param sourceVersion    源数据版本
+     * @param generatedAt      ISO-8601 生成时间戳
+     * @param extensions       扩展键值对
      */
     public CommonMeta(String specVersion, String bundleId, RegionCode regionCode,
                       RegionCode parentRegionCode, int year, LocalDate validFrom,

@@ -1,15 +1,15 @@
 package com.github.gmkits.holiday.api.dto;
 
-import lombok.Getter;
+import lombok.Value;
 
 import java.time.LocalDateTime;
 
-@Getter
+@Value
 public class ErrorResponse {
 
-    private final int status;
-    private final String message;
-    private final LocalDateTime timestamp;
+    int status;
+    String message;
+    LocalDateTime timestamp;
 
     public ErrorResponse(int status, String message) {
         this.status = status;

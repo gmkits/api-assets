@@ -1,10 +1,15 @@
 package com.github.gmkits.holiday.core;
 
+import com.github.gmkits.holiday.lunar.LunarCalendar;
+import com.github.gmkits.holiday.lunar.LunarInfo;
 import com.github.gmkits.holiday.spec.CalendarSystem;
 import com.github.gmkits.holiday.spec.DayInfo;
+import com.github.gmkits.holiday.spec.LunarDateInfo;
+import com.github.gmkits.holiday.spec.SolarTermInfo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import lombok.Getter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -23,17 +28,22 @@ public final class HdayBundle {
     /** 二进制格式中的“无索引”哨兵值。 */
     static final int NO_INDEX = 0xFFFF;
 
+    @Getter
     private final int year;
+    @Getter
     private final String regionCode;
     private final CalendarSystem calendarSystem;
+    @Getter
     private final int dayCount;
+    @Getter
     private final int majorVersion;
+    @Getter
     private final int minorVersion;
     private final DayEntry[] days;
     private final String[] strings;
     private final int[][][] nameLists;
     private final DayInfo[] dayInfos;
-    private final List<DayInfo> yearView;
+    private final ImmutableList<DayInfo> yearView;
 
     HdayBundle(int year, String regionCode, CalendarSystem calendarSystem,
                int dayCount, int majorVersion, int minorVersion,
@@ -50,18 +60,6 @@ public final class HdayBundle {
         this.dayInfos = buildDayInfos();
         this.yearView = ImmutableList.copyOf(this.dayInfos);
     }
-
-    public int getYear() { return year; }
-
-    public String getRegionCode() { return regionCode; }
-
-    public CalendarSystem getCalendarSystem() { return calendarSystem; }
-
-    public int getDayCount() { return dayCount; }
-
-    public int getMajorVersion() { return majorVersion; }
-
-    public int getMinorVersion() { return minorVersion; }
 
     /**
      * 按 dayIndex 直接返回预构建结果。
@@ -81,7 +79,7 @@ public final class HdayBundle {
             return null;
         }
         int dayIndex = date.getDayOfYear() - 1;
-        if (dayIndex < 0 || dayIndex >= dayCount) {
+        if (dayIndex >= dayCount) {
             return null;
         }
         return dayInfos[dayIndex];
@@ -106,7 +104,24 @@ public final class HdayBundle {
         if (start > end) {
             return ImmutableList.of();
         }
-        return new ArrayList<>(yearView.subList(start, end + 1));
+        if (start == 0 && end == dayCount - 1) {
+            return yearView;
+        }
+        return yearView.subList(start, end + 1);
+    }
+
+    /**
+     * 直接将闭区间 dayIndex 范围追加到目标列表，避免创建中间子视图。
+     */
+    void appendRangeTo(List<DayInfo> target, int startDayIndex, int endDayIndex) {
+        int start = Math.max(0, startDayIndex);
+        int end = Math.min(dayCount - 1, endDayIndex);
+        if (start > end) {
+            return;
+        }
+        for (int i = start; i <= end; i++) {
+            target.add(dayInfos[i]);
+        }
     }
 
     /**
@@ -128,6 +143,22 @@ public final class HdayBundle {
         return count;
     }
 
+    /**
+     * 从指定起点开始扫描下一个法定节假日。
+     */
+    DayInfo findStatutoryHoliday(int startDayIndex) {
+        int start = Math.max(0, startDayIndex);
+        if (start >= dayCount) {
+            return null;
+        }
+        for (int i = start; i < dayCount; i++) {
+            if (dayInfos[i].isStatutoryHoliday()) {
+                return dayInfos[i];
+            }
+        }
+        return null;
+    }
+
     private DayInfo[] buildDayInfos() {
         DayInfo[] result = new DayInfo[dayCount];
         LocalDate cursor = LocalDate.of(year, 1, 1);
@@ -144,10 +175,44 @@ public final class HdayBundle {
                     .adjustedWorkday(entry.isAdjustedWorkday())
                     .holidayNames(resolveNames(entry.nameListIndex))
                     .labels(resolveLabels(entry.labelListIndex))
+                    .extensions(resolveExtensions(cursor, i))
                     .build();
             cursor = cursor.plusDays(1);
         }
         return result;
+    }
+
+    private Map<String, Object> resolveExtensions(LocalDate date, int dayIndex) {
+        LunarDateInfo lunarInfo = resolveLunarDateInfo(date);
+        SolarTermInfo solarTermInfo = SolarTermTable.lookup(date.getYear(), dayIndex);
+        if (lunarInfo == null && solarTermInfo == null) {
+            return ImmutableMap.of();
+        }
+        ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+        if (lunarInfo != null) {
+            builder.put("lunar", lunarInfo);
+        }
+        if (solarTermInfo != null) {
+            builder.put("solarTerm", solarTermInfo);
+        }
+        return builder.build();
+    }
+
+    private LunarDateInfo resolveLunarDateInfo(LocalDate date) {
+        try {
+            LunarInfo lunar = LunarCalendar.solarToLunar(date);
+            return new LunarDateInfo(
+                    lunar.getDate().getYear(),
+                    lunar.getDate().getMonth(),
+                    lunar.getDate().getDay(),
+                    lunar.getDate().isLeapMonth(),
+                    lunar.getGanZhiYear(),
+                    lunar.getShengXiao(),
+                    lunar.getMonthName(),
+                    lunar.getDayName());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     private Map<String, List<String>> resolveNames(int listIndex) {
@@ -170,11 +235,7 @@ public final class HdayBundle {
             }
             String key = strings[keyIdx];
             String value = strings[valIdx];
-            List<String> list = result.get(key);
-            if (list == null) {
-                list = new ArrayList<>();
-                result.put(key, list);
-            }
+            List<String> list = result.computeIfAbsent(key, k -> new ArrayList<>());
             list.add(value);
         }
         if (result.isEmpty()) {

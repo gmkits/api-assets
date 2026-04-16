@@ -84,11 +84,15 @@ const TIAN_GAN = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬',
 /** 十二地支。 */
 const DI_ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'] as const;
 
-/** 十二生肖。 */
+/** 十二生肖（简体）。 */
 const SHENG_XIAO = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'] as const;
+/** 十二生肖（繁体）。 */
+const SHENG_XIAO_TW = ['鼠', '牛', '虎', '兔', '龍', '蛇', '馬', '羊', '猴', '雞', '狗', '豬'] as const;
 
-/** 农历月份名。 */
+/** 农历月份名（简体）。 */
 const MONTH_NAMES = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊'] as const;
+/** 农历月份名（繁体）。 */
+const MONTH_NAMES_TW = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '臘'] as const;
 
 /** 农历日期名。 */
 const DAY_NAMES = [
@@ -284,7 +288,7 @@ export interface LunarInfo extends LunarDate {
  * @param solarDay 公历日
  * @returns 农历日期信息
  */
-export function solarToLunar(solarYear: number, solarMonth: number, solarDay: number): LunarInfo {
+export function solarToLunar(solarYear: number, solarMonth: number, solarDay: number, locale: 'zh-CN' | 'zh-TW' = 'zh-CN'): LunarInfo {
   const targetMs = Date.UTC(solarYear, solarMonth - 1, solarDay);
   let offset = Math.floor((targetMs - BASE_DATE_MS) / MS_PER_DAY);
 
@@ -329,18 +333,18 @@ export function solarToLunar(solarYear: number, solarMonth: number, solarDay: nu
   const isLeapMonth = (m & 0x10) !== 0;
   const lunarDay = offset - offsets[slot] + 1;
 
-  return buildLunarInfo(lunarYear, lunarMonth, lunarDay, isLeapMonth);
+  return buildLunarInfo(lunarYear, lunarMonth, lunarDay, isLeapMonth, locale);
 }
 
 /**
  * 便捷方法：接受 YYYY-MM-DD 格式字符串。
  */
-export function solarToLunarFromStr(dateStr: string): LunarInfo {
+export function solarToLunarFromStr(dateStr: string, locale: 'zh-CN' | 'zh-TW' = 'zh-CN'): LunarInfo {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
   if (!match) {
     throw new Error(`日期格式错误: "${dateStr}"，应为 YYYY-MM-DD`);
   }
-  return solarToLunar(Number(match[1]), Number(match[2]), Number(match[3]));
+  return solarToLunar(Number(match[1]), Number(match[2]), Number(match[3]), locale);
 }
 
 // ===================================================================
@@ -449,18 +453,21 @@ export function getGanZhi(lunarYear: number): string {
 /**
  * 获取农历年的生肖。
  */
-export function getShengXiao(lunarYear: number): string {
-  return SHENG_XIAO[(lunarYear - 4) % 12];
+export function getShengXiao(lunarYear: number, locale: 'zh-CN' | 'zh-TW' = 'zh-CN'): string {
+  const table = locale === 'zh-TW' ? SHENG_XIAO_TW : SHENG_XIAO;
+  return table[(lunarYear - 4) % 12];
 }
 
 /**
  * 获取农历月份名称。
  */
-export function getMonthName(month: number, isLeapMonth: boolean): string {
+export function getMonthName(month: number, isLeapMonth: boolean, locale: 'zh-CN' | 'zh-TW' = 'zh-CN'): string {
   if (month < 1 || month > 12) {
     throw new RangeError(`月份超出范围: ${month}`);
   }
-  return (isLeapMonth ? '闰' : '') + MONTH_NAMES[month - 1] + '月';
+  const table = locale === 'zh-TW' ? MONTH_NAMES_TW : MONTH_NAMES;
+  const prefix = isLeapMonth ? (locale === 'zh-TW' ? '閏' : '闰') : '';
+  return prefix + table[month - 1] + '月';
 }
 
 /**
@@ -1088,12 +1095,13 @@ function buildLunarInfo(
   month: number,
   day: number,
   isLeapMonth: boolean,
+  locale: 'zh-CN' | 'zh-TW' = 'zh-CN',
 ): LunarInfo {
   const tianGan = getTianGan(year);
   const diZhi = getDiZhi(year);
   const ganZhiYear = tianGan + diZhi + '年';
-  const shengXiao = getShengXiao(year);
-  const monthName = getMonthName(month, isLeapMonth);
+  const shengXiao = getShengXiao(year, locale);
+  const monthName = getMonthName(month, isLeapMonth, locale);
   const dayName = getDayName(day);
   const fullName = `${ganZhiYear} ${monthName}${dayName}`;
 

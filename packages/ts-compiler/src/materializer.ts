@@ -60,19 +60,17 @@ export function getWeekday(dateStr: string): WeekDay {
 }
 
 /**
- * Merge multi-language names, appending new names to existing ones.
+ * Merge multi-language names, deduplicating via Set.
  */
 function mergeNames(target: MultiLangNames, source: MultiLangNames): MultiLangNames {
   const result = { ...target };
   for (const [locale, rawNames] of Object.entries(source)) {
-    // Handle both string and string[] values for compatibility
     const names: string[] = Array.isArray(rawNames) ? rawNames : [rawNames as unknown as string];
     const existing = result[locale] ?? [];
+    const seen = new Set(existing);
     const merged = [...existing];
     for (const name of names) {
-      if (!merged.includes(name)) {
-        merged.push(name);
-      }
+      if (!seen.has(name)) { seen.add(name); merged.push(name); }
     }
     result[locale] = merged;
   }
@@ -80,31 +78,31 @@ function mergeNames(target: MultiLangNames, source: MultiLangNames): MultiLangNa
 }
 
 /**
- * Merge label arrays, deduplicating.
+ * Merge label arrays, deduplicating via Set.
  */
 function mergeLabels(existing: string[], incoming: string[]): string[] {
+  const seen = new Set(existing);
   const result = [...existing];
   for (const label of incoming) {
-    if (!result.includes(label)) {
-      result.push(label);
-    }
+    if (!seen.has(label)) { seen.add(label); result.push(label); }
   }
   return result;
 }
 
 /**
- * Collect all dates a rule applies to.
+ * Collect all dates a rule applies to (index arithmetic, no Date allocation for ranges).
  */
 function expandRuleDates(rule: HolidayRule): string[] {
   if (rule.type === 'FIXED_DATE' && rule.date) {
     return [rule.date];
   }
   if (rule.type === 'DATE_RANGE' && rule.from && rule.to) {
+    const fromYear = parseInt(rule.from.slice(0, 4), 10);
+    const startIdx = dateToIndex(rule.from);
+    const endIdx = dateToIndex(rule.to);
     const dates: string[] = [];
-    const start = new Date(rule.from + 'T00:00:00Z');
-    const end = new Date(rule.to + 'T00:00:00Z');
-    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-      dates.push(d.toISOString().slice(0, 10));
+    for (let i = startIdx; i <= endIdx; i++) {
+      dates.push(indexToDate(fromYear, i));
     }
     return dates;
   }

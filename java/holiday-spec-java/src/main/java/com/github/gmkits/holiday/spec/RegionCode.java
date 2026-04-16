@@ -9,10 +9,10 @@ import lombok.ToString;
 import java.util.regex.Pattern;
 
 /**
- * An immutable value class that wraps a validated region code string.
+ * 对已校验区域代码字符串的不可变值对象封装。
  *
- * <p>Valid region codes contain only ASCII letters, digits, and hyphens
- * (e.g. {@code "CN"}, {@code "CN-BJ"}).</p>
+ * <p>合法区域代码仅允许包含 ASCII 字母、数字和连字符，
+ * 例如 {@code "CN"}、{@code "CN-BJ"}。</p>
  */
 @Getter
 @EqualsAndHashCode
@@ -24,12 +24,11 @@ public final class RegionCode {
     private final String code;
 
     /**
-     * Creates a new {@code RegionCode} after validating its format.
+     * 在校验格式后创建新的 {@code RegionCode}。
      *
-     * @param code the region code string
-     * @throws IllegalArgumentException if {@code code} is null, empty, or
-     *                                  contains characters other than letters,
-     *                                  digits, and hyphens
+     * @param code 区域代码字符串
+     * @throws IllegalArgumentException 当 {@code code} 为 null、空字符串，
+     *                                  或包含字母、数字、连字符之外的字符时抛出
      */
     public RegionCode(String code) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(code),

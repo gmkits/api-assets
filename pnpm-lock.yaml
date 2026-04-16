@@ -62,6 +62,9 @@ importers:
 
   packages/ts-core:
     dependencies:
+      '@holiday/lunar':
+        specifier: workspace:*
+        version: link:../ts-lunar
       '@holiday/spec':
         specifier: workspace:*
         version: link:../ts-spec

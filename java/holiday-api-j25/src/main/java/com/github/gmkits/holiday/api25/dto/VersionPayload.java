@@ -1,19 +1,31 @@
 package com.github.gmkits.holiday.api25.dto;
 
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Value;
 
 import java.util.List;
 
 /**
  * 版本信息。
  */
-@Getter
-@Builder
+@Value
 public class VersionPayload {
-    private final String apiVersion;
-    private final String specVersion;
-    private final String bundleFormatVersion;
-    private final String publishedAt;
-    private final List<String> regions;
+    String apiVersion;
+    String specVersion;
+    String bundleFormatVersion;
+    String publishedAt;
+    List<String> regions;
+
+    @Builder
+    private VersionPayload(String apiVersion,
+                           String specVersion,
+                           String bundleFormatVersion,
+                           String publishedAt,
+                           List<String> regions) {
+        this.apiVersion = apiVersion;
+        this.specVersion = specVersion;
+        this.bundleFormatVersion = bundleFormatVersion;
+        this.publishedAt = publishedAt;
+        this.regions = regions == null ? List.of() : List.copyOf(regions);
+    }
 }

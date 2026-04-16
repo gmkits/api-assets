@@ -34,7 +34,15 @@ class DayControllerTest {
                 .andExpect(jsonPath("$.statutoryHoliday").value(true))
                 .andExpect(jsonPath("$.adjustedWorkday").value(false))
                 .andExpect(jsonPath("$.holidayNames").isMap())
-                .andExpect(jsonPath("$.labels").isArray());
+                .andExpect(jsonPath("$.labels").isArray())
+                .andExpect(jsonPath("$.extensions").isMap())
+                .andExpect(jsonPath("$.extensions.lunar.year").value(2024))
+                .andExpect(jsonPath("$.extensions.lunar.month").value(12))
+                .andExpect(jsonPath("$.extensions.lunar.day").value(2))
+                .andExpect(jsonPath("$.extensions.lunar.ganZhiYear").value("甲辰年"))
+                .andExpect(jsonPath("$.extensions.lunar.shengXiao").value("龙"))
+                .andExpect(jsonPath("$.extensions.lunar.monthName").value("腊月"))
+                .andExpect(jsonPath("$.extensions.lunar.dayName").value("初二"));
     }
 
     @Test
@@ -48,6 +56,17 @@ class DayControllerTest {
                 .andExpect(jsonPath("$.regionCode").value("CN"))
                 .andExpect(jsonPath("$.holiday").value(true))
                 .andExpect(jsonPath("$.statutoryHoliday").value(true));
+    }
+
+    @Test
+    void getDay_liChun2025_hasSolarTerm() throws Exception {
+        mockMvc.perform(get("/api/v1/day")
+                        .param("date", "2025-02-03")
+                        .param("regionCode", "CN"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.extensions.solarTerm.index").value(2))
+                .andExpect(jsonPath("$.extensions.solarTerm.name").value("立春"));
     }
 
     @Test

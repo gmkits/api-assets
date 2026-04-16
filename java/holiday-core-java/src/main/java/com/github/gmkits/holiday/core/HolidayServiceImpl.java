@@ -81,7 +81,7 @@ final class HolidayServiceImpl implements HolidayService {
             return ImmutableList.of();
         }
 
-        List<DayInfo> result = new ArrayList<>();
+        List<DayInfo> result = new ArrayList<>(estimateRangeCapacity(from, to));
         for (int year = from.getYear(); year <= to.getYear(); year++) {
             HdayBundle bundle = resolveBundle(regionCode, year);
             if (bundle == null) {
@@ -89,7 +89,7 @@ final class HolidayServiceImpl implements HolidayService {
             }
             int startIndex = year == from.getYear() ? from.getDayOfYear() - 1 : 0;
             int endIndex = year == to.getYear() ? to.getDayOfYear() - 1 : bundle.getDayCount() - 1;
-            result.addAll(bundle.getRange(startIndex, endIndex));
+            bundle.appendRangeTo(result, startIndex, endIndex);
         }
         return result;
     }
@@ -105,7 +105,7 @@ final class HolidayServiceImpl implements HolidayService {
         if (bundle == null) {
             return ImmutableList.of();
         }
-        return new ArrayList<>(bundle.getDayInfos());
+        return bundle.getDayInfos();
     }
 
     @Override
@@ -158,42 +158,37 @@ final class HolidayServiceImpl implements HolidayService {
 
     @Override
     public DayInfo getNextHoliday(String regionCode, LocalDate from) {
-        // 先在当年搜索
         HdayBundle bundle = resolveBundle(regionCode, from.getYear());
         if (bundle != null) {
-            int startIndex = from.getDayOfYear() - 1;
-            List<DayInfo> days = bundle.getRange(startIndex, bundle.getDayCount() - 1);
-            for (DayInfo day : days) {
-                if (day.isStatutoryHoliday()) {
-                    return day;
-                }
+            DayInfo day = bundle.findStatutoryHoliday(from.getDayOfYear() - 1);
+            if (day != null) {
+                return day;
             }
         }
-        // 搜索下一年
         HdayBundle nextBundle = resolveBundle(regionCode, from.getYear() + 1);
         if (nextBundle != null) {
-            for (DayInfo day : nextBundle.getDayInfos()) {
-                if (day.isStatutoryHoliday()) {
-                    return day;
-                }
-            }
+            return nextBundle.findStatutoryHoliday(0);
         }
         return null;
     }
 
+    private static int estimateRangeCapacity(LocalDate from, LocalDate to) {
+        long dayCount = to.toEpochDay() - from.toEpochDay() + 1;
+        if (dayCount >= Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        return (int) dayCount;
+    }
+
     private HdayBundle resolveBundle(String region, int year) {
         String key = region + "/" + year;
-        HdayBundle bundle = cache.get(key);
-        if (bundle != null) {
-            return bundle;
-        }
+        return cache.get(key, ignored -> loadBundle(region, year));
+    }
 
-        bundle = loadFromFilesystem(region, year);
+    private HdayBundle loadBundle(String region, int year) {
+        HdayBundle bundle = loadFromFilesystem(region, year);
         if (bundle == null && classpathFallback) {
             bundle = loadFromClasspath(region, year);
-        }
-        if (bundle != null) {
-            cache.put(key, bundle);
         }
         return bundle;
     }

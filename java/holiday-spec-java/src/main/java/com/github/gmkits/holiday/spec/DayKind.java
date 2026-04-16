@@ -1,22 +1,22 @@
 package com.github.gmkits.holiday.spec;
 
 /**
- * Enumeration of day classification kinds used in holiday calendars.
+ * 节假日日历中使用的日期分类枚举。
  */
 public enum DayKind {
 
-    /** A holiday established by law (e.g. National Day). */
+    /** 法律规定的节假日（如国庆节）。 */
     STATUTORY_HOLIDAY,
 
-    /** An official public holiday that may not be statutory. */
+    /** 放假安排中的节假日，不一定属于法定节假日。 */
     OFFICIAL_HOLIDAY,
 
-    /** A workday that compensates for a holiday (makeup day). */
+    /** 因调休而安排的补班工作日。 */
     ADJUSTED_WORKDAY,
 
-    /** A regular workday (Monday–Friday, non-holiday). */
+    /** 普通工作日（周一至周五，且不是节假日）。 */
     NORMAL_WORKDAY,
 
-    /** A regular weekend day (Saturday or Sunday). */
+    /** 普通周末（周六或周日）。 */
     NORMAL_WEEKEND
 }

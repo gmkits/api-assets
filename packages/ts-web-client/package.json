@@ -13,7 +13,8 @@
   },
   "scripts": {
     "build": "tsup",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "node --test __tests__/*.test.mjs"
   },
   "dependencies": {
     "@holiday/spec": "workspace:*"

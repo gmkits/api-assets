@@ -2,6 +2,8 @@ package com.github.gmkits.holiday.core;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -91,5 +93,15 @@ class LRUCacheTest {
             cache.put("key" + i, i);
         }
         assertEquals(LRUCache.DEFAULT_MAX_SIZE, cache.size());
+    }
+
+    @Test
+    void shouldLoadMissingValueOnce() {
+        LRUCache<String, Integer> cache = new LRUCache<>(3);
+        AtomicInteger loadCount = new AtomicInteger();
+
+        assertEquals(1, cache.get("a", key -> loadCount.incrementAndGet()));
+        assertEquals(1, cache.get("a", key -> loadCount.incrementAndGet()));
+        assertEquals(1, loadCount.get());
     }
 }

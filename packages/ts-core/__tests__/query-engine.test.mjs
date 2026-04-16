@@ -7,11 +7,12 @@ import {
   parseDate,
   formatDate,
   monthDayFromIndex,
+  queryDay,
   resolveNames,
   resolveLabels,
 } from '../dist/esm/index.js';
 
-import { NO_INDEX } from '../../ts-spec/dist/esm/index.js';
+import { DAY_FLAGS, NO_INDEX } from '../../ts-spec/dist/esm/index.js';
 
 describe('isLeapYear', () => {
   it('should identify leap years', () => {
@@ -161,5 +162,69 @@ describe('resolveLabels', () => {
     };
     const result = resolveLabels(entry, strings);
     assert.deepEqual(result, ['NEW_YEAR']);
+  });
+});
+
+describe('queryDay', () => {
+  it('should skip lunar extension outside supported lunar range', () => {
+    const bundle = {
+      header: {
+        magic: 'HDAY',
+        majorVersion: 1,
+        minorVersion: 0,
+        flags: 0,
+        year: 1900,
+        regionCode: 'CN',
+        calendarSystem: 0,
+        dayCount: 1,
+        sectionCount: 0,
+      },
+      days: [
+        {
+          flags: DAY_FLAGS.IS_WORKDAY,
+          nameListIndex: NO_INDEX,
+          labelListIndex: NO_INDEX,
+          extIndex: NO_INDEX,
+        },
+      ],
+      strings: [],
+      nameLists: [],
+    };
+
+    const info = queryDay(bundle, '1900-01-01');
+    assert.ok(info);
+    assert.deepEqual(info.extensions, {});
+  });
+
+  it('should keep lunar extension on the last supported solar day', () => {
+    const bundle = {
+      header: {
+        magic: 'HDAY',
+        majorVersion: 1,
+        minorVersion: 0,
+        flags: 0,
+        year: 2101,
+        regionCode: 'CN',
+        calendarSystem: 0,
+        dayCount: 29,
+        sectionCount: 0,
+      },
+      days: Array.from({ length: 29 }, () => ({
+        flags: DAY_FLAGS.IS_WORKDAY,
+        nameListIndex: NO_INDEX,
+        labelListIndex: NO_INDEX,
+        extIndex: NO_INDEX,
+      })),
+      strings: [],
+      nameLists: [],
+    };
+
+    const lastSupported = queryDay(bundle, '2101-01-28');
+    const nextDay = queryDay(bundle, '2101-01-29');
+
+    assert.ok(lastSupported);
+    assert.ok(lastSupported.extensions.lunar);
+    assert.ok(nextDay);
+    assert.deepEqual(nextDay.extensions, {});
   });
 });

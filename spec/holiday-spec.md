@@ -1,769 +1,170 @@
-# Holiday Data Platform Specification v1.0.0
+# cn-holiday-kit 主规范
 
-> **Status**: Draft  
-> **Last Updated**: 2025-07-14  
-> **Maintainers**: cn-holiday-kit contributors
+本文档说明仓库当前的核心设计目标、数据分层、查询模型与扩展约定。它不追求覆盖每一个历史设想，而是以**当前已实现能力**为主。
 
----
+## 1. 项目定位
 
-## Table of Contents
+`cn-holiday-kit` 不是单一的“判断某天是不是假日”的工具函数，而是一套围绕中国节假日数据构建的完整工具链：
 
-1. [Product Positioning](#1-product-positioning)
-2. [Design Principles](#2-design-principles)
-3. [Four-Layer Data Model](#3-four-layer-data-model)
-4. [Core Concept Model](#4-core-concept-model)
-5. [Unified Metadata Specification](#5-unified-metadata-specification)
-6. [DayInfoDTO (Frontend/Backend ABI)](#6-dayinfodto-frontendbackend-abi)
-7. [Canonical Spec Design](#7-canonical-spec-design)
-8. [Lunar Calendar Extension](#8-lunar-calendar-extension)
-9. [Manifest Design](#9-manifest-design)
-10. [Offline Update Mechanism](#10-offline-update-mechanism)
-11. [Performance Strategy](#11-performance-strategy)
+1. 规范与 Schema
+2. 原始数据清洗与规范化
+3. `.hday` 二进制编译
+4. Java / TypeScript 运行时查询
+5. HTTP API 与运维接口
+6. 农历与节气扩展能力
 
----
+## 2. 数据分层
 
-## 1. Product Positioning
-
-This platform is **not** just an `isHoliday(date)` utility. It is a complete **Holiday Data Platform** composed of five layers:
-
-| Layer | Scope | Examples |
-|-------|-------|----------|
-| **Data Layer** | Manage raw, canonical, materialized, and runtime data | JSON specs, binary bundles |
-| **Tool Layer** | CLI tools, converters, validators, compilers | `holiday-compiler`, `holiday-lint` |
-| **Runtime Layer** | Unified query across Java / Node / TypeScript / HTTP API | SDKs, REST endpoints |
-| **Frontend Layer** | Admin UI and business calendar components | Holiday admin dashboard, date-picker |
-| **Extension Layer** | Lunar calendar, regional inheritance, enterprise custom calendars | `CHINESE_LUNAR`, `CN-SH-ACME` org calendar |
-
-### Key Insight
-
-Every layer has a clear contract boundary. The **Data Layer** owns truth; the **Tool Layer** transforms it; the **Runtime Layer** serves it; the **Frontend Layer** presents it; the **Extension Layer** enriches it. No layer may bypass the one beneath it.
-
----
-
-## 2. Design Principles
-
-1. **Spec before implementation** — This document is the authority. Code follows the spec, not the other way around.
-2. **Pipeline-driven data flow** — Data flows through a strict pipeline:
-
-   ```
-   Raw → Canonical → Materialized → Binary Bundle → SDK / API
-   ```
-
-   Each stage is independently auditable and diffable.
-
-3. **Client simplicity** — Clients only query pre-computed date results. No client ever performs complex calendar computation (e.g., lunar-to-Gregorian conversion).
-4. **Universal parsability** — File formats must be simple enough for **any** programming language to parse without specialized libraries.
-5. **Frontend/backend ABI consistency** — The `DayInfoDTO` structure is identical whether served by a Java backend, a Node.js SDK, or consumed directly by a frontend component.
-
----
-
-## 3. Four-Layer Data Model
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    3.1  Raw Source Layer                     │
-│          raw/{region}/{year}-{source}.source.json           │
-├─────────────────────────────────────────────────────────────┤
-│                  3.2  Canonical Spec Layer                   │
-│            canonical/{region}/{year}.canon.json              │
-├─────────────────────────────────────────────────────────────┤
-│              3.3  Materialized Year Data Layer               │
-│           materialized/{region}/{year}.year.json             │
-├─────────────────────────────────────────────────────────────┤
-│              3.4  Runtime Binary Bundle Layer                │
-│               bundles/{region}/{year}.hday                   │
-└─────────────────────────────────────────────────────────────┘
+```text
+原始数据（Raw）
+  -> Canonical 规范数据
+  -> Materialized 年度展开数据
+  -> .hday Runtime Bundle
+  -> SDK / HTTP API 查询
 ```
 
-### 3.1 Raw Source Layer
-
-| Attribute | Description |
-|-----------|-------------|
-| **Purpose** | Ingest and preserve original data from external sources |
-| **Trust level** | Untrusted — formats are inconsistent, quality varies |
-| **Sources** | Government notices (政府公告), ICS feeds, third-party JSON, CSV, enterprise patches |
-| **Provenance** | Every raw file preserves its origin URL, fetch timestamp, and original format |
-| **File pattern** | `raw/{region}/{year}-{source}.source.json` |
-
-**Example path**: `raw/CN/2026-gov-notice.source.json`
-
-Raw files are **never** consumed directly by runtimes. They exist solely for:
-- Auditing and traceability
-- Re-importing when canonical rules change
-- Diffing against updated government publications
-
-### 3.2 Canonical Spec Layer
-
-| Attribute | Description |
-|-----------|-------------|
-| **Purpose** | The **single source of truth** contract for a given region and year |
-| **Trust level** | Trusted — validated, reviewed, version-controlled |
-| **File pattern** | `canonical/{region}/{year}.canon.json` |
-
-**Structure overview**:
-
-```json
-{
-  "meta": { /* CommonMeta — see §5.1 */ },
-  "sources": [ /* provenance references */ ],
-  "rules": [ /* holiday rules */ ],
-  "overrides": [ /* exception overrides */ ],
-  "extensions": {}
-}
-```
-
-**Critical invariant**: All importers (government notice parser, ICS converter, CSV importer, etc.) **must** output Canonical format. No importer may write runtime files directly.
-
-### 3.3 Materialized Year Data Layer
-
-| Attribute | Description |
-|-----------|-------------|
-| **Purpose** | All rules expanded to concrete Gregorian dates for a specific year and region |
-| **Trust level** | Derived — deterministically produced from Canonical |
-| **File pattern** | `materialized/{region}/{year}.year.json` |
-
-**Use cases**:
-- Debugging rule expansion logic
-- Generating diffs between versions
-- Validation and golden-file tests
-- Cross-language comparison (Java compiler output vs. Node compiler output must match)
-
-**Example entry** (one day within the year file):
-
-```json
-{
-  "date": "2026-01-01",
-  "isHoliday": true,
-  "isWorkday": false,
-  "isWeekend": false,
-  "isStatutoryHoliday": true,
-  "isAdjustedWorkday": false,
-  "holidayNames": { "zh-CN": ["元旦"], "en-US": ["New Year's Day"] },
-  "labels": ["NEW_YEAR", "STATUTORY"]
-}
-```
-
-### 3.4 Runtime Binary Bundle Layer
-
-| Attribute | Description |
-|-----------|-------------|
-| **Purpose** | Optimized payload for SDK, API, and frontend direct loading |
-| **Trust level** | Derived — deterministically produced from Materialized |
-| **File extension** | `.hday` |
-| **File pattern** | `bundles/{region}/{year}.hday` |
-
-**Design goals**:
-- Minimal size (a few KB per year)
-- O(1) lookup by day-of-year index
-- No external dependencies to parse
-- Integrity verified via SHA-256 and CRC-32 checksums
-
----
-
-## 4. Core Concept Model
-
-### 4.1 Key Semantics
-
-Each date in the system supports the following queries:
-
-| Query | Type | Description |
-|-------|------|-------------|
-| `isHoliday` | `boolean` | Whether the date is a day off (休息日) |
-| `isWorkday` | `boolean` | Whether the date is a working day (工作日) |
-| `isWeekend` | `boolean` | Whether the date falls on a default weekend (周末) |
-| `isStatutoryHoliday` | `boolean` | Whether the date is a statutory holiday proper (法定节假日) |
-| `isAdjustedWorkday` | `boolean` | Whether the date is an adjusted workday, i.e., a weekend overridden to be a workday (调休补班) |
-| `holidayNames` | `Map<locale, string[]>` | Holiday names, multi-language |
-| `labels` | `string[]` | Enum labels (e.g., `SPRING_FESTIVAL`, `STATUTORY`) |
-| `regionCode` | `string` | Region identifier |
-| `calendarSystem` | `string` | Source calendar system (e.g., `GREGORIAN`, `CHINESE_LUNAR`) |
-| `sourceVersion` | `string` | Data version stamp |
-
-**Invariants**:
-- `isHoliday` and `isWorkday` are **mutually exclusive** and **exhaustive**: exactly one is `true` for any date.
-- `isWeekend` reflects the **default** weekend mask, regardless of holiday adjustments. A Saturday that is an adjusted workday still has `isWeekend = true`.
-- `isStatutoryHoliday` is a subset of `isHoliday`. A date can be `isHoliday = true` (e.g., a normal Saturday) without being a statutory holiday.
-
-### 4.2 Concept Distinctions
-
-These four concepts are frequently confused but are **semantically distinct**:
-
-| Concept | Chinese | Definition | Example |
-|---------|---------|------------|---------|
-| **Statutory Holiday** | 法定节假日 | A holiday defined by law or regulation. Applies every year by statute. | New Year's Day (元旦), National Day (国庆节) |
-| **Holiday Arrangement** | 放假安排 | A specific year's concrete holiday periods, published annually by the State Council (国务院). May extend statutory holidays with adjacent weekends. | 2026 Spring Festival: Jan 27 – Feb 2 |
-| **Adjusted Workday** | 调休补班 | A date that would normally be a rest day (weekend) but is overridden to be a working day to compensate for an extended holiday. | Saturday Jan 24, 2026 made a workday to compensate for Spring Festival |
-| **Weekend** | 周末 | System default rest days, determined by `weekendMask`. | Saturday and Sunday by default |
-
-> **Warning**: Weekend ≠ Statutory Holiday. A normal Saturday is a weekend rest day but is **not** a statutory holiday. An adjusted workday is still a weekend day by mask (`isWeekend = true`) but is a working day (`isWorkday = true`).
-
----
-
-## 5. Unified Metadata Specification
-
-### 5.1 CommonMeta
-
-`CommonMeta` is the shared metadata header used by **all** data layers (Canonical, Materialized, and Bundle).
-
-```json
-{
-  "specVersion": "1.0.0",
-  "bundleId": "{region}-{year}",
-  "regionCode": "CN",
-  "parentRegionCode": null,
-  "year": 2026,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
-  "calendarSystem": "GREGORIAN",
-  "timezone": "Asia/Shanghai",
-  "weekendMask": ["SAT", "SUN"],
-  "locales": ["zh-CN", "en-US"],
-  "sourceVersion": "2025.11.04",
-  "generatedAt": "2025-11-04T20:30:00+08:00",
-  "generator": {
-    "name": "holiday-compiler",
-    "version": "1.0.0"
-  },
-  "extensions": {}
-}
-```
-
-**Field descriptions**:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `specVersion` | `string` | Yes | Version of this specification the file conforms to |
-| `bundleId` | `string` | Yes | Unique identifier: `{regionCode}-{year}` |
-| `regionCode` | `string` | Yes | Region code (see §5.2 for format) |
-| `parentRegionCode` | `string \| null` | Yes | Parent region for inheritance, or `null` |
-| `year` | `integer` | Yes | Calendar year |
-| `validFrom` | `string` | Yes | Start of validity range (`YYYY-MM-DD`) |
-| `validTo` | `string` | Yes | End of validity range (`YYYY-MM-DD`) |
-| `calendarSystem` | `string` | Yes | Primary calendar system |
-| `timezone` | `string` | Yes | IANA timezone identifier |
-| `weekendMask` | `string[]` | Yes | Default weekend days |
-| `locales` | `string[]` | Yes | Supported locales |
-| `sourceVersion` | `string` | Yes | Data version stamp |
-| `generatedAt` | `string` | Yes | ISO 8601 generation timestamp with timezone |
-| `generator` | `object` | Yes | Tool that generated this file |
-| `extensions` | `object` | Yes | Extension data, default `{}` |
-
-### 5.2 Conventions
-
-#### Date Format
-- **Always** `YYYY-MM-DD`. No timestamps, no time components.
-- Example: `"2026-01-01"`, never `"2026-01-01T00:00:00"`.
-
-#### Timezone
-- IANA format only.
-- Example: `"Asia/Shanghai"`, never `"UTC+8"` or `"CST"`.
-
-#### Region Codes
-Region codes follow a hierarchical scheme:
-
-| Level | Format | Example | Description |
-|-------|--------|---------|-------------|
-| Country | `{CC}` | `CN` | ISO 3166-1 alpha-2 |
-| Province / State | `{CC}-{SUB}` | `CN-SH` | ISO 3166-2 subdivision |
-| Organization | `{CC}-{SUB}-{ORG}` | `CN-SH-ACME` | Enterprise custom calendar |
-
-Inheritance flows downward: `CN-SH-ACME` inherits from `CN-SH`, which inherits from `CN`. Overrides at a lower level take precedence.
-
-#### Multi-Language Names
-Names are stored as a map of locale to string arrays:
-
-```json
-{
-  "zh-CN": ["元旦"],
-  "en-US": ["New Year's Day"]
-}
-```
-
-Arrays allow multiple names per locale (e.g., a holiday with both a formal and a colloquial name).
-
-#### Enum Values
-- Always `UPPER_SNAKE_CASE` strings. Never numeric codes.
-- Examples: `"SPRING_FESTIVAL"`, `"STATUTORY"`, `"GOV_NOTICE"`, `"SAT"`, `"SUN"`.
-
-#### JSON Field Naming
-- Always `lowerCamelCase`.
-- Examples: `"isHoliday"`, `"regionCode"`, `"weekendMask"`.
-
-#### Boolean Fields
-- **Never omitted**. Every boolean field must be explicitly `true` or `false`.
-- Rationale: Omitted booleans create ambiguity (`undefined` vs. `false`), causing bugs across languages.
-
-#### Extensions Field
-- **Always present**, even if empty. Default value: `{}`.
-- Rationale: Ensures forward compatibility. Consumers can always safely access `extensions` without null checks.
-
----
-
-## 6. DayInfoDTO (Frontend/Backend ABI)
-
-`DayInfoDTO` is the **unified response structure** returned by all SDKs and APIs for a single date query. It is the contract that guarantees frontend/backend ABI consistency.
-
-```json
-{
-  "date": "2026-01-01",
-  "regionCode": "CN",
-  "calendarSystem": "GREGORIAN",
-  "isHoliday": true,
-  "isWorkday": false,
-  "isWeekend": false,
-  "isStatutoryHoliday": true,
-  "isAdjustedWorkday": false,
-  "holidayNames": {
-    "zh-CN": ["元旦"],
-    "en-US": ["New Year's Day"]
-  },
-  "labels": ["NEW_YEAR", "STATUTORY"],
-  "sourceVersion": "2025.11.04",
-  "extensions": {}
-}
-```
-
-**Field descriptions**:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `date` | `string` | Yes | `YYYY-MM-DD` format |
-| `regionCode` | `string` | Yes | Region this result applies to |
-| `calendarSystem` | `string` | Yes | Calendar system used |
-| `isHoliday` | `boolean` | Yes | Whether the date is a day off |
-| `isWorkday` | `boolean` | Yes | Whether the date is a working day |
-| `isWeekend` | `boolean` | Yes | Whether the date falls on a default weekend |
-| `isStatutoryHoliday` | `boolean` | Yes | Whether the date is a statutory holiday |
-| `isAdjustedWorkday` | `boolean` | Yes | Whether the date is an adjusted workday (调休补班) |
-| `holidayNames` | `Map<string, string[]>` | Yes | Multi-language holiday names, empty map `{}` if none |
-| `labels` | `string[]` | Yes | Enum labels, empty array `[]` if none |
-| `sourceVersion` | `string` | Yes | Data version stamp |
-| `extensions` | `object` | Yes | Extension data, default `{}` |
-
-**Cross-platform guarantee**: A Java SDK, a Node.js SDK, a TypeScript SDK, and an HTTP API endpoint must all return **structurally identical** JSON for the same `(date, regionCode)` query.
-
----
-
-## 7. Canonical Spec Design
-
-### 7.1 Structure
-
-The canonical file is the **single source of truth** for a given region and year.
-
-```json
-{
-  "meta": { /* CommonMeta — see §5.1 */ },
-  "sources": [ /* provenance references — see §7.2 */ ],
-  "rules": [ /* holiday rules — see §7.3 */ ],
-  "overrides": [ /* exception overrides — see §7.4 */ ],
-  "extensions": {}
-}
-```
-
-### 7.2 Sources
-
-Each source entry records the provenance of the data:
-
-```json
-{
-  "id": "gov-notice-2026",
-  "type": "GOV_NOTICE",
-  "title": "国务院办公厅关于2026年部分节假日安排的通知",
-  "url": "https://www.gov.cn/...",
-  "publishedAt": "2025-11-04"
-}
-```
-
-**Source types**:
-
-| Type | Description |
-|------|-------------|
-| `GOV_NOTICE` | Official government notice (政府公告) |
-| `ICS_FEED` | iCalendar feed |
-| `THIRD_PARTY_JSON` | Third-party JSON data |
-| `CSV_IMPORT` | CSV file import |
-| `ENTERPRISE_PATCH` | Enterprise-specific override |
-| `MANUAL_ENTRY` | Manually entered by administrator |
-
-### 7.3 Rules
-
-Rules define how holidays are computed. Each rule has a `type` field that determines its structure.
-
-**Supported rule types**:
-
-| Type | Description | Example |
-|------|-------------|---------|
-| `FIXED_DATE` | A specific Gregorian date | New Year's Day: Jan 1 |
-| `DATE_RANGE` | A contiguous range of dates | Spring Festival: Jan 28 – Feb 3 |
-| `WEEKDAY_OVERRIDE` | Override a weekday/weekend to workday/holiday | Saturday Jan 24 → workday |
-| `LUNAR_DATE` | A date in the Chinese lunar calendar (see §8) | Mid-Autumn Festival: Lunar 8/15 |
-| `RECURRENCE` | A recurring pattern (e.g., nth weekday of month) | Thanksgiving (US): 4th Thursday of November |
-| `PATCH` | A freeform patch for edge cases | Enterprise-specific adjustments |
-
-**Example — `FIXED_DATE` rule**:
-
-```json
-{
-  "id": "new-year-2026",
-  "type": "FIXED_DATE",
-  "sourceId": "gov-notice-2026",
-  "date": "2026-01-01",
-  "isStatutoryHoliday": true,
-  "isHoliday": true,
-  "isAdjustedWorkday": false,
-  "names": {
-    "zh-CN": ["元旦"],
-    "en-US": ["New Year's Day"]
-  },
-  "labels": ["NEW_YEAR", "STATUTORY"]
-}
-```
-
-**Example — `DATE_RANGE` rule**:
-
-```json
-{
-  "id": "spring-festival-2026",
-  "type": "DATE_RANGE",
-  "sourceId": "gov-notice-2026",
-  "startDate": "2026-01-28",
-  "endDate": "2026-02-03",
-  "isStatutoryHoliday": true,
-  "isHoliday": true,
-  "isAdjustedWorkday": false,
-  "names": {
-    "zh-CN": ["春节"],
-    "en-US": ["Spring Festival"]
-  },
-  "labels": ["SPRING_FESTIVAL", "STATUTORY"]
-}
-```
-
-**Example — `WEEKDAY_OVERRIDE` rule**:
-
-```json
-{
-  "id": "spring-festival-makeup-1",
-  "type": "WEEKDAY_OVERRIDE",
-  "sourceId": "gov-notice-2026",
-  "date": "2026-01-24",
-  "isStatutoryHoliday": false,
-  "isHoliday": false,
-  "isAdjustedWorkday": true,
-  "names": {},
-  "labels": ["SPRING_FESTIVAL_MAKEUP"]
-}
-```
-
-### 7.4 Overrides
-
-Overrides have the **same structure** as rules but serve a different purpose: they represent exceptions applied at a lower level in the region hierarchy.
-
-**Evaluation order**:
-1. Load parent region's rules.
-2. Apply current region's rules (merge/replace by `id`).
-3. Apply current region's overrides (highest priority).
-
-**Use cases**:
-- A province declares an additional local holiday.
-- An enterprise removes a national holiday for operational reasons.
-- A regional override adjusts the makeup workday schedule.
-
----
-
-## 8. Lunar Calendar Extension
-
-### Design Principle
-
-> **Never let clients perform lunar-to-Gregorian computation at runtime.**
-
-Lunar calendar support is handled entirely in the **compilation pipeline**, not in SDKs or APIs.
-
-### Workflow
-
-1. **Declare** in Canonical using `LUNAR_DATE` rule type:
-
-   ```json
-   {
-     "id": "mid-autumn-2026",
-     "type": "LUNAR_DATE",
-     "sourceId": "gov-notice-2026",
-     "calendarSystem": "CHINESE_LUNAR",
-     "month": 8,
-     "day": 15,
-     "isStatutoryHoliday": true,
-     "isHoliday": true,
-     "isAdjustedWorkday": false,
-     "names": {
-       "zh-CN": ["中秋节"],
-       "en-US": ["Mid-Autumn Festival"]
-     },
-     "labels": ["MID_AUTUMN", "STATUTORY"]
-   }
-   ```
-
-2. **Compile** — The `holiday-compiler` expands `LUNAR_DATE` rules to concrete Gregorian dates in the Materialized layer. The compiler uses a trusted lunar-to-Gregorian conversion table.
-
-3. **Serve** — The Runtime Binary Bundle and SDKs only ever see Gregorian dates. No lunar logic leaks into runtime.
-
-### Rationale
-
-- Lunar-to-Gregorian conversion is complex and locale-sensitive.
-- Different languages have different (or no) lunar calendar libraries.
-- Pre-computing guarantees cross-language consistency.
-- Runtime ABI is **never polluted** by lunar logic.
-
----
-
-## 9. Manifest Design
-
-The manifest file is the **index** that SDKs and APIs use to discover and load bundles.
-
-```json
-{
-  "specVersion": "1.0.0",
-  "bundleFormatVersion": "1.0.0",
-  "defaultRegion": "CN",
-  "publishedAt": "2025-11-04T20:35:00+08:00",
-  "bundles": {
-    "CN": {
-      "2026": {
-        "file": "bundles/CN/2026.hday",
-        "sha256": "a1b2c3d4e5f6...",
-        "crc32": "DEADBEEF",
-        "size": 4096,
-        "sourceVersion": "2025.11.04"
-      },
-      "2025": {
-        "file": "bundles/CN/2025.hday",
-        "sha256": "f6e5d4c3b2a1...",
-        "crc32": "CAFEBABE",
-        "size": 4012,
-        "sourceVersion": "2024.11.08"
-      }
-    }
-  }
-}
-```
-
-**Field descriptions**:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `specVersion` | `string` | Specification version |
-| `bundleFormatVersion` | `string` | Binary bundle format version |
-| `defaultRegion` | `string` | Default region code when none specified |
-| `publishedAt` | `string` | ISO 8601 publish timestamp |
-| `bundles` | `object` | Nested map: `regionCode → year → bundle descriptor` |
-
-**Bundle descriptor fields**:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `file` | `string` | Relative path to the `.hday` bundle file |
-| `sha256` | `string` | SHA-256 hash for integrity verification |
-| `crc32` | `string` | CRC-32 checksum for quick validation |
-| `size` | `integer` | File size in bytes |
-| `sourceVersion` | `string` | Data version stamp |
-
----
-
-## 10. Offline Update Mechanism
-
-### Architecture
-
-```
-┌───────────────────────────────────────────┐
-│            Application Startup            │
-├───────────────────────────────────────────┤
-│  1. Load built-in base bundles            │
-│     (from classpath / node_modules)       │
-├───────────────────────────────────────────┤
-│  2. Check external override directory     │
-│     (higher priority than built-in)       │
-├───────────────────────────────────────────┤
-│  3. Merge manifests                       │
-│     (external overrides win on conflict)  │
-├───────────────────────────────────────────┤
-│  4. Ready to serve queries                │
-└───────────────────────────────────────────┘
-```
-
-### Built-in Base Bundles
-
-Every SDK ships with a set of base bundles embedded in its distribution:
-- **Java**: bundles in classpath resources (`/holiday-data/bundles/`)
-- **Node / TypeScript**: bundles in `node_modules/cn-holiday-kit/bundles/`
-- **HTTP API**: bundles in the application's data directory
-
-These bundles ensure the SDK works **offline** and **out-of-the-box** without any network access.
-
-### External Override Directory
-
-An external directory can be configured to override or supplement built-in bundles:
-
-```
-/etc/holiday-data/          # or configured path
-├── manifest.json
-└── bundles/
-    └── CN/
-        └── 2026.hday
-```
-
-**Priority**: External bundles **always** take precedence over built-in bundles for the same `(regionCode, year)`.
-
-### Update Package Format
-
-An update package is a ZIP archive containing:
-
-```
-holiday-update-2026.zip
-├── manifest.json           # partial manifest with only updated bundles
-└── bundles/
-    └── CN/
-        └── 2026.hday
-```
-
-### Hot Update Sequence
-
-The hot update process is **atomic** and **safe**:
-
-1. **Write** new bundles to a staging directory.
-2. **Verify** integrity: check SHA-256 and CRC-32 for every bundle in the update manifest.
-3. **Atomic replace** — Swap the manifest pointer from the old directory to the staging directory.
-4. **Clear cache** — Invalidate all in-memory LRU caches.
-5. **Effective immediately** — New queries hit the updated bundles.
-
-**Failure handling**: If verification fails at step 2, the update is **rejected** entirely. The old bundles remain in effect. No partial updates.
-
----
-
-## 11. Performance Strategy
-
-### Query Path
-
-```
-Client query (date, regionCode)
-  │
-  ▼
-Read manifest.json
-  │
-  ▼
-Resolve bundle file for (regionCode, year)
-  │
-  ▼
-Lazy-load year bundle (if not cached)
-  │
-  ▼
-dayOfYear index → read DAY_TABLE entry
-  │
-  ▼
-Assemble DayInfoDTO
-  │
-  ▼
-Return to client
-```
-
-### Memory Budget
-
-| Item | Size | Notes |
-|------|------|-------|
-| One day record | ~50–200 bytes | Depends on name/label count |
-| One year bundle (365/366 days) | ~2–8 KB | After binary encoding |
-| LRU cache (16 bundles) | ~32–128 KB | Typical workload |
-| LRU cache (64 bundles) | ~128–512 KB | High-cardinality regions |
-
-### Caching Strategy
-
-- **Cache key**: `(regionCode, year)` tuple.
-- **Eviction**: LRU (Least Recently Used).
-- **Default capacity**: 16 bundles (configurable, recommended range: 16–64).
-- **Cache invalidation**: On hot update (see §10), all entries are cleared atomically.
-
-### Lookup Complexity
-
-| Operation | Complexity | Notes |
-|-----------|-----------|-------|
-| Manifest lookup | O(1) | Hash map by region + year |
-| Day lookup within bundle | O(1) | Direct array index by day-of-year |
-| Bundle load (cold) | O(n) | n = days in year (365/366), one-time cost |
-| Bundle load (warm) | O(1) | LRU cache hit |
-
-### Concurrency
-
-- Manifest and bundles are **immutable once loaded**. No read locks required.
-- Hot update uses **atomic pointer swap** — readers see either the old or the new version, never a partial state.
-- LRU cache operations use a lightweight lock (or lock-free structure, implementation-dependent).
-
----
-
-## Appendix A: File Path Summary
-
-| Layer | Pattern | Example |
-|-------|---------|---------|
-| Raw Source | `raw/{region}/{year}-{source}.source.json` | `raw/CN/2026-gov-notice.source.json` |
-| Canonical Spec | `canonical/{region}/{year}.canon.json` | `canonical/CN/2026.canon.json` |
-| Materialized | `materialized/{region}/{year}.year.json` | `materialized/CN/2026.year.json` |
-| Runtime Bundle | `bundles/{region}/{year}.hday` | `bundles/CN/2026.hday` |
-| Manifest | `manifest.json` | `manifest.json` |
-
-## Appendix B: Enum Reference
-
-### Calendar Systems
-
-| Value | Description |
-|-------|-------------|
-| `GREGORIAN` | Standard Gregorian calendar |
-| `CHINESE_LUNAR` | Chinese lunisolar calendar (农历) |
-
-### Day-of-Week
-
-| Value | Description |
-|-------|-------------|
-| `MON` | Monday |
-| `TUE` | Tuesday |
-| `WED` | Wednesday |
-| `THU` | Thursday |
-| `FRI` | Friday |
-| `SAT` | Saturday |
-| `SUN` | Sunday |
-
-### Rule Types
-
-| Value | Description |
-|-------|-------------|
-| `FIXED_DATE` | A specific Gregorian date |
-| `DATE_RANGE` | A contiguous range of Gregorian dates |
-| `WEEKDAY_OVERRIDE` | Override default weekday/weekend behavior |
-| `LUNAR_DATE` | A date in the Chinese lunar calendar |
-| `RECURRENCE` | A recurring pattern |
-| `PATCH` | Freeform patch for edge cases |
-
-### Source Types
-
-| Value | Description |
-|-------|-------------|
-| `GOV_NOTICE` | Government notice (政府公告) |
-| `ICS_FEED` | iCalendar feed |
-| `THIRD_PARTY_JSON` | Third-party JSON data |
-| `CSV_IMPORT` | CSV file import |
-| `ENTERPRISE_PATCH` | Enterprise-specific override |
-| `MANUAL_ENTRY` | Manual entry by administrator |
-
-### Common Labels
-
-| Value | Description |
-|-------|-------------|
-| `STATUTORY` | Statutory holiday (法定节假日) |
-| `NEW_YEAR` | New Year's Day (元旦) |
-| `SPRING_FESTIVAL` | Spring Festival (春节) |
-| `TOMB_SWEEPING` | Tomb-Sweeping Day (清明节) |
-| `LABOUR_DAY` | Labour Day (劳动节) |
-| `DRAGON_BOAT` | Dragon Boat Festival (端午节) |
-| `MID_AUTUMN` | Mid-Autumn Festival (中秋节) |
-| `NATIONAL_DAY` | National Day (国庆节) |
-| `SPRING_FESTIVAL_MAKEUP` | Spring Festival makeup workday |
-
----
-
-*End of specification.*
+### 2.1 Raw
+
+- 保存原始来源内容
+- 只用于审计、追溯、重放导入
+- 运行时绝不直接消费
+
+### 2.2 Canonical
+
+- 单地区单年份的唯一事实来源
+- 导入器必须先产出 Canonical
+- 适合做审查、版本管理与差异比较
+
+### 2.3 Materialized
+
+- 把规则完全展开到公历日期
+- 适合做 golden 对比与编译输入
+
+### 2.4 `.hday`
+
+- 面向运行时的高性能二进制格式
+- 单年单地区一个文件
+- 只负责主数据，不直接内嵌农历/节气日级扩展
+
+## 3. 查询模型
+
+查询层统一围绕 `DayInfo` 语义展开。一个日历日至少包含以下语义字段：
+
+| 语义 | 说明 |
+| --- | --- |
+| `date` | 日期 |
+| `regionCode` | 地区代码 |
+| `calendarSystem` | 历法体系 |
+| `holiday` / `isHoliday` | 是否休息日 |
+| `workday` / `isWorkday` | 是否工作日 |
+| `weekend` / `isWeekend` | 是否默认周末 |
+| `statutoryHoliday` / `isStatutoryHoliday` | 是否法定节假日 |
+| `adjustedWorkday` / `isAdjustedWorkday` | 是否调休补班 |
+| `holidayNames` | 多语言名称 |
+| `labels` | 标签列表 |
+| `sourceVersion` | 数据版本 |
+| `extensions` | 兼容扩展区 |
+
+### 3.1 语义约束
+
+1. 休息日与工作日互斥，且二者必有其一
+2. 默认周末不因调休而消失
+3. 法定节假日是休息日的子集
+4. 调休补班必须是工作日
+
+### 3.2 命名约定
+
+当前仓库已经存在语言差异：
+
+- TypeScript SDK 使用 `isHoliday/isWorkday/...`
+- Java 对象与 HTTP JSON 当前使用 `holiday/workday/...`
+- `@holiday/web-client` 会把 HTTP 返回归一化为 TypeScript 侧命名
+
+因此本规范强调**语义对齐**，不再宣称所有语言层的字段名完全一致。
+
+## 4. 扩展约定
+
+`extensions` 是当前最稳定的兼容扩展位。仓库已落地两类标准扩展：
+
+### 4.1 `extensions.lunar`
+
+提供当天对应的农历信息：
+
+- 年、月、日
+- 是否闰月
+- 干支年
+- 生肖
+- 月中文名
+- 日中文名
+
+### 4.2 `extensions.solarTerm`
+
+仅在当天命中节气时返回，结构为：
+
+- `index`：稳定节气序号（`0-23`）
+- `name`：节气中文名
+
+## 5. 权威数据基线
+
+当前农历与节气的跨语言校验均基于香港天文台（HKO）1901-2100 数据：
+
+| 文件 | 说明 |
+| --- | --- |
+| `tests/lunar-golden.csv` | 公历 ↔ 农历权威对照 |
+| `tests/solar-terms.csv` | 节气日期权威对照 |
+
+这些基线同时同步到 Java 测试资源中，用于跨语言一致性验证。
+
+## 6. 运行时实现策略
+
+### 6.1 节假日主查询
+
+- `.hday` 负责承载节假日、名称、标签等主数据
+- Java `HdayBundle` 在初始化阶段预构建 `DayInfo[]`
+- TypeScript 查询层对 bundle 建立惰性查询视图
+
+### 6.2 农历扩展
+
+- 使用 1900-2100 压缩算法表
+- TS / Java 都已实现边界校验、闰月校验与 round-trip 测试
+
+### 6.3 节气扩展
+
+- 先从 HKO 文本提取 `tests/solar-terms.csv`
+- 再离线生成年度 `dayIndex` 表
+- 运行时以 O(1) 查表方式补到 `extensions.solarTerm`
+
+## 7. 性能策略
+
+### 7.1 Java
+
+- `holiday-core-java` 使用 **Caffeine 后端** 承载 bundle 缓存
+- 区间查询预估容量并直接追加，避免中间列表复制
+- `getYear()` 直接返回预构建年视图
+- `getNextHoliday()` 直接扫描预构建数组
+
+### 7.2 TypeScript
+
+- 预计算 `dayIndex -> month/day`
+- 查询链路缓存名称与标签解析结果
+- 节气运行时不读取 CSV，只查离线生成表
+- 农历范围先做快判，避免把异常当流程控制
+
+## 8. 兼容性边界
+
+| 层 | 当前边界 |
+| --- | --- |
+| Java 8 模块 | 保持 Java 8 兼容 |
+| `holiday-api-j25` | 可使用 Java 25 / Spring Boot 4 / Caffeine |
+| `.hday` 格式 | 当前仍为 v1.0.0 |
+| 农历范围 | 1900-2100 |
+| HKO 节气范围 | 1901-2100 |
+
+## 9. 文档关系
+
+- `README.md`：中文主入口与使用说明
+- `spec/api-contract.md`：HTTP 接口
+- `spec/enums.md`：枚举与位标记
+- `spec/bundle-format.md`：`.hday` 二进制格式
+
+如果实现与历史文档不一致，应以**当前代码与测试**为准，并同步回写这些文档。

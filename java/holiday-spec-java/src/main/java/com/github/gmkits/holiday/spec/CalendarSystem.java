@@ -1,13 +1,13 @@
 package com.github.gmkits.holiday.spec;
 
 /**
- * Supported calendar systems for holiday data.
+ * 节假日数据支持的历法体系。
  */
 public enum CalendarSystem {
 
-    /** Gregorian (solar) calendar. */
+    /** 公历（阳历）。 */
     GREGORIAN,
 
-    /** Traditional Chinese lunisolar calendar. */
+    /** 中国传统农历。 */
     CHINESE_LUNAR
 }

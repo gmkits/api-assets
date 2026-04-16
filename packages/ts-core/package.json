@@ -22,6 +22,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@holiday/lunar": "workspace:*",
     "@holiday/spec": "workspace:*"
   },
   "devDependencies": {

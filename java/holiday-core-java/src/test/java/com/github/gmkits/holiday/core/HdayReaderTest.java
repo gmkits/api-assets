@@ -1,13 +1,16 @@
 package com.github.gmkits.holiday.core;
 
+import com.github.gmkits.holiday.spec.CalendarSystem;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.util.List;
 
 import com.github.gmkits.holiday.spec.DayInfo;
+import com.github.gmkits.holiday.spec.SolarTermInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -91,6 +94,7 @@ class HdayReaderTest {
         assertEquals(7, range.size());
         assertEquals(java.time.LocalDate.of(2025, 1, 1), range.get(0).getDate());
         assertEquals(java.time.LocalDate.of(2025, 1, 7), range.get(6).getDate());
+        assertThrows(UnsupportedOperationException.class, () -> range.add(bundle.getDayInfo(0)));
     }
 
     @Test
@@ -103,6 +107,23 @@ class HdayReaderTest {
     }
 
     @Test
+    void readBundle_dayInfo_includesSolarTermExtension() throws IOException {
+        HdayBundle bundle;
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("bundles/CN/2025.hday")) {
+            bundle = HdayReader.read(is);
+        }
+
+        DayInfo info = bundle.getDayInfo(LocalDate.of(2025, 4, 4));
+        assertNotNull(info);
+        Object solarTerm = info.getExtensions().get("solarTerm");
+        assertTrue(solarTerm instanceof SolarTermInfo, "Qingming should expose solarTerm extension");
+
+        SolarTermInfo solarTermInfo = (SolarTermInfo) solarTerm;
+        assertEquals(6, solarTermInfo.getIndex());
+        assertEquals("清明", solarTermInfo.getName());
+    }
+
+    @Test
     void readBundle_outOfBounds_shouldThrow() throws IOException {
         HdayBundle bundle;
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("bundles/CN/2025.hday")) {
@@ -110,5 +131,30 @@ class HdayReaderTest {
         }
         assertThrows(IndexOutOfBoundsException.class, () -> bundle.getDayInfo(365));
         assertThrows(IndexOutOfBoundsException.class, () -> bundle.getDayInfo(-1));
+    }
+
+    @Test
+    void buildDayInfo_outsideLunarRange_shouldNotThrow() {
+        HdayBundle bundle = new HdayBundle(
+                1900,
+                "CN",
+                CalendarSystem.GREGORIAN,
+                1,
+                1,
+                0,
+                new HdayBundle.DayEntry[]{
+                        new HdayBundle.DayEntry(
+                                HdayBundle.DayEntry.FLAG_IS_WORKDAY,
+                                HdayBundle.NO_INDEX,
+                                HdayBundle.NO_INDEX,
+                                HdayBundle.NO_INDEX),
+                },
+                new String[0],
+                new int[0][][]);
+
+        DayInfo info = bundle.getDayInfo(LocalDate.of(1900, 1, 1));
+        assertNotNull(info);
+        assertTrue(info.isWorkday());
+        assertTrue(info.getExtensions().isEmpty(), "Out-of-range lunar dates should omit lunar extension");
     }
 }

@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -51,7 +52,7 @@ public class CachedHolidayQueryService {
         if (days.isEmpty()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RANGE_NOT_FOUND", "指定区间没有可用数据");
         }
-        return days;
+        return readOnlyDays(days);
     }
 
     @Cacheable(cacheNames = "yearInfo", key = "#regionCode + ':' + #year")
@@ -60,7 +61,7 @@ public class CachedHolidayQueryService {
         if (days.isEmpty()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "YEAR_NOT_FOUND", "未找到年份 " + year + " 的节假日数据");
         }
-        return days;
+        return readOnlyDays(days);
     }
 
     public JsonNode getManifest() {
@@ -72,23 +73,17 @@ public class CachedHolidayQueryService {
     }
 
     public List<RegionInfo> getRegions() {
-        List<RegionInfo> result = new ArrayList<>();
-        for (String region : manifestRepository.getSupportedRegions()) {
-            result.add(RegionInfo.builder()
-                    .code(region)
-                    .name(resolveRegionName(region))
-                    .build());
-        }
-        return result;
+        return manifestRepository.getSupportedRegions().stream()
+                .map(CachedHolidayQueryService::toRegionInfo)
+                .toList();
     }
 
     public VersionPayload getVersion() {
-        JsonNode manifest = manifestRepository.getManifest();
         return VersionPayload.builder()
                 .apiVersion(properties.getApiVersion())
-                .specVersion(manifest.path("specVersion").asText(""))
-                .bundleFormatVersion(manifest.path("bundleFormatVersion").asText(""))
-                .publishedAt(manifest.path("publishedAt").asText(""))
+                .specVersion(manifestRepository.getSpecVersion())
+                .bundleFormatVersion(manifestRepository.getBundleFormatVersion())
+                .publishedAt(manifestRepository.getPublishedAt())
                 .regions(manifestRepository.getSupportedRegions())
                 .build();
     }
@@ -118,6 +113,13 @@ public class CachedHolidayQueryService {
         return ImmutableMap.of("zh-CN", regionCode);
     }
 
+    private static RegionInfo toRegionInfo(String regionCode) {
+        return RegionInfo.builder()
+                .code(regionCode)
+                .name(resolveRegionName(regionCode))
+                .build();
+    }
+
     /**
      * 查询指定月份。
      */
@@ -127,7 +129,7 @@ public class CachedHolidayQueryService {
             throw new ApiException(HttpStatus.NOT_FOUND, "MONTH_NOT_FOUND",
                     "未找到 " + year + "-" + month + " 的节假日数据");
         }
-        return days;
+        return readOnlyDays(days);
     }
 
     /**
@@ -158,5 +160,12 @@ public class CachedHolidayQueryService {
                     "从 " + from + " 起未找到下一个法定节假日");
         }
         return info;
+    }
+
+    private static List<DayInfo> readOnlyDays(List<DayInfo> days) {
+        if (days.isEmpty()) {
+            return List.of();
+        }
+        return Collections.unmodifiableList(new ArrayList<>(days));
     }
 }

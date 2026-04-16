@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Information about a single calendar day within a holiday dataset.
+ * 节假日数据集中单个日历日的信息。
  *
- * <p>All boolean fields are always present (never {@code null}).
- * Instances are immutable once constructed via the {@link Builder}.</p>
+ * <p>所有布尔字段始终存在（绝不会是 {@code null}）。
+ * 实例通过 {@link Builder} 构造后保持不可变。</p>
  */
 @Getter
 public final class DayInfo {
@@ -68,7 +68,7 @@ public final class DayInfo {
     }
 
     /**
-     * Builder for constructing {@link DayInfo} instances.
+     * 用于构造 {@link DayInfo} 实例的构建器。
      */
     public static final class Builder {
         private LocalDate date;
@@ -84,46 +84,46 @@ public final class DayInfo {
         private String sourceVersion;
         private Map<String, Object> extensions;
 
-        /** Sets the date. */
+        /** 设置日期。 */
         public Builder date(LocalDate date) { this.date = date; return this; }
 
-        /** Sets the region code. */
+        /** 设置区域代码。 */
         public Builder regionCode(String regionCode) { this.regionCode = regionCode; return this; }
 
-        /** Sets the calendar system. */
+        /** 设置历法体系。 */
         public Builder calendarSystem(CalendarSystem cs) { this.calendarSystem = cs; return this; }
 
-        /** Sets the holiday flag. */
+        /** 设置节假日标记。 */
         public Builder holiday(boolean v) { this.holiday = v; return this; }
 
-        /** Sets the workday flag. */
+        /** 设置工作日标记。 */
         public Builder workday(boolean v) { this.workday = v; return this; }
 
-        /** Sets the weekend flag. */
+        /** 设置周末标记。 */
         public Builder weekend(boolean v) { this.weekend = v; return this; }
 
-        /** Sets the statutory-holiday flag. */
+        /** 设置法定节假日标记。 */
         public Builder statutoryHoliday(boolean v) { this.statutoryHoliday = v; return this; }
 
-        /** Sets the adjusted-workday flag. */
+        /** 设置调休补班标记。 */
         public Builder adjustedWorkday(boolean v) { this.adjustedWorkday = v; return this; }
 
-        /** Sets the holiday names map. */
+        /** 设置节假日名称映射。 */
         public Builder holidayNames(Map<String, List<String>> names) { this.holidayNames = names; return this; }
 
-        /** Sets the label list. */
+        /** 设置标签列表。 */
         public Builder labels(List<String> labels) { this.labels = labels; return this; }
 
-        /** Sets the source version. */
+        /** 设置源数据版本。 */
         public Builder sourceVersion(String v) { this.sourceVersion = v; return this; }
 
-        /** Sets the extensions map. */
+        /** 设置扩展映射。 */
         public Builder extensions(Map<String, Object> ext) { this.extensions = ext; return this; }
 
         /**
-         * Builds an immutable {@link DayInfo}.
+         * 构建不可变的 {@link DayInfo} 实例。
          *
-         * @return the constructed instance
+         * @return 构造后的实例
          */
         public DayInfo build() {
             return new DayInfo(this);

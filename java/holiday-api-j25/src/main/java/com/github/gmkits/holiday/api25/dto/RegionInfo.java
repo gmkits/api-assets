@@ -1,16 +1,25 @@
 package com.github.gmkits.holiday.api25.dto;
 
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Value;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * 地区信息。
  */
-@Getter
-@Builder
+@Value
 public class RegionInfo {
-    private final String code;
-    private final Map<String, String> name;
+    String code;
+    Map<String, String> name;
+
+    @Builder
+    private RegionInfo(String code, Map<String, String> name) {
+        this.code = code;
+        this.name = name == null || name.isEmpty()
+                ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(name));
+    }
 }

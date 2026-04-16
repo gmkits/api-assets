@@ -9,8 +9,6 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
-import com.google.common.collect.ImmutableList;
-
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -24,6 +22,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class HolidayOpsService {
+
+    private static final List<String> NO_WARMED_KEYS = List.of();
 
     private final CacheManager holidayCacheManager;
     private final HolidayApi25Properties properties;
@@ -43,7 +43,7 @@ public class HolidayOpsService {
         return OperationResult.builder()
                 .operation("clearCaches")
                 .message(reloadManifest ? "缓存已清空并重载 manifest" : "缓存已清空")
-                .warmedKeys(ImmutableList.of())
+                .warmedKeys(NO_WARMED_KEYS)
                 .build();
     }
 
@@ -52,7 +52,7 @@ public class HolidayOpsService {
         return OperationResult.builder()
                 .operation("reloadManifest")
                 .message("manifest 已重新加载")
-                .warmedKeys(ImmutableList.of())
+                .warmedKeys(NO_WARMED_KEYS)
                 .build();
     }
 
@@ -80,7 +80,7 @@ public class HolidayOpsService {
             effectiveYears.add(currentYear + 1);
         }
 
-        List<String> warmedKeys = new ArrayList<>();
+        List<String> warmedKeys = new ArrayList<>(effectiveRegions.size() * effectiveYears.size());
         CachedHolidayQueryService proxy = selfProvider.getObject();
         for (String region : effectiveRegions) {
             for (Integer year : effectiveYears) {
