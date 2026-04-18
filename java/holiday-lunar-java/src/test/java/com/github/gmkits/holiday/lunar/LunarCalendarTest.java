@@ -271,4 +271,72 @@ class LunarCalendarTest {
             assertTrue(interval >= 29.2 && interval <= 29.9, "k=" + k + " 间隔" + interval);
         }
     }
+
+    // ─── 二十四节气 ───
+
+    @Test
+    void solarTermNamesLength() {
+        assertEquals(24, LunarCalendar.SOLAR_TERM_NAMES.length);
+    }
+
+    @Test
+    void getSolarTermsReturns24() {
+        LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(2025);
+        assertEquals(24, terms.length);
+        for (LunarCalendar.SolarTermInfo term : terms) {
+            assertNotNull(term.getName(), "节气应有名称");
+            assertEquals(2025, term.getDate().getYear(), term.getName() + " 年份应为 2025");
+            assertTrue(term.getDate().getMonthValue() >= 1 && term.getDate().getMonthValue() <= 12);
+            assertTrue(term.getDate().getDayOfMonth() >= 1 && term.getDate().getDayOfMonth() <= 31);
+        }
+    }
+
+    @Test
+    void solarTerms2025KnownDates() {
+        // 2025 年部分已知节气（来源：紫金山天文台）
+        int[][] known = {
+            // {黄经索引, 期望月, 期望日}
+            {0, 1, 5},   // 小寒
+            {1, 1, 20},  // 大寒
+            {2, 2, 3},   // 立春
+            {5, 3, 20},  // 春分
+            {11, 6, 21}, // 夏至
+            {17, 9, 22}, // 秋分
+            {23, 12, 21},// 冬至
+        };
+        LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(2025);
+        for (int[] row : known) {
+            LunarCalendar.SolarTermInfo term = terms[row[0]];
+            assertEquals(row[1], term.getDate().getMonthValue(),
+                term.getName() + " 月份不匹配");
+            int dayDiff = Math.abs(term.getDate().getDayOfMonth() - row[2]);
+            assertTrue(dayDiff <= 1,
+                term.getName() + " 日期偏差 " + dayDiff + " 天（期望 " + row[1] + "-" + row[2]
+                    + "，实际 " + term.getDate().getMonthValue() + "-" + term.getDate().getDayOfMonth() + "）");
+        }
+    }
+
+    @Test
+    void getSolarTermOnTermDay() {
+        LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(2025);
+        LunarCalendar.SolarTermInfo firstTerm = terms[0];
+        String result = LunarCalendar.getSolarTerm(firstTerm.getDate());
+        assertEquals(firstTerm.getName(), result);
+    }
+
+    @Test
+    void getSolarTermOnNonTermDay() {
+        // 2025-01-01 通常不是节气日
+        String result = LunarCalendar.getSolarTerm(LocalDate.of(2025, 1, 1));
+        assertNull(result);
+    }
+
+    @Test
+    void solarTermsChronologicalOrder() {
+        LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(2025);
+        for (int i = 1; i < terms.length; i++) {
+            assertTrue(!terms[i].getDate().isBefore(terms[i - 1].getDate()),
+                "节气顺序错误: " + terms[i - 1].getName() + " 应早于 " + terms[i].getName());
+        }
+    }
 }

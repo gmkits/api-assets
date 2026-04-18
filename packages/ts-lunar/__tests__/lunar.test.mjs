@@ -22,6 +22,7 @@ import {
     getTianGan, getDiZhi, getGanZhi, getShengXiao,
     getMonthName, getDayName,
     estimateNewMoonJDE, jdeToGregorian, estimateLunarNewYear,
+    getSolarTerms, getSolarTerm, SOLAR_TERM_NAMES,
 } from '../dist/esm/index.js';
 
 // ─── 加载全量参照 CSV ───
@@ -305,6 +306,85 @@ describe('朔日估算', () => {
     for (let k = -100; k < 100; k++) {
         const interval = estimateNewMoonJDE(k + 1) - estimateNewMoonJDE(k);
         assert.ok(interval >= 29.2 && interval <= 29.9, `k=${k} 间隔${interval.toFixed(4)}`);
+    }
+  });
+});
+
+// ─── 二十四节气 ───
+
+describe('二十四节气', () => {
+  it('SOLAR_TERM_NAMES 应有 24 个名称', () => {
+    assert.equal(SOLAR_TERM_NAMES.length, 24);
+  });
+
+  it('getSolarTerms 应返回 24 个节气', () => {
+    const terms = getSolarTerms(2025);
+    assert.equal(terms.length, 24);
+    for (const term of terms) {
+      assert.ok(term.name, '节气应有名称');
+      assert.ok(term.date[0] === 2025, `节气年份应为 2025，实际 ${term.date[0]}: ${term.name}`);
+      assert.ok(term.date[1] >= 1 && term.date[1] <= 12, '月份应在 1-12');
+      assert.ok(term.date[2] >= 1 && term.date[2] <= 31, '日期应在 1-31');
+    }
+  });
+
+  it('2025 年已知节气日期精度 ≤1 天', () => {
+    // 2025 年部分已知节气（来源：紫金山天文台发布数据）
+    const known = [
+      ['小寒', 1, 5],
+      ['大寒', 1, 20],
+      ['立春', 2, 3],
+      ['雨水', 2, 18],
+      ['惊蛰', 3, 5],
+      ['春分', 3, 20],
+      ['清明', 4, 4],
+      ['谷雨', 4, 20],
+      ['立夏', 5, 5],
+      ['小满', 5, 21],
+      ['芒种', 6, 5],
+      ['夏至', 6, 21],
+      ['小暑', 7, 7],
+      ['大暑', 7, 22],
+      ['立秋', 8, 7],
+      ['处暑', 8, 23],
+      ['白露', 9, 7],
+      ['秋分', 9, 22],
+      ['寒露', 10, 8],
+      ['霜降', 10, 23],
+      ['立冬', 11, 7],
+      ['小雪', 11, 22],
+      ['大雪', 12, 7],
+      ['冬至', 12, 21],
+    ];
+    const terms = getSolarTerms(2025);
+    for (const [name, expectedMonth, expectedDay] of known) {
+      const term = terms.find(t => t.name === name);
+      assert.ok(term, `应找到节气: ${name}`);
+      assert.equal(term.date[1], expectedMonth, `${name} 月份不匹配`);
+      const dayDiff = Math.abs(term.date[2] - expectedDay);
+      assert.ok(dayDiff <= 1, `${name} 日期偏差 ${dayDiff} 天（期望 ${expectedMonth}-${expectedDay}，实际 ${term.date[1]}-${term.date[2]}）`);
+    }
+  });
+
+  it('getSolarTerm 应在节气日返回名称', () => {
+    const terms = getSolarTerms(2025);
+    const firstTerm = terms[0];
+    const result = getSolarTerm(firstTerm.date[0], firstTerm.date[1], firstTerm.date[2]);
+    assert.equal(result, firstTerm.name);
+  });
+
+  it('getSolarTerm 应在非节气日返回 null', () => {
+    // 2025-01-01 通常不是节气日
+    const result = getSolarTerm(2025, 1, 1);
+    assert.equal(result, null);
+  });
+
+  it('节气按时间顺序排列', () => {
+    const terms = getSolarTerms(2025);
+    for (let i = 1; i < terms.length; i++) {
+      const prev = new Date(terms[i - 1].date[0], terms[i - 1].date[1] - 1, terms[i - 1].date[2]);
+      const curr = new Date(terms[i].date[0], terms[i].date[1] - 1, terms[i].date[2]);
+      assert.ok(curr >= prev, `节气顺序错误: ${terms[i - 1].name} (${prev.toISOString()}) 应早于 ${terms[i].name} (${curr.toISOString()})`);
     }
   });
 });

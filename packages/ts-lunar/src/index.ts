@@ -50,7 +50,7 @@ const LUNAR_INFO: number[] = [
   0x092e0, 0x0d2e3, 0x0c960, 0x0d557, 0x0d4a0, 0x0da50, 0x05d55, 0x056a0, 0x0a6d0, 0x055d4,
   0x052d0, 0x0a9b8, 0x0a950, 0x0b4a0, 0x0b6a6, 0x0ad50, 0x055a0, 0x0aba4, 0x0a5b0, 0x052b0,
   0x0b273, 0x06930, 0x07337, 0x06aa0, 0x0ad50, 0x14b55, 0x04b60, 0x0a570, 0x054e4, 0x0d160,
-    0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
+  0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
   0x0d520,
 ];
 
@@ -367,7 +367,7 @@ export function lunarToSolar(
   const offsets = MONTH_OFFSETS[yi];
   const slotCount = offsets.length - 1;
 
-    // 查找目标月份在月槽表中的位置
+  // 查找目标月份在月槽表中的位置
   const targetMeta = (lunarMonth & 0xF) | (isLeapMonth ? 0x10 : 0);
   let slotIdx = -1;
   for (let s = 0; s < slotCount; s++) {
@@ -378,17 +378,17 @@ export function lunarToSolar(
   }
 
   if (slotIdx < 0) {
-      throw new RangeError(
-          `农历 ${lunarYear} 年不存在${isLeapMonth ? '闰' : ''}${lunarMonth} 月`,
-      );
+    throw new RangeError(
+      `农历 ${lunarYear} 年不存在${isLeapMonth ? '闰' : ''}${lunarMonth} 月`,
+    );
   }
 
-    // 校验日期不超过该月实际天数
-    const slotDays = offsets[slotIdx + 1] - offsets[slotIdx];
-    if (lunarDay > slotDays) {
-        throw new RangeError(
-            `农历 ${lunarYear} 年${isLeapMonth ? '闰' : ''}${lunarMonth} 月仅有 ${slotDays} 天，日期 ${lunarDay} 超出范围`,
-        );
+  // 校验日期不超过该月实际天数
+  const slotDays = offsets[slotIdx + 1] - offsets[slotIdx];
+  if (lunarDay > slotDays) {
+    throw new RangeError(
+      `农历 ${lunarYear} 年${isLeapMonth ? '闰' : ''}${lunarMonth} 月仅有 ${slotDays} 天，日期 ${lunarDay} 超出范围`,
+    );
   }
 
   // 年前缀和 + 月内偏移 + 日偏移 → 总天数偏移
@@ -587,6 +587,194 @@ export function estimateLunarNewYear(year: number): [number, number, number] {
   }
 
   return jdeToGregorian(estimateNewMoonJDE(k0));
+}
+
+// ===================================================================
+// 二十四节气（Solar Terms）
+// ===================================================================
+
+/**
+ * 二十四节气名称（按黄经度数从小到大排列）。
+ *
+ * 节气以太阳黄经每 15° 为一个节气，从春分（0°）开始：
+ *   春分(0°) → 清明(15°) → 谷雨(30°) → ... → 雨水(330°) → 惊蛰(345°)
+ *
+ * 本数组按黄经 0°, 15°, 30°, ... 345° 排列，共 24 个节气。
+ */
+export const SOLAR_TERM_NAMES = [
+  '春分', '清明', '谷雨', '立夏', '小满', '芒种',
+  '夏至', '小暑', '大暑', '立秋', '处暑', '白露',
+  '秋分', '寒露', '霜降', '立冬', '小雪', '大雪',
+  '冬至', '小寒', '大寒', '立春', '雨水', '惊蛰',
+] as const;
+
+/** 节气信息。 */
+export interface SolarTermInfo {
+  /** 节气名称。 */
+  name: string;
+  /** 对应的太阳黄经度数（0-345，步长 15）。 */
+  longitude: number;
+  /** 公历日期 [年, 月, 日]。 */
+  date: [number, number, number];
+}
+
+/**
+ * 计算太阳黄经（简化 VSOP87 近似）。
+ *
+ * 基于 Jean Meeus《Astronomical Algorithms》第 25 章简化公式。
+ * 精度约 ±0.01°，对于节气日期计算足够（节气间隔约 15 天，0.01° ≈ 几分钟）。
+ *
+ * @param jde 儒略日数
+ * @returns 太阳黄经（度，0-360）
+ */
+function solarLongitude(jde: number): number {
+  const T = (jde - 2451545.0) / 36525.0; // 儒略世纪数（J2000.0 起算）
+  const T2 = T * T;
+
+  // 太阳几何平黄经（度）
+  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T2;
+
+  // 太阳平近点角（度）
+  const M = 357.52911 + 35999.05029 * T - 0.0001537 * T2;
+  const Mrad = deg2rad(M);
+
+  // 太阳中心方程
+  const C = (1.914602 - 0.004817 * T - 0.000014 * T2) * Math.sin(Mrad)
+          + (0.019993 - 0.000101 * T) * Math.sin(2 * Mrad)
+          + 0.000289 * Math.sin(3 * Mrad);
+
+  // 太阳真黄经
+  const sunLon = L0 + C;
+
+  // 章动修正（简化）
+  const omega = 125.04 - 1934.136 * T;
+  const lon = sunLon - 0.00569 - 0.00478 * Math.sin(deg2rad(omega));
+
+  return ((lon % 360) + 360) % 360;
+}
+
+/**
+ * 公历日期转儒略日数。
+ */
+function gregorianToJDE(year: number, month: number, day: number): number {
+  let y = year;
+  let m = month;
+  if (m <= 2) {
+    y -= 1;
+    m += 12;
+  }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B - 1524.5;
+}
+
+/**
+ * 计算指定公历年的所有 24 节气日期。
+ *
+ * ─── 算法 ───
+ * 从每个目标黄经度数出发，估算大约日期，再用牛顿迭代精化到太阳黄经恰好过该度数的日期。
+ * 精度通常为 ±1 天（对日历显示和农历推算足够）。
+ *
+ * @param year 公历年份
+ * @returns 24 个节气信息，按时间顺序排列
+ */
+export function getSolarTerms(year: number): SolarTermInfo[] {
+  const results: SolarTermInfo[] = [];
+
+  // 一年 24 个节气，按时间顺序从小寒开始（公历约 1 月 5-7 日）
+  // 小寒黄经 = 285°，之后每 15° 一个节气
+  const termOrder = [
+    { name: '小寒',   longitude: 285 },
+    { name: '大寒',   longitude: 300 },
+    { name: '立春',   longitude: 315 },
+    { name: '雨水',   longitude: 330 },
+    { name: '惊蛰',   longitude: 345 },
+    { name: '春分',   longitude: 0 },
+    { name: '清明',   longitude: 15 },
+    { name: '谷雨',   longitude: 30 },
+    { name: '立夏',   longitude: 45 },
+    { name: '小满',   longitude: 60 },
+    { name: '芒种',   longitude: 75 },
+    { name: '夏至',   longitude: 90 },
+    { name: '小暑',   longitude: 105 },
+    { name: '大暑',   longitude: 120 },
+    { name: '立秋',   longitude: 135 },
+    { name: '处暑',   longitude: 150 },
+    { name: '白露',   longitude: 165 },
+    { name: '秋分',   longitude: 180 },
+    { name: '寒露',   longitude: 195 },
+    { name: '霜降',   longitude: 210 },
+    { name: '立冬',   longitude: 225 },
+    { name: '小雪',   longitude: 240 },
+    { name: '大雪',   longitude: 255 },
+    { name: '冬至',   longitude: 270 },
+  ];
+
+  for (const { name, longitude } of termOrder) {
+    const date = findSolarTermDate(year, longitude);
+    results.push({ name, longitude, date });
+  }
+
+  return results;
+}
+
+/**
+ * 查找指定年份某个节气的公历日期。
+ *
+ * 使用迭代搜索：从估算日期开始，计算太阳黄经与目标的差，逐步逼近。
+ */
+function findSolarTermDate(year: number, targetLon: number): [number, number, number] {
+  // 估算初始 JDE：节气大约均匀分布在一年中
+  // 春分约 3月20日 = 黄经 0°，每 15° ≈ 15.22 天
+  let monthEstimate: number;
+  if (targetLon >= 285) {
+    // 小寒(285)~雨水(330) → 1~2 月
+    monthEstimate = 1 + (targetLon - 285) / 30;
+  } else {
+    // 春分(0)~冬至(270) → 3~12 月
+    monthEstimate = 3 + targetLon / 30;
+  }
+
+  const dayEstimate = Math.round((monthEstimate % 1) * 30);
+  const monthInt = Math.min(12, Math.max(1, Math.floor(monthEstimate)));
+  const dayInt = Math.min(28, Math.max(1, dayEstimate || 15));
+
+  let jde = gregorianToJDE(year, monthInt, dayInt);
+
+  // 迭代逼近（通常 3-5 次收敛）
+  for (let i = 0; i < 50; i++) {
+    const lon = solarLongitude(jde);
+    let diff = targetLon - lon;
+
+    // 处理 0°/360° 边界
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+
+    if (Math.abs(diff) < 0.0001) break; // 精度足够
+
+    // 太阳每天移动约 360/365.25 ≈ 0.9856°
+    jde += diff / 0.9856;
+  }
+
+  return jdeToGregorian(jde);
+}
+
+/**
+ * 获取指定公历日期的节气（如果当天是节气的话）。
+ *
+ * @param solarYear 公历年
+ * @param solarMonth 公历月（1-12）
+ * @param solarDay 公历日
+ * @returns 节气名称，如果当天不是节气则返回 null
+ */
+export function getSolarTerm(solarYear: number, solarMonth: number, solarDay: number): string | null {
+  const terms = getSolarTerms(solarYear);
+  for (const term of terms) {
+    if (term.date[0] === solarYear && term.date[1] === solarMonth && term.date[2] === solarDay) {
+      return term.name;
+    }
+  }
+  return null;
 }
 
 // ===================================================================
