@@ -7,24 +7,26 @@ on:
     branches: [main]
 
 jobs:
+  # ── JSON Schema 格式校验 ──
   spec-validate:
-    name: Validate JSON Schemas
+    name: 校验 JSON Schema
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install -g ajv-cli
-      - name: Validate schemas
+      - run: npm install -g ajv-cli ajv-formats
+      - name: 校验所有 Schema 文件
         run: |
           for schema in spec/holiday-json-schema/*.schema.json; do
             echo "Validating $schema..."
-            ajv compile -s "$schema" --spec=draft7
+            ajv compile -s "$schema" --spec=draft7 -c ajv-formats
           done
 
-  compiler-test:
-    name: TypeScript Compiler Tests
+  # ── TypeScript 全量构建 + 类型检查 + 测试 + 编译器流水线 ──
+  ts-build:
+    name: TypeScript 构建与测试
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,15 +40,16 @@ jobs:
       - run: pnpm -r run build
       - run: pnpm -r run lint
       - run: pnpm -r run test
-      - name: Validate pipeline
+      - name: 验证编译器流水线
         run: |
           node packages/ts-compiler/dist/esm/cli.js validate --input data/canonical/CN/2025.canon.json
           node packages/ts-compiler/dist/esm/cli.js validate --input data/canonical/CN/2026.canon.json
           node packages/ts-compiler/dist/esm/cli.js inspect --bundle data/bundles/CN/2025.hday
           node packages/ts-compiler/dist/esm/cli.js inspect --bundle data/bundles/CN/2026.hday
 
+  # ── Java 多版本矩阵构建 ──
   java-build:
-    name: Java Build & Test
+    name: Java 构建与测试 (JDK ${{ matrix.java }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -57,40 +60,23 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
-      - name: Build Java modules (JDK 17)
+      - name: 构建 Java 8 兼容模块 (JDK 17)
         if: matrix.java == '17'
         working-directory: java
         run: mvn -B clean verify
-      - name: Build all modules including J25 API (JDK 25)
+      - name: 构建全部模块含 J25 API (JDK 25)
         if: matrix.java == '25'
         working-directory: java
         run: mvn -B clean verify -Pj25
 
-  node-build:
-    name: Node.js Build & Test
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: ['18', '20', '22']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      - run: pnpm install
-      - run: pnpm -r run build
-      - run: pnpm -r run test
-
+  # ── Bundle 完整性校验（魔数 + SHA256）──
   bundle-verify:
-    name: Bundle Integrity Check
+    name: Bundle 完整性校验
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify bundles
+      - name: 校验 bundle 文件完整性
         run: bash scripts/verify-bundles.sh
