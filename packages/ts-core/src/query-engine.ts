@@ -78,7 +78,7 @@ export function dayOfYear(year: number, month: number, day: number): number {
 export function parseDate(dateStr: string): [number, number, number] {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
   if (!match) {
-      throw new Error(`日期格式错误: "${dateStr}"，应为 YYYY-MM-DD`);
+    throw new Error(`日期格式错误: "${dateStr}"，应为 YYYY-MM-DD`);
   }
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }

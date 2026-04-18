@@ -77,7 +77,7 @@ public final class LunarCalendar {
         0x092e0, 0x0d2e3, 0x0c960, 0x0d557, 0x0d4a0, 0x0da50, 0x05d55, 0x056a0, 0x0a6d0, 0x055d4,
         0x052d0, 0x0a9b8, 0x0a950, 0x0b4a0, 0x0b6a6, 0x0ad50, 0x055a0, 0x0aba4, 0x0a5b0, 0x052b0,
         0x0b273, 0x06930, 0x07337, 0x06aa0, 0x0ad50, 0x14b55, 0x04b60, 0x0a570, 0x054e4, 0x0d160,
-            0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
+        0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
         0x0d520,
     };
 
@@ -486,6 +486,173 @@ public final class LunarCalendar {
         }
 
         return jdeToGregorian(estimateNewMoonJDE(k0));
+    }
+
+    // ===================================================================
+    // 二十四节气（Solar Terms）
+    // ===================================================================
+
+    /**
+     * 二十四节气名称（按一年中时间顺序排列，从小寒开始）。
+     */
+    public static final String[] SOLAR_TERM_NAMES = {
+        "小寒", "大寒", "立春", "雨水", "惊蛰", "春分",
+        "清明", "谷雨", "立夏", "小满", "芒种", "夏至",
+        "小暑", "大暑", "立秋", "处暑", "白露", "秋分",
+        "寒露", "霜降", "立冬", "小雪", "大雪", "冬至"
+    };
+
+    /**
+     * 二十四节气对应的太阳黄经度数（与 SOLAR_TERM_NAMES 对应）。
+     */
+    private static final int[] SOLAR_TERM_LONGITUDES = {
+        285, 300, 315, 330, 345, 0,
+        15, 30, 45, 60, 75, 90,
+        105, 120, 135, 150, 165, 180,
+        195, 210, 225, 240, 255, 270
+    };
+
+    /**
+     * 节气信息。
+     */
+    public static final class SolarTermInfo {
+        private final String name;
+        private final int longitude;
+        private final LocalDate date;
+
+        SolarTermInfo(String name, int longitude, LocalDate date) {
+            this.name = name;
+            this.longitude = longitude;
+            this.date = date;
+        }
+
+        /** 节气名称。 */
+        public String getName() { return name; }
+        /** 对应的太阳黄经度数（0-345，步长 15）。 */
+        public int getLongitude() { return longitude; }
+        /** 公历日期。 */
+        public LocalDate getDate() { return date; }
+
+        @Override
+        public String toString() {
+            return name + "(" + date + ")";
+        }
+    }
+
+    /**
+     * 计算指定公历年的所有 24 节气日期。
+     *
+     * <p>使用简化 VSOP87 太阳黄经公式 + 迭代逼近，精度通常为 ±1 天。</p>
+     *
+     * @param year 公历年份
+     * @return 24 个节气信息，按时间顺序排列（从小寒到冬至）
+     */
+    public static SolarTermInfo[] getSolarTerms(int year) {
+        SolarTermInfo[] results = new SolarTermInfo[24];
+        for (int i = 0; i < 24; i++) {
+            LocalDate date = findSolarTermDate(year, SOLAR_TERM_LONGITUDES[i]);
+            results[i] = new SolarTermInfo(SOLAR_TERM_NAMES[i], SOLAR_TERM_LONGITUDES[i], date);
+        }
+        return results;
+    }
+
+    /**
+     * 获取指定公历日期的节气（如果当天是节气的话）。
+     *
+     * @param date 公历日期
+     * @return 节气名称，如果当天不是节气则返回 null
+     */
+    public static String getSolarTerm(LocalDate date) {
+        SolarTermInfo[] terms = getSolarTerms(date.getYear());
+        for (SolarTermInfo term : terms) {
+            if (term.getDate().equals(date)) {
+                return term.getName();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 计算太阳黄经（简化 VSOP87 近似，精度约 ±0.01°）。
+     *
+     * <p>基于 Jean Meeus《Astronomical Algorithms》第 25 章简化公式。</p>
+     */
+    private static double solarLongitude(double jde) {
+        double T = (jde - 2451545.0) / 36525.0;
+        double T2 = T * T;
+
+        // 太阳几何平黄经
+        double L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T2;
+
+        // 太阳平近点角
+        double M = 357.52911 + 35999.05029 * T - 0.0001537 * T2;
+        double Mrad = Math.toRadians(M);
+
+        // 太阳中心方程
+        double C = (1.914602 - 0.004817 * T - 0.000014 * T2) * Math.sin(Mrad)
+                 + (0.019993 - 0.000101 * T) * Math.sin(2 * Mrad)
+                 + 0.000289 * Math.sin(3 * Mrad);
+
+        // 太阳真黄经
+        double sunLon = L0 + C;
+
+        // 章动修正（简化）
+        double omega = 125.04 - 1934.136 * T;
+        double lon = sunLon - 0.00569 - 0.00478 * Math.sin(Math.toRadians(omega));
+
+        return ((lon % 360) + 360) % 360;
+    }
+
+    /**
+     * 公历日期转儒略日数。
+     */
+    private static double gregorianToJDE(int year, int month, int day) {
+        int y = year;
+        int m = month;
+        if (m <= 2) {
+            y -= 1;
+            m += 12;
+        }
+        int A = y / 100;
+        int B = 2 - A + A / 4;
+        return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B - 1524.5;
+    }
+
+    /**
+     * 查找指定年份某个节气的公历日期。
+     * 使用迭代搜索逼近太阳黄经恰好过目标度数的日期。
+     */
+    private static LocalDate findSolarTermDate(int year, int targetLon) {
+        // 估算初始 JDE
+        double monthEstimate;
+        if (targetLon >= 285) {
+            monthEstimate = 1 + (targetLon - 285) / 30.0;
+        } else {
+            monthEstimate = 3 + targetLon / 30.0;
+        }
+
+        int monthInt = Math.min(12, Math.max(1, (int) monthEstimate));
+        int dayEstimate = (int) Math.round((monthEstimate % 1) * 30);
+        int dayInt = Math.min(28, Math.max(1, dayEstimate == 0 ? 15 : dayEstimate));
+
+        double jde = gregorianToJDE(year, monthInt, dayInt);
+
+        // 迭代逼近（通常 3-5 次收敛）
+        for (int i = 0; i < 50; i++) {
+            double lon = solarLongitude(jde);
+            double diff = targetLon - lon;
+
+            // 处理 0°/360° 边界
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+
+            if (Math.abs(diff) < 0.0001) break;
+
+            // 太阳每天移动约 360/365.25 ≈ 0.9856°
+            jde += diff / 0.9856;
+        }
+
+        return jdeToGregorian(jde);
     }
 
     // ===================================================================
