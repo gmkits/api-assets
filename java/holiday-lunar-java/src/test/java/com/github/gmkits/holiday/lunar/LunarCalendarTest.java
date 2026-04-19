@@ -293,7 +293,7 @@ class LunarCalendarTest {
 
     @Test
     void solarTerms2025KnownDates() {
-        // 2025 年部分已知节气（来源：紫金山天文台）
+        // 2025 年已知节气（来源：香港天文台 / 紫金山天文台数据，精确匹配）
         int[][] known = {
             // {黄经索引, 期望月, 期望日}
             {0, 1, 5},   // 小寒
@@ -301,7 +301,7 @@ class LunarCalendarTest {
             {2, 2, 3},   // 立春
             {5, 3, 20},  // 春分
             {11, 6, 21}, // 夏至
-            {17, 9, 22}, // 秋分
+            {17, 9, 23}, // 秋分
             {23, 12, 21},// 冬至
         };
         LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(2025);
@@ -309,9 +309,8 @@ class LunarCalendarTest {
             LunarCalendar.SolarTermInfo term = terms[row[0]];
             assertEquals(row[1], term.getDate().getMonthValue(),
                 term.getName() + " 月份不匹配");
-            int dayDiff = Math.abs(term.getDate().getDayOfMonth() - row[2]);
-            assertTrue(dayDiff <= 1,
-                term.getName() + " 日期偏差 " + dayDiff + " 天（期望 " + row[1] + "-" + row[2]
+            assertEquals(row[2], term.getDate().getDayOfMonth(),
+                term.getName() + " 日期不匹配（期望 " + row[1] + "-" + row[2]
                     + "，实际 " + term.getDate().getMonthValue() + "-" + term.getDate().getDayOfMonth() + "）");
         }
     }
@@ -338,5 +337,18 @@ class LunarCalendarTest {
             assertTrue(!terms[i].getDate().isBefore(terms[i - 1].getDate()),
                 "节气顺序错误: " + terms[i - 1].getName() + " 应早于 " + terms[i].getName());
         }
+    }
+
+    @ParameterizedTest
+    @CsvFileSource(resources = "/solar-terms-golden.csv", numLinesToSkip = 1)
+    void solarTermsGoldenCsv(int year, int termIndex, String termName, int month, int day) {
+        LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(year);
+        LunarCalendar.SolarTermInfo term = terms[termIndex];
+        assertEquals(termName, term.getName(), year + " term " + termIndex + " 名称不匹配");
+        assertEquals(month, term.getDate().getMonthValue(),
+            year + " " + termName + " 月份不匹配");
+        assertEquals(day, term.getDate().getDayOfMonth(),
+            year + " " + termName + " 日期不匹配（期望 " + month + "-" + day
+                + "，实际 " + term.getDate().getMonthValue() + "-" + term.getDate().getDayOfMonth() + "）");
     }
 }

@@ -590,7 +590,7 @@ export function estimateLunarNewYear(year: number): [number, number, number] {
 }
 
 // ===================================================================
-// 二十四节气（Solar Terms）
+// 二十四节气（Solar Terms）——基于权威天文台数据的精确查表
 // ===================================================================
 
 /**
@@ -617,6 +617,330 @@ export interface SolarTermInfo {
   /** 公历日期 [年, 月, 日]。 */
   date: [number, number, number];
 }
+
+// ─── 节气数据表（1901-2100，共 200 年，基于香港天文台 / 紫金山天文台数据）───
+//
+// 每年用一个 24 字符字符串表示 24 个节气的日期（日 day-of-month）。
+// 按时间顺序：小寒, 大寒, 立春, 雨水, 惊蛰, 春分, 清明, 谷雨,
+//             立夏, 小满, 芒种, 夏至, 小暑, 大暑, 立秋, 处暑,
+//             白露, 秋分, 寒露, 霜降, 立冬, 小雪, 大雪, 冬至
+//
+// 编码：'1'-'9' = 1-9，'a'-'v' = 10-31
+
+/** 节气数据覆盖起始年。 */
+const SOLAR_TERM_DATA_START = 1901;
+
+/** 节气数据覆盖结束年。 */
+const SOLAR_TERM_DATA_END = 2100;
+
+/* eslint-disable @stylistic/max-len */
+const SOLAR_TERM_DAYS: string[] = [
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1901
+  '6l5j6l6l6m7m8o8o8o9o8n8n', // 1902
+  '6l5k7m6l7m7m8o9o9o9o8n8n', // 1903
+  '7l5k6l5k6l6m7n8n8n9o8n7m', // 1904
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1905
+  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1906
+  '6l5k7m6l7m7m8o9o9o9o8n8n', // 1907
+  '7l5k6l5k6l6m7n8n8n9o8n7m', // 1908
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1909
+  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1910
+  '6l5k7m6l7m7m8o9o9o9o8n8n', // 1911
+  '7l5k6l5k6l6m7n8n8n9o8n7m', // 1912
+  '6k4j6l5l6m6m8n8o8o9o8n8m', // 1913
+  '6l4j6l5l6m6m8o8o8o9o8n8n', // 1914
+  '6l5k6m6l6m7m8o8o9o9o8n8n', // 1915
+  '6l5k6l5k6l6m7n8n8n8o8m7m', // 1916
+  '6k4j6l5l6l6m8n8o8n9o8n7m', // 1917
+  '6l4j6l5l6m6m8o8o8o9o8n8m', // 1918
+  '6l5k6m6l6m7m8o8o9o9o8n8n', // 1919
+  '6l5k6l5k6l6m7n8n8n8o8m7m', // 1920
+  '6k4j6l5k6l6m8n8o8n9o8n7m', // 1921
+  '6l4j6l5l6m6m8o8o8o9o8n8m', // 1922
+  '6l5j6l6l6m7m8o8o9o9o8n8n', // 1923
+  '6l5k6l5k6l6m7n8n8n8o8m7m', // 1924
+  '6k4j6l5k6l6m8n8o8n9o8n7m', // 1925
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1926
+  '6l5j6l6l6m7m8o8o8o9o8n8n', // 1927
+  '6l5k6l5k6l6l7n8n8n8n7m7m', // 1928
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1929
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1930
+  '6l5j6l6l6m7m8o8o8o9o8n8n', // 1931
+  '6l5k6l5k6l6l7n8n8n8n7m7m', // 1932
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1933
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1934
+  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1935
+  '6l5k6l5k6l6l7n8n8n8n7m7m', // 1936
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1937
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1938
+  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1939
+  '6l5k6l5k6l6l7n8n8n8n7m7m', // 1940
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1941
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1942
+  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1943
+  '6l5k6l5k5l6l7n8n8n8n7m7m', // 1944
+  '6k4j6l5k6l6m7n8n8n8o8m7m', // 1945
+  '6k4j6l5l6m6m8n8o8n9o8n8m', // 1946
+  '6l4j6l5l6m6m8o8o8o9o8n8n', // 1947
+  '6l5k5l5k5l6l7n7n8n8n7m7m', // 1948
+  '5k4j6l5k6l6m7n8n8n8o8m7m', // 1949
+  '6k4j6l5k6l6m8n8o8n9o8n8m', // 1950
+  '6l4j6l5l6m6m8o8o8o9o8n8n', // 1951
+  '6l5k5l5k5l6l7n7n8n8n7m7m', // 1952
+  '5k4j6l5k6l6m7n8n8n8o8m7m', // 1953
+  '6k4j6l5k6l6m8n8o8n9o8n7m', // 1954
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1955
+  '6l5k5k5k5l6l7n7n8n8n7m7m', // 1956
+  '5k4j6l5k6l6m7n8n8n8o8m7m', // 1957
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1958
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1959
+  '6l5j5k5k5l6l7n7n7n8n7m7m', // 1960
+  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1961
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1962
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1963
+  '6l5j5k5k5l6l7n7n7n8n7m7m', // 1964
+  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1965
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1966
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1967
+  '6l5j5k5k5l5l7n7n7n8n7m7m', // 1968
+  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1969
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1970
+  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1971
+  '6l5j5k5k5l5l7n7n7n8n7m7m', // 1972
+  '5k4j6l5k5l6l7n8n8n8n7m7m', // 1973
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1974
+  '6l4j6l5l6m6m8n8o8n9o8n8m', // 1975
+  '6l5j5k4k5l5l7n7n7n8n7m7m', // 1976
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 1977
+  '6k4j6l5k6l6m7n8n8n8o8n7m', // 1978
+  '6l4j6l5l6l6m8n8o8n9o8n8m', // 1979
+  '6l5j5k4k5l5l7n7n7n8n7m7m', // 1980
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 1981
+  '6k4j6l5k6l6m7n8n8n8o8m7m', // 1982
+  '6k4j6l5k6l6m8n8o8n9o8n8m', // 1983
+  '6l4j5k4k5l5l7m7n7n8n7m7m', // 1984
+  '5k4j5l5k5l6l7n7n8n8n7m7m', // 1985
+  '5k4j6l5k6l6m7n8n8n8o8m7m', // 1986
+  '6k4j6l5k6l6m7n8o8n9o8n7m', // 1987
+  '6l4j5k4k5l5l7m7n7n8n7m7l', // 1988
+  '5k4j5k5k5l6l7n7n7n8n7m7m', // 1989
+  '5k4j6l5k6l6l7n8n8n8o8m7m', // 1990
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1991
+  '6l4j5k4k5l5l7m7n7n8n7m7l', // 1992
+  '5k4i5k5k5l6l7n7n7n8n7m7m', // 1993
+  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1994
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1995
+  '6l4j5k4k5l5l7m7n7n8n7m7l', // 1996
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 1997
+  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1998
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1999
+  '6l4j5k4k5l5l7m7n7n8n7m7l', // 2000
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2001
+  '5k4j6l5k6l6l7n8n8n8n7m7m', // 2002
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 2003
+  '6l4j5k4k5l5l7m7n7n8n7m7l', // 2004
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2005
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2006
+  '6k4j6l5k6l6m7n8n8n9o8n7m', // 2007
+  '6l4j5k4k5l5l7m7n7m8n7m7l', // 2008
+  '5k4i5k4k5l5l7n7n7n8n7m7m', // 2009
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2010
+  '6k4j6l5k6l6m7n8n8n8o8n7m', // 2011
+  '6l4j5k4k5k5l7m7n7m8n7m7l', // 2012
+  '5k4i5k4k5l5l7m7n7n8n7m7m', // 2013
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2014
+  '6k4j6l5k6l6m7n8n8n8o8m7m', // 2015
+  '6k4j5k4j5k5l7m7n7m8n7m7l', // 2016
+  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2017
+  '5k4j5l5k5l6l7n7n8n8n7m7m', // 2018
+  '5k4j6l5k6l6l7n8n8n8o8m7m', // 2019
+  '6k4j5k4j5k5l6m7m7m8n7m7l', // 2020
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2021
+  '5k4j5k5k5l6l7n7n7n8n7m7m', // 2022
+  '5k4j6l5k6l6l7n8n8n8o8m7m', // 2023
+  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2024
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2025
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2026
+  '5k4j6l5k6l6l7n8n8n8n7m7m', // 2027
+  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2028
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2029
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2030
+  '5k4j6l5k6l6l7n8n8n8n7m7m', // 2031
+  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2032
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2033
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2034
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2035
+  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2036
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2037
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2038
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2039
+  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2040
+  '5k3i5k4k5k5l7m7n7m8n7m7l', // 2041
+  '5k4i5k4k5l5l7n7n7n8n7m7m', // 2042
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2043
+  '6k4j5k4j5k5l6m7m7m7n7m6l', // 2044
+  '5k3i5k4j5k5l7m7n7m8n7m7l', // 2045
+  '5k4i5k4k5l5l7m7n7n8n7m7m', // 2046
+  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2047
+  '6k4j5k4j5k5k6m7m7m7n7l6l', // 2048
+  '5j3i5k4j5k5l6m7m7m8n7m7l', // 2049
+  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2050
+  '5k4j5k5k5l6l7n7n7n8n7m7m', // 2051
+  '5k4j5k4j5k5k6m7m7m7n7l6l', // 2052
+  '5j3i5k4j5k5l6m7m7m8n7m7l', // 2053
+  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2054
+  '5k4j5k5k5l5l7n7n7n8n7m7m', // 2055
+  '5k4j5k4j5k5k6m7m7m7n7l6l', // 2056
+  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2057
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2058
+  '5k4j5k5k5l5l7n7n7n8n7m7m', // 2059
+  '5k4j5k4j5k5k6m7m7m7m6l6l', // 2060
+  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2061
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2062
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2063
+  '5k4j5k4j5k5k6m7m7m7m6l6l', // 2064
+  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2065
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2066
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2067
+  '5k4j5k4j4k5k6m6m7m7m6l6l', // 2068
+  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2069
+  '5k3i5k4k5k5l7m7n7m8n7m7l', // 2070
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2071
+  '5k4j5k4j4k5k6m6m7m7m6l6l', // 2072
+  '5j3i5k4j5k5l6m7m7m7n7m6l', // 2073
+  '5k3i5k4k5k5l7m7n7m8n7m7l', // 2074
+  '5k4i5k4k5l5l7m7n7n8n7m7m', // 2075
+  '5k4j5k4j4k5k6m6m7m7m6l6l', // 2076
+  '5j3i5k4j5k5l6m7m7m7n7m6l', // 2077
+  '5k3i5k4j5k5l6m7n7m8n7m7l', // 2078
+  '5k4i5k4k5l5l7m7n7n8n7m7m', // 2079
+  '5k4j5k4j4k5k6m6m7m7m6l6l', // 2080
+  '5j3i5k4j5k5k6m7m7m7n7l6l', // 2081
+  '5k3i5k4j5k5l6m7m7m8n7m7l', // 2082
+  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2083
+  '5k4j4j4j4k5k6m6m6m7m6l6l', // 2084
+  '4j3i5k4j5k5k6m7m7m7n7l6l', // 2085
+  '5j3i5k4j5k5l6m7m7m8n7m7l', // 2086
+  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2087
+  '5k4j4j4j4k4k6m6m6m7m6l6l', // 2088
+  '4j3i5k4j5k5k6m7m7m7n7l6l', // 2089
+  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2090
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2091
+  '5k4j4j4j4k4k6m6m6m7m6l6l', // 2092
+  '4j3i5k4j5k5k6m7m7m7m6l6l', // 2093
+  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2094
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2095
+  '5k4i4j4j4k4k6m6m6m7m6l6l', // 2096
+  '4j3i5k4j5k5k6m6m7m7m6l6l', // 2097
+  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2098
+  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2099
+  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2100
+]
+/* eslint-enable @stylistic/max-len */
+
+/**
+ * 24 个节气按时间顺序排列的名称、黄经度数、对应月份。
+ * 每个节气总是固定落在某个月份内。
+ */
+const TERM_INFO: { name: string; longitude: number; month: number }[] = [
+  { name: '小寒', longitude: 285, month: 1 },
+  { name: '大寒', longitude: 300, month: 1 },
+  { name: '立春', longitude: 315, month: 2 },
+  { name: '雨水', longitude: 330, month: 2 },
+  { name: '惊蛰', longitude: 345, month: 3 },
+  { name: '春分', longitude: 0,   month: 3 },
+  { name: '清明', longitude: 15,  month: 4 },
+  { name: '谷雨', longitude: 30,  month: 4 },
+  { name: '立夏', longitude: 45,  month: 5 },
+  { name: '小满', longitude: 60,  month: 5 },
+  { name: '芒种', longitude: 75,  month: 6 },
+  { name: '夏至', longitude: 90,  month: 6 },
+  { name: '小暑', longitude: 105, month: 7 },
+  { name: '大暑', longitude: 120, month: 7 },
+  { name: '立秋', longitude: 135, month: 8 },
+  { name: '处暑', longitude: 150, month: 8 },
+  { name: '白露', longitude: 165, month: 9 },
+  { name: '秋分', longitude: 180, month: 9 },
+  { name: '寒露', longitude: 195, month: 10 },
+  { name: '霜降', longitude: 210, month: 10 },
+  { name: '立冬', longitude: 225, month: 11 },
+  { name: '小雪', longitude: 240, month: 11 },
+  { name: '大雪', longitude: 255, month: 12 },
+  { name: '冬至', longitude: 270, month: 12 },
+];
+
+/**
+ * 解码 SOLAR_TERM_DAYS 中的字符为 day-of-month。
+ */
+function decodeSolarTermDay(ch: string): number {
+  const c = ch.charCodeAt(0);
+  // '1'-'9' → 1-9
+  if (c >= 49 && c <= 57) return c - 48;
+  // 'a'-'v' → 10-31
+  return c - 97 + 10;
+}
+
+/**
+ * 计算指定公历年的所有 24 节气日期。
+ *
+ * ─── 数据来源 ───
+ * 1901-2100 年使用权威天文台预计算数据（香港天文台 / 紫金山天文台），精度为准确日期。
+ * 超出范围时回退到 VSOP87 太阳黄经公式估算（精度 ±1 天）。
+ *
+ * @param year 公历年份
+ * @returns 24 个节气信息，按时间顺序排列
+ */
+export function getSolarTerms(year: number): SolarTermInfo[] {
+  // 数据表范围内：精确查表
+  if (year >= SOLAR_TERM_DATA_START && year <= SOLAR_TERM_DATA_END) {
+    const encoded = SOLAR_TERM_DAYS[year - SOLAR_TERM_DATA_START];
+    const results: SolarTermInfo[] = [];
+    for (let i = 0; i < 24; i++) {
+      const { name, longitude, month } = TERM_INFO[i];
+      const day = decodeSolarTermDay(encoded[i]);
+      results.push({ name, longitude, date: [year, month, day] });
+    }
+    return results;
+  }
+
+  // 回退到公式估算
+  return getSolarTermsByFormula(year);
+}
+
+/**
+ * 获取指定公历日期的节气（如果当天是节气的话）。
+ *
+ * @param solarYear 公历年
+ * @param solarMonth 公历月（1-12）
+ * @param solarDay 公历日
+ * @returns 节气名称，如果当天不是节气则返回 null
+ */
+export function getSolarTerm(solarYear: number, solarMonth: number, solarDay: number): string | null {
+  // 数据表范围内：直接定位（无需遍历全部 24 个节气）
+  if (solarYear >= SOLAR_TERM_DATA_START && solarYear <= SOLAR_TERM_DATA_END) {
+    const encoded = SOLAR_TERM_DAYS[solarYear - SOLAR_TERM_DATA_START];
+    for (let i = 0; i < 24; i++) {
+      if (TERM_INFO[i].month === solarMonth) {
+        const day = decodeSolarTermDay(encoded[i]);
+        if (day === solarDay) return TERM_INFO[i].name;
+      }
+    }
+    return null;
+  }
+
+  // 回退到公式估算
+  const terms = getSolarTermsByFormula(solarYear);
+  for (const term of terms) {
+    if (term.date[0] === solarYear && term.date[1] === solarMonth && term.date[2] === solarDay) {
+      return term.name;
+    }
+  }
+  return null;
+}
+
+// ===================================================================
+// VSOP87 公式估算（作为数据表范围外的回退方案）
+// ===================================================================
 
 /**
  * 计算太阳黄经（简化 VSOP87 近似）。
@@ -668,53 +992,13 @@ function gregorianToJDE(year: number, month: number, day: number): number {
   return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B - 1524.5;
 }
 
-/**
- * 计算指定公历年的所有 24 节气日期。
- *
- * ─── 算法 ───
- * 从每个目标黄经度数出发，估算大约日期，再用牛顿迭代精化到太阳黄经恰好过该度数的日期。
- * 精度通常为 ±1 天（对日历显示和农历推算足够）。
- *
- * @param year 公历年份
- * @returns 24 个节气信息，按时间顺序排列
- */
-export function getSolarTerms(year: number): SolarTermInfo[] {
+/** 回退方案：使用 VSOP87 公式计算节气日期（精度 ±1 天）。 */
+function getSolarTermsByFormula(year: number): SolarTermInfo[] {
   const results: SolarTermInfo[] = [];
-
-  // 一年 24 个节气，按时间顺序从小寒开始（公历约 1 月 5-7 日）
-  // 小寒黄经 = 285°，之后每 15° 一个节气
-  const termOrder = [
-    { name: '小寒',   longitude: 285 },
-    { name: '大寒',   longitude: 300 },
-    { name: '立春',   longitude: 315 },
-    { name: '雨水',   longitude: 330 },
-    { name: '惊蛰',   longitude: 345 },
-    { name: '春分',   longitude: 0 },
-    { name: '清明',   longitude: 15 },
-    { name: '谷雨',   longitude: 30 },
-    { name: '立夏',   longitude: 45 },
-    { name: '小满',   longitude: 60 },
-    { name: '芒种',   longitude: 75 },
-    { name: '夏至',   longitude: 90 },
-    { name: '小暑',   longitude: 105 },
-    { name: '大暑',   longitude: 120 },
-    { name: '立秋',   longitude: 135 },
-    { name: '处暑',   longitude: 150 },
-    { name: '白露',   longitude: 165 },
-    { name: '秋分',   longitude: 180 },
-    { name: '寒露',   longitude: 195 },
-    { name: '霜降',   longitude: 210 },
-    { name: '立冬',   longitude: 225 },
-    { name: '小雪',   longitude: 240 },
-    { name: '大雪',   longitude: 255 },
-    { name: '冬至',   longitude: 270 },
-  ];
-
-  for (const { name, longitude } of termOrder) {
+  for (const { name, longitude } of TERM_INFO) {
     const date = findSolarTermDate(year, longitude);
     results.push({ name, longitude, date });
   }
-
   return results;
 }
 
@@ -757,24 +1041,6 @@ function findSolarTermDate(year: number, targetLon: number): [number, number, nu
   }
 
   return jdeToGregorian(jde);
-}
-
-/**
- * 获取指定公历日期的节气（如果当天是节气的话）。
- *
- * @param solarYear 公历年
- * @param solarMonth 公历月（1-12）
- * @param solarDay 公历日
- * @returns 节气名称，如果当天不是节气则返回 null
- */
-export function getSolarTerm(solarYear: number, solarMonth: number, solarDay: number): string | null {
-  const terms = getSolarTerms(solarYear);
-  for (const term of terms) {
-    if (term.date[0] === solarYear && term.date[1] === solarMonth && term.date[2] === solarDay) {
-      return term.name;
-    }
-  }
-  return null;
 }
 
 // ===================================================================

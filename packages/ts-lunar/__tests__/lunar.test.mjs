@@ -312,6 +312,17 @@ describe('朔日估算', () => {
 
 // ─── 二十四节气 ───
 
+// 加载节气全量参照 CSV
+const solarTermsCsvPath = resolve(__dirname, '../../../tests/solar-terms-golden.csv');
+const solarTermsCsvRows = readFileSync(solarTermsCsvPath, 'utf-8')
+    .split('\n')
+    .slice(1)                     // 跳过表头
+    .filter(Boolean)
+    .map(line => {
+        const [year, termIndex, termName, month, day] = line.split(',');
+        return [Number(year), Number(termIndex), termName, Number(month), Number(day)];
+    });
+
 describe('二十四节气', () => {
   it('SOLAR_TERM_NAMES 应有 24 个名称', () => {
     assert.equal(SOLAR_TERM_NAMES.length, 24);
@@ -328,8 +339,8 @@ describe('二十四节气', () => {
     }
   });
 
-  it('2025 年已知节气日期精度 ≤1 天', () => {
-    // 2025 年部分已知节气（来源：紫金山天文台发布数据）
+  it('2025 年已知节气日期精确匹配', () => {
+    // 2025 年已知节气（来源：香港天文台 / 紫金山天文台数据）
     const known = [
       ['小寒', 1, 5],
       ['大寒', 1, 20],
@@ -348,7 +359,7 @@ describe('二十四节气', () => {
       ['立秋', 8, 7],
       ['处暑', 8, 23],
       ['白露', 9, 7],
-      ['秋分', 9, 22],
+      ['秋分', 9, 23],
       ['寒露', 10, 8],
       ['霜降', 10, 23],
       ['立冬', 11, 7],
@@ -361,8 +372,7 @@ describe('二十四节气', () => {
       const term = terms.find(t => t.name === name);
       assert.ok(term, `应找到节气: ${name}`);
       assert.equal(term.date[1], expectedMonth, `${name} 月份不匹配`);
-      const dayDiff = Math.abs(term.date[2] - expectedDay);
-      assert.ok(dayDiff <= 1, `${name} 日期偏差 ${dayDiff} 天（期望 ${expectedMonth}-${expectedDay}，实际 ${term.date[1]}-${term.date[2]}）`);
+      assert.equal(term.date[2], expectedDay, `${name} 日期不匹配（期望 ${expectedMonth}-${expectedDay}，实际 ${term.date[1]}-${term.date[2]}）`);
     }
   });
 
@@ -386,5 +396,24 @@ describe('二十四节气', () => {
       const curr = new Date(terms[i].date[0], terms[i].date[1] - 1, terms[i].date[2]);
       assert.ok(curr >= prev, `节气顺序错误: ${terms[i - 1].name} (${prev.toISOString()}) 应早于 ${terms[i].name} (${curr.toISOString()})`);
     }
+  });
+
+  it('CSV 全量验证（4,800 行，1901-2100 全部 24 节气）', () => {
+    let checked = 0;
+    // 按年分组验证
+    let currentYear = null;
+    let currentTerms = null;
+    for (const [year, termIndex, termName, month, day] of solarTermsCsvRows) {
+      if (year !== currentYear) {
+        currentYear = year;
+        currentTerms = getSolarTerms(year);
+      }
+      const term = currentTerms[termIndex];
+      assert.equal(term.name, termName, `${year} term ${termIndex} 名称不匹配`);
+      assert.equal(term.date[1], month, `${year} ${termName} 月份不匹配`);
+      assert.equal(term.date[2], day, `${year} ${termName} 日期不匹配（期望 ${month}-${day}，实际 ${term.date[1]}-${term.date[2]}）`);
+      checked++;
+    }
+    assert.ok(checked >= 4800, `仅验证了 ${checked} 行，期望 ≥4800`);
   });
 });
