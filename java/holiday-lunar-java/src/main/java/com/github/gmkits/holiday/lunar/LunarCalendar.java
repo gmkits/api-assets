@@ -9,12 +9,18 @@ import java.time.temporal.ChronoUnit;
  * <p>基于香港天文台（HKO）和紫金山天文台数据，覆盖 1900-2100 年的公历↔农历转换。
  * 每年仅用一个 20-bit 整数编码，201 年数据总共约 800 字节。</p>
  *
- * <h3>编码格式（每年一个整数）</h3>
+ * <h3>农历编码格式（每年一个整数）</h3>
  * <ul>
  *   <li>bit 0-3：闰月月份（0 = 无闰月，1-12 = 闰几月）</li>
  *   <li>bit 4：闰月天数（0 = 29 天，1 = 30 天）</li>
  *   <li>bit 5-16：正常 1-12 月的天数（0 = 29 天，1 = 30 天）</li>
  * </ul>
+ *
+ * <h3>节气编码格式（每年一个 48-bit long）</h3>
+ * <p>24 个节气 × 2 bit = 48 bit，低位在前。
+ * bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）。
+ * 实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset。
+ * 数据来源：香港天文台 / 紫金山天文台，覆盖 1901-2100（200 年 ~1.2KB）。</p>
  *
  * <h3>信息论最优性分析</h3>
  * <p>农历每年最少需编码：12 个月大小（12 bit）+ 闰月位置（4 bit）+ 闰月大小（1 bit）= 17 bit。
@@ -27,6 +33,7 @@ import java.time.temporal.ChronoUnit;
  *   <li>年前缀和数组（CUMULATIVE_DAYS）：solarToLunar 年份定位 O(log n) 二分查找</li>
  *   <li>每年月份偏移表（MONTH_OFFSETS / MONTH_META）：月份定位 O(1) 直接索引，消除热路径位运算</li>
  *   <li>朔日天文估算（estimateNewMoonJDE）：Jean Meeus 算法，可验证数据表正确性</li>
+ *   <li>节气 O(1) 位运算解码：HKO 权威数据 + 2-bit 偏移压缩，1901-2100 准确日期</li>
  * </ol>
  *
  * <p>线程安全：所有方法均为无状态纯函数，可安全并发调用。</p>
