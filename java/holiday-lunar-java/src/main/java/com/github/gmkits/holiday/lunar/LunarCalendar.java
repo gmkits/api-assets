@@ -489,7 +489,7 @@ public final class LunarCalendar {
     }
 
     // ===================================================================
-    // 二十四节气（Solar Terms）
+    // 二十四节气（Solar Terms）——基于权威天文台数据的精确查表
     // ===================================================================
 
     /**
@@ -510,6 +510,227 @@ public final class LunarCalendar {
         15, 30, 45, 60, 75, 90,
         105, 120, 135, 150, 165, 180,
         195, 210, 225, 240, 255, 270
+    };
+
+    /**
+     * 二十四节气对应的固定月份（与 SOLAR_TERM_NAMES 对应）。
+     * 每个节气总是落在该月份内。
+     */
+    private static final int[] SOLAR_TERM_MONTHS = {
+        1, 1, 2, 2, 3, 3,
+        4, 4, 5, 5, 6, 6,
+        7, 7, 8, 8, 9, 9,
+        10, 10, 11, 11, 12, 12
+    };
+
+    // ─── 节气数据表（1901-2100，共 200 年，基于香港天文台 / 紫金山天文台数据）───
+    //
+    // 每年用一个 24 字符字符串表示 24 个节气的日期（日 day-of-month）。
+    // 编码：'1'-'9' = 1-9，'a'-'v' = 10-31
+    private static final int SOLAR_TERM_DATA_START = 1901;
+    private static final int SOLAR_TERM_DATA_END = 2100;
+
+    private static final String[] SOLAR_TERM_DAYS = {
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1901
+  "6l5j6l6l6m7m8o8o8o9o8n8n", // 1902
+  "6l5k7m6l7m7m8o9o9o9o8n8n", // 1903
+  "7l5k6l5k6l6m7n8n8n9o8n7m", // 1904
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1905
+  "6l5j6l6l6m6m8o8o8o9o8n8n", // 1906
+  "6l5k7m6l7m7m8o9o9o9o8n8n", // 1907
+  "7l5k6l5k6l6m7n8n8n9o8n7m", // 1908
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1909
+  "6l5j6l6l6m6m8o8o8o9o8n8n", // 1910
+  "6l5k7m6l7m7m8o9o9o9o8n8n", // 1911
+  "7l5k6l5k6l6m7n8n8n9o8n7m", // 1912
+  "6k4j6l5l6m6m8n8o8o9o8n8m", // 1913
+  "6l4j6l5l6m6m8o8o8o9o8n8n", // 1914
+  "6l5k6m6l6m7m8o8o9o9o8n8n", // 1915
+  "6l5k6l5k6l6m7n8n8n8o8m7m", // 1916
+  "6k4j6l5l6l6m8n8o8n9o8n7m", // 1917
+  "6l4j6l5l6m6m8o8o8o9o8n8m", // 1918
+  "6l5k6m6l6m7m8o8o9o9o8n8n", // 1919
+  "6l5k6l5k6l6m7n8n8n8o8m7m", // 1920
+  "6k4j6l5k6l6m8n8o8n9o8n7m", // 1921
+  "6l4j6l5l6m6m8o8o8o9o8n8m", // 1922
+  "6l5j6l6l6m7m8o8o9o9o8n8n", // 1923
+  "6l5k6l5k6l6m7n8n8n8o8m7m", // 1924
+  "6k4j6l5k6l6m8n8o8n9o8n7m", // 1925
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1926
+  "6l5j6l6l6m7m8o8o8o9o8n8n", // 1927
+  "6l5k6l5k6l6l7n8n8n8n7m7m", // 1928
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1929
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1930
+  "6l5j6l6l6m7m8o8o8o9o8n8n", // 1931
+  "6l5k6l5k6l6l7n8n8n8n7m7m", // 1932
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1933
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1934
+  "6l5j6l6l6m6m8o8o8o9o8n8n", // 1935
+  "6l5k6l5k6l6l7n8n8n8n7m7m", // 1936
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1937
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1938
+  "6l5j6l6l6m6m8o8o8o9o8n8n", // 1939
+  "6l5k6l5k6l6l7n8n8n8n7m7m", // 1940
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1941
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1942
+  "6l5j6l6l6m6m8o8o8o9o8n8n", // 1943
+  "6l5k6l5k5l6l7n8n8n8n7m7m", // 1944
+  "6k4j6l5k6l6m7n8n8n8o8m7m", // 1945
+  "6k4j6l5l6m6m8n8o8n9o8n8m", // 1946
+  "6l4j6l5l6m6m8o8o8o9o8n8n", // 1947
+  "6l5k5l5k5l6l7n7n8n8n7m7m", // 1948
+  "5k4j6l5k6l6m7n8n8n8o8m7m", // 1949
+  "6k4j6l5k6l6m8n8o8n9o8n8m", // 1950
+  "6l4j6l5l6m6m8o8o8o9o8n8n", // 1951
+  "6l5k5l5k5l6l7n7n8n8n7m7m", // 1952
+  "5k4j6l5k6l6m7n8n8n8o8m7m", // 1953
+  "6k4j6l5k6l6m8n8o8n9o8n7m", // 1954
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1955
+  "6l5k5k5k5l6l7n7n8n8n7m7m", // 1956
+  "5k4j6l5k6l6m7n8n8n8o8m7m", // 1957
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1958
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1959
+  "6l5j5k5k5l6l7n7n7n8n7m7m", // 1960
+  "5k4j6l5k6l6l7n8n8n8n7m7m", // 1961
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1962
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1963
+  "6l5j5k5k5l6l7n7n7n8n7m7m", // 1964
+  "5k4j6l5k6l6l7n8n8n8n7m7m", // 1965
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1966
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1967
+  "6l5j5k5k5l5l7n7n7n8n7m7m", // 1968
+  "5k4j6l5k6l6l7n8n8n8n7m7m", // 1969
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1970
+  "6l4j6l5l6m6m8n8o8o9o8n8m", // 1971
+  "6l5j5k5k5l5l7n7n7n8n7m7m", // 1972
+  "5k4j6l5k5l6l7n8n8n8n7m7m", // 1973
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1974
+  "6l4j6l5l6m6m8n8o8n9o8n8m", // 1975
+  "6l5j5k4k5l5l7n7n7n8n7m7m", // 1976
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 1977
+  "6k4j6l5k6l6m7n8n8n8o8n7m", // 1978
+  "6l4j6l5l6l6m8n8o8n9o8n8m", // 1979
+  "6l5j5k4k5l5l7n7n7n8n7m7m", // 1980
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 1981
+  "6k4j6l5k6l6m7n8n8n8o8m7m", // 1982
+  "6k4j6l5k6l6m8n8o8n9o8n8m", // 1983
+  "6l4j5k4k5l5l7m7n7n8n7m7m", // 1984
+  "5k4j5l5k5l6l7n7n8n8n7m7m", // 1985
+  "5k4j6l5k6l6m7n8n8n8o8m7m", // 1986
+  "6k4j6l5k6l6m7n8o8n9o8n7m", // 1987
+  "6l4j5k4k5l5l7m7n7n8n7m7l", // 1988
+  "5k4j5k5k5l6l7n7n7n8n7m7m", // 1989
+  "5k4j6l5k6l6l7n8n8n8o8m7m", // 1990
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1991
+  "6l4j5k4k5l5l7m7n7n8n7m7l", // 1992
+  "5k4i5k5k5l6l7n7n7n8n7m7m", // 1993
+  "5k4j6l5k6l6l7n8n8n8n7m7m", // 1994
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1995
+  "6l4j5k4k5l5l7m7n7n8n7m7l", // 1996
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 1997
+  "5k4j6l5k6l6l7n8n8n8n7m7m", // 1998
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 1999
+  "6l4j5k4k5l5l7m7n7n8n7m7l", // 2000
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2001
+  "5k4j6l5k6l6l7n8n8n8n7m7m", // 2002
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 2003
+  "6l4j5k4k5l5l7m7n7n8n7m7l", // 2004
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2005
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 2006
+  "6k4j6l5k6l6m7n8n8n9o8n7m", // 2007
+  "6l4j5k4k5l5l7m7n7m8n7m7l", // 2008
+  "5k4i5k4k5l5l7n7n7n8n7m7m", // 2009
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 2010
+  "6k4j6l5k6l6m7n8n8n8o8n7m", // 2011
+  "6l4j5k4k5k5l7m7n7m8n7m7l", // 2012
+  "5k4i5k4k5l5l7m7n7n8n7m7m", // 2013
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 2014
+  "6k4j6l5k6l6m7n8n8n8o8m7m", // 2015
+  "6k4j5k4j5k5l7m7n7m8n7m7l", // 2016
+  "5k3i5k4k5l5l7m7n7n8n7m7m", // 2017
+  "5k4j5l5k5l6l7n7n8n8n7m7m", // 2018
+  "5k4j6l5k6l6l7n8n8n8o8m7m", // 2019
+  "6k4j5k4j5k5l6m7m7m8n7m7l", // 2020
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2021
+  "5k4j5k5k5l6l7n7n7n8n7m7m", // 2022
+  "5k4j6l5k6l6l7n8n8n8o8m7m", // 2023
+  "6k4j5k4j5k5l6m7m7m8n7m6l", // 2024
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2025
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2026
+  "5k4j6l5k6l6l7n8n8n8n7m7m", // 2027
+  "6k4j5k4j5k5l6m7m7m8n7m6l", // 2028
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2029
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2030
+  "5k4j6l5k6l6l7n8n8n8n7m7m", // 2031
+  "6k4j5k4j5k5l6m7m7m8n7m6l", // 2032
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2033
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2034
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 2035
+  "6k4j5k4j5k5l6m7m7m8n7m6l", // 2036
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2037
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2038
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 2039
+  "6k4j5k4j5k5l6m7m7m8n7m6l", // 2040
+  "5k3i5k4k5k5l7m7n7m8n7m7l", // 2041
+  "5k4i5k4k5l5l7n7n7n8n7m7m", // 2042
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 2043
+  "6k4j5k4j5k5l6m7m7m7n7m6l", // 2044
+  "5k3i5k4j5k5l7m7n7m8n7m7l", // 2045
+  "5k4i5k4k5l5l7m7n7n8n7m7m", // 2046
+  "5k4j6l5k5l6l7n7n8n8n7m7m", // 2047
+  "6k4j5k4j5k5k6m7m7m7n7l6l", // 2048
+  "5j3i5k4j5k5l6m7m7m8n7m7l", // 2049
+  "5k3i5k4k5l5l7m7n7n8n7m7m", // 2050
+  "5k4j5k5k5l6l7n7n7n8n7m7m", // 2051
+  "5k4j5k4j5k5k6m7m7m7n7l6l", // 2052
+  "5j3i5k4j5k5l6m7m7m8n7m7l", // 2053
+  "5k3i5k4k5l5l7m7n7n8n7m7m", // 2054
+  "5k4j5k5k5l5l7n7n7n8n7m7m", // 2055
+  "5k4j5k4j5k5k6m7m7m7n7l6l", // 2056
+  "5j3i5k4j5k5l6m7m7m8n7m6l", // 2057
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2058
+  "5k4j5k5k5l5l7n7n7n8n7m7m", // 2059
+  "5k4j5k4j5k5k6m7m7m7m6l6l", // 2060
+  "5j3i5k4j5k5l6m7m7m8n7m6l", // 2061
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2062
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2063
+  "5k4j5k4j5k5k6m7m7m7m6l6l", // 2064
+  "5j3i5k4j5k5l6m7m7m8n7m6l", // 2065
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2066
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2067
+  "5k4j5k4j4k5k6m6m7m7m6l6l", // 2068
+  "5j3i5k4j5k5l6m7m7m8n7m6l", // 2069
+  "5k3i5k4k5k5l7m7n7m8n7m7l", // 2070
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2071
+  "5k4j5k4j4k5k6m6m7m7m6l6l", // 2072
+  "5j3i5k4j5k5l6m7m7m7n7m6l", // 2073
+  "5k3i5k4k5k5l7m7n7m8n7m7l", // 2074
+  "5k4i5k4k5l5l7m7n7n8n7m7m", // 2075
+  "5k4j5k4j4k5k6m6m7m7m6l6l", // 2076
+  "5j3i5k4j5k5l6m7m7m7n7m6l", // 2077
+  "5k3i5k4j5k5l6m7n7m8n7m7l", // 2078
+  "5k4i5k4k5l5l7m7n7n8n7m7m", // 2079
+  "5k4j5k4j4k5k6m6m7m7m6l6l", // 2080
+  "5j3i5k4j5k5k6m7m7m7n7l6l", // 2081
+  "5k3i5k4j5k5l6m7m7m8n7m7l", // 2082
+  "5k3i5k4k5l5l7m7n7n8n7m7m", // 2083
+  "5k4j4j4j4k5k6m6m6m7m6l6l", // 2084
+  "4j3i5k4j5k5k6m7m7m7n7l6l", // 2085
+  "5j3i5k4j5k5l6m7m7m8n7m7l", // 2086
+  "5k3i5k4k5l5l7m7n7n8n7m7m", // 2087
+  "5k4j4j4j4k4k6m6m6m7m6l6l", // 2088
+  "4j3i5k4j5k5k6m7m7m7n7l6l", // 2089
+  "5j3i5k4j5k5l6m7m7m8n7m6l", // 2090
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2091
+  "5k4j4j4j4k4k6m6m6m7m6l6l", // 2092
+  "4j3i5k4j5k5k6m7m7m7m6l6l", // 2093
+  "5j3i5k4j5k5l6m7m7m8n7m6l", // 2094
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2095
+  "5k4i4j4j4k4k6m6m6m7m6l6l", // 2096
+  "4j3i5k4j5k5k6m6m7m7m6l6l", // 2097
+  "5j3i5k4j5k5l6m7m7m8n7m6l", // 2098
+  "5k3i5k4k5l5l7m7n7n8n7m7l", // 2099
+  "5k4i5k5k5l5l7n7n7n8n7m7m", // 2100
     };
 
     /**
@@ -540,20 +761,38 @@ public final class LunarCalendar {
     }
 
     /**
+     * 解码 SOLAR_TERM_DAYS 中的字符为 day-of-month。
+     */
+    private static int decodeSolarTermDay(char ch) {
+        if (ch >= '1' && ch <= '9') return ch - '0';
+        return ch - 'a' + 10;
+    }
+
+    /**
      * 计算指定公历年的所有 24 节气日期。
      *
-     * <p>使用简化 VSOP87 太阳黄经公式 + 迭代逼近，精度通常为 ±1 天。</p>
+     * <p>1901-2100 年使用权威天文台预计算数据（香港天文台 / 紫金山天文台），精度为准确日期。
+     * 超出范围时回退到 VSOP87 太阳黄经公式估算（精度 ±1 天）。</p>
      *
      * @param year 公历年份
      * @return 24 个节气信息，按时间顺序排列（从小寒到冬至）
      */
     public static SolarTermInfo[] getSolarTerms(int year) {
-        SolarTermInfo[] results = new SolarTermInfo[24];
-        for (int i = 0; i < 24; i++) {
-            LocalDate date = findSolarTermDate(year, SOLAR_TERM_LONGITUDES[i]);
-            results[i] = new SolarTermInfo(SOLAR_TERM_NAMES[i], SOLAR_TERM_LONGITUDES[i], date);
+        // 数据表范围内：精确查表
+        if (year >= SOLAR_TERM_DATA_START && year <= SOLAR_TERM_DATA_END) {
+            String encoded = SOLAR_TERM_DAYS[year - SOLAR_TERM_DATA_START];
+            SolarTermInfo[] results = new SolarTermInfo[24];
+            for (int i = 0; i < 24; i++) {
+                int day = decodeSolarTermDay(encoded.charAt(i));
+                results[i] = new SolarTermInfo(
+                    SOLAR_TERM_NAMES[i], SOLAR_TERM_LONGITUDES[i],
+                    LocalDate.of(year, SOLAR_TERM_MONTHS[i], day));
+            }
+            return results;
         }
-        return results;
+
+        // 回退到公式估算
+        return getSolarTermsByFormula(year);
     }
 
     /**
@@ -563,7 +802,24 @@ public final class LunarCalendar {
      * @return 节气名称，如果当天不是节气则返回 null
      */
     public static String getSolarTerm(LocalDate date) {
-        SolarTermInfo[] terms = getSolarTerms(date.getYear());
+        int year = date.getYear();
+
+        // 数据表范围内：直接定位
+        if (year >= SOLAR_TERM_DATA_START && year <= SOLAR_TERM_DATA_END) {
+            String encoded = SOLAR_TERM_DAYS[year - SOLAR_TERM_DATA_START];
+            int month = date.getMonthValue();
+            int dayOfMonth = date.getDayOfMonth();
+            for (int i = 0; i < 24; i++) {
+                if (SOLAR_TERM_MONTHS[i] == month) {
+                    int day = decodeSolarTermDay(encoded.charAt(i));
+                    if (day == dayOfMonth) return SOLAR_TERM_NAMES[i];
+                }
+            }
+            return null;
+        }
+
+        // 回退到公式估算
+        SolarTermInfo[] terms = getSolarTermsByFormula(year);
         for (SolarTermInfo term : terms) {
             if (term.getDate().equals(date)) {
                 return term.getName();
@@ -571,6 +827,10 @@ public final class LunarCalendar {
         }
         return null;
     }
+
+    // ===================================================================
+    // VSOP87 公式估算（作为数据表范围外的回退方案）
+    // ===================================================================
 
     /**
      * 计算太阳黄经（简化 VSOP87 近似，精度约 ±0.01°）。
@@ -616,6 +876,16 @@ public final class LunarCalendar {
         int A = y / 100;
         int B = 2 - A + A / 4;
         return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B - 1524.5;
+    }
+
+    /** 回退方案：使用 VSOP87 公式计算节气日期（精度 ±1 天）。 */
+    private static SolarTermInfo[] getSolarTermsByFormula(int year) {
+        SolarTermInfo[] results = new SolarTermInfo[24];
+        for (int i = 0; i < 24; i++) {
+            LocalDate date = findSolarTermDate(year, SOLAR_TERM_LONGITUDES[i]);
+            results[i] = new SolarTermInfo(SOLAR_TERM_NAMES[i], SOLAR_TERM_LONGITUDES[i], date);
+        }
+        return results;
     }
 
     /**

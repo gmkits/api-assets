@@ -30,3 +30,9 @@ packages/ts-lunar/dist/
 
 # HKO download cache
 .hko-cache/
+
+# Solar terms download cache
+.solar-terms-cache/
+
+# Generated compact data (intermediate build artifact)
+.solar-terms-compact.txt
