@@ -620,12 +620,10 @@ export interface SolarTermInfo {
 
 // ─── 节气数据表（1901-2100，共 200 年，基于香港天文台 / 紫金山天文台数据）───
 //
-// 每年用一个 24 字符字符串表示 24 个节气的日期（日 day-of-month）。
-// 按时间顺序：小寒, 大寒, 立春, 雨水, 惊蛰, 春分, 清明, 谷雨,
-//             立夏, 小满, 芒种, 夏至, 小暑, 大暑, 立秋, 处暑,
-//             白露, 秋分, 寒露, 霜降, 立冬, 小雪, 大雪, 冬至
+// 使用 2-bit 偏移量压缩编码，每年仅需 48 位（1 个 BigInt/long）。
+// 每个节气的 day-of-month = BASE_DAYS[i] + ((packed >> (i*2)) & 3)
 //
-// 编码：'1'-'9' = 1-9，'a'-'v' = 10-31
+// 与 LUNAR_INFO 类似的紧凑整数设计，200 年仅 ~1.2KB（vs 原始字符串 4.8KB）。
 
 /** 节气数据覆盖起始年。 */
 const SOLAR_TERM_DATA_START = 1901;
@@ -633,210 +631,227 @@ const SOLAR_TERM_DATA_START = 1901;
 /** 节气数据覆盖结束年。 */
 const SOLAR_TERM_DATA_END = 2100;
 
-/* eslint-disable @stylistic/max-len */
-const SOLAR_TERM_DAYS: string[] = [
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1901
-  '6l5j6l6l6m7m8o8o8o9o8n8n', // 1902
-  '6l5k7m6l7m7m8o9o9o9o8n8n', // 1903
-  '7l5k6l5k6l6m7n8n8n9o8n7m', // 1904
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1905
-  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1906
-  '6l5k7m6l7m7m8o9o9o9o8n8n', // 1907
-  '7l5k6l5k6l6m7n8n8n9o8n7m', // 1908
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1909
-  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1910
-  '6l5k7m6l7m7m8o9o9o9o8n8n', // 1911
-  '7l5k6l5k6l6m7n8n8n9o8n7m', // 1912
-  '6k4j6l5l6m6m8n8o8o9o8n8m', // 1913
-  '6l4j6l5l6m6m8o8o8o9o8n8n', // 1914
-  '6l5k6m6l6m7m8o8o9o9o8n8n', // 1915
-  '6l5k6l5k6l6m7n8n8n8o8m7m', // 1916
-  '6k4j6l5l6l6m8n8o8n9o8n7m', // 1917
-  '6l4j6l5l6m6m8o8o8o9o8n8m', // 1918
-  '6l5k6m6l6m7m8o8o9o9o8n8n', // 1919
-  '6l5k6l5k6l6m7n8n8n8o8m7m', // 1920
-  '6k4j6l5k6l6m8n8o8n9o8n7m', // 1921
-  '6l4j6l5l6m6m8o8o8o9o8n8m', // 1922
-  '6l5j6l6l6m7m8o8o9o9o8n8n', // 1923
-  '6l5k6l5k6l6m7n8n8n8o8m7m', // 1924
-  '6k4j6l5k6l6m8n8o8n9o8n7m', // 1925
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1926
-  '6l5j6l6l6m7m8o8o8o9o8n8n', // 1927
-  '6l5k6l5k6l6l7n8n8n8n7m7m', // 1928
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1929
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1930
-  '6l5j6l6l6m7m8o8o8o9o8n8n', // 1931
-  '6l5k6l5k6l6l7n8n8n8n7m7m', // 1932
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1933
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1934
-  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1935
-  '6l5k6l5k6l6l7n8n8n8n7m7m', // 1936
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1937
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1938
-  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1939
-  '6l5k6l5k6l6l7n8n8n8n7m7m', // 1940
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1941
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1942
-  '6l5j6l6l6m6m8o8o8o9o8n8n', // 1943
-  '6l5k6l5k5l6l7n8n8n8n7m7m', // 1944
-  '6k4j6l5k6l6m7n8n8n8o8m7m', // 1945
-  '6k4j6l5l6m6m8n8o8n9o8n8m', // 1946
-  '6l4j6l5l6m6m8o8o8o9o8n8n', // 1947
-  '6l5k5l5k5l6l7n7n8n8n7m7m', // 1948
-  '5k4j6l5k6l6m7n8n8n8o8m7m', // 1949
-  '6k4j6l5k6l6m8n8o8n9o8n8m', // 1950
-  '6l4j6l5l6m6m8o8o8o9o8n8n', // 1951
-  '6l5k5l5k5l6l7n7n8n8n7m7m', // 1952
-  '5k4j6l5k6l6m7n8n8n8o8m7m', // 1953
-  '6k4j6l5k6l6m8n8o8n9o8n7m', // 1954
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1955
-  '6l5k5k5k5l6l7n7n8n8n7m7m', // 1956
-  '5k4j6l5k6l6m7n8n8n8o8m7m', // 1957
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1958
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1959
-  '6l5j5k5k5l6l7n7n7n8n7m7m', // 1960
-  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1961
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1962
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1963
-  '6l5j5k5k5l6l7n7n7n8n7m7m', // 1964
-  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1965
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1966
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1967
-  '6l5j5k5k5l5l7n7n7n8n7m7m', // 1968
-  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1969
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1970
-  '6l4j6l5l6m6m8n8o8o9o8n8m', // 1971
-  '6l5j5k5k5l5l7n7n7n8n7m7m', // 1972
-  '5k4j6l5k5l6l7n8n8n8n7m7m', // 1973
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1974
-  '6l4j6l5l6m6m8n8o8n9o8n8m', // 1975
-  '6l5j5k4k5l5l7n7n7n8n7m7m', // 1976
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 1977
-  '6k4j6l5k6l6m7n8n8n8o8n7m', // 1978
-  '6l4j6l5l6l6m8n8o8n9o8n8m', // 1979
-  '6l5j5k4k5l5l7n7n7n8n7m7m', // 1980
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 1981
-  '6k4j6l5k6l6m7n8n8n8o8m7m', // 1982
-  '6k4j6l5k6l6m8n8o8n9o8n8m', // 1983
-  '6l4j5k4k5l5l7m7n7n8n7m7m', // 1984
-  '5k4j5l5k5l6l7n7n8n8n7m7m', // 1985
-  '5k4j6l5k6l6m7n8n8n8o8m7m', // 1986
-  '6k4j6l5k6l6m7n8o8n9o8n7m', // 1987
-  '6l4j5k4k5l5l7m7n7n8n7m7l', // 1988
-  '5k4j5k5k5l6l7n7n7n8n7m7m', // 1989
-  '5k4j6l5k6l6l7n8n8n8o8m7m', // 1990
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1991
-  '6l4j5k4k5l5l7m7n7n8n7m7l', // 1992
-  '5k4i5k5k5l6l7n7n7n8n7m7m', // 1993
-  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1994
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1995
-  '6l4j5k4k5l5l7m7n7n8n7m7l', // 1996
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 1997
-  '5k4j6l5k6l6l7n8n8n8n7m7m', // 1998
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 1999
-  '6l4j5k4k5l5l7m7n7n8n7m7l', // 2000
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2001
-  '5k4j6l5k6l6l7n8n8n8n7m7m', // 2002
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 2003
-  '6l4j5k4k5l5l7m7n7n8n7m7l', // 2004
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2005
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2006
-  '6k4j6l5k6l6m7n8n8n9o8n7m', // 2007
-  '6l4j5k4k5l5l7m7n7m8n7m7l', // 2008
-  '5k4i5k4k5l5l7n7n7n8n7m7m', // 2009
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2010
-  '6k4j6l5k6l6m7n8n8n8o8n7m', // 2011
-  '6l4j5k4k5k5l7m7n7m8n7m7l', // 2012
-  '5k4i5k4k5l5l7m7n7n8n7m7m', // 2013
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2014
-  '6k4j6l5k6l6m7n8n8n8o8m7m', // 2015
-  '6k4j5k4j5k5l7m7n7m8n7m7l', // 2016
-  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2017
-  '5k4j5l5k5l6l7n7n8n8n7m7m', // 2018
-  '5k4j6l5k6l6l7n8n8n8o8m7m', // 2019
-  '6k4j5k4j5k5l6m7m7m8n7m7l', // 2020
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2021
-  '5k4j5k5k5l6l7n7n7n8n7m7m', // 2022
-  '5k4j6l5k6l6l7n8n8n8o8m7m', // 2023
-  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2024
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2025
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2026
-  '5k4j6l5k6l6l7n8n8n8n7m7m', // 2027
-  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2028
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2029
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2030
-  '5k4j6l5k6l6l7n8n8n8n7m7m', // 2031
-  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2032
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2033
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2034
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2035
-  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2036
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2037
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2038
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2039
-  '6k4j5k4j5k5l6m7m7m8n7m6l', // 2040
-  '5k3i5k4k5k5l7m7n7m8n7m7l', // 2041
-  '5k4i5k4k5l5l7n7n7n8n7m7m', // 2042
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2043
-  '6k4j5k4j5k5l6m7m7m7n7m6l', // 2044
-  '5k3i5k4j5k5l7m7n7m8n7m7l', // 2045
-  '5k4i5k4k5l5l7m7n7n8n7m7m', // 2046
-  '5k4j6l5k5l6l7n7n8n8n7m7m', // 2047
-  '6k4j5k4j5k5k6m7m7m7n7l6l', // 2048
-  '5j3i5k4j5k5l6m7m7m8n7m7l', // 2049
-  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2050
-  '5k4j5k5k5l6l7n7n7n8n7m7m', // 2051
-  '5k4j5k4j5k5k6m7m7m7n7l6l', // 2052
-  '5j3i5k4j5k5l6m7m7m8n7m7l', // 2053
-  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2054
-  '5k4j5k5k5l5l7n7n7n8n7m7m', // 2055
-  '5k4j5k4j5k5k6m7m7m7n7l6l', // 2056
-  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2057
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2058
-  '5k4j5k5k5l5l7n7n7n8n7m7m', // 2059
-  '5k4j5k4j5k5k6m7m7m7m6l6l', // 2060
-  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2061
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2062
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2063
-  '5k4j5k4j5k5k6m7m7m7m6l6l', // 2064
-  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2065
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2066
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2067
-  '5k4j5k4j4k5k6m6m7m7m6l6l', // 2068
-  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2069
-  '5k3i5k4k5k5l7m7n7m8n7m7l', // 2070
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2071
-  '5k4j5k4j4k5k6m6m7m7m6l6l', // 2072
-  '5j3i5k4j5k5l6m7m7m7n7m6l', // 2073
-  '5k3i5k4k5k5l7m7n7m8n7m7l', // 2074
-  '5k4i5k4k5l5l7m7n7n8n7m7m', // 2075
-  '5k4j5k4j4k5k6m6m7m7m6l6l', // 2076
-  '5j3i5k4j5k5l6m7m7m7n7m6l', // 2077
-  '5k3i5k4j5k5l6m7n7m8n7m7l', // 2078
-  '5k4i5k4k5l5l7m7n7n8n7m7m', // 2079
-  '5k4j5k4j4k5k6m6m7m7m6l6l', // 2080
-  '5j3i5k4j5k5k6m7m7m7n7l6l', // 2081
-  '5k3i5k4j5k5l6m7m7m8n7m7l', // 2082
-  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2083
-  '5k4j4j4j4k5k6m6m6m7m6l6l', // 2084
-  '4j3i5k4j5k5k6m7m7m7n7l6l', // 2085
-  '5j3i5k4j5k5l6m7m7m8n7m7l', // 2086
-  '5k3i5k4k5l5l7m7n7n8n7m7m', // 2087
-  '5k4j4j4j4k4k6m6m6m7m6l6l', // 2088
-  '4j3i5k4j5k5k6m7m7m7n7l6l', // 2089
-  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2090
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2091
-  '5k4j4j4j4k4k6m6m6m7m6l6l', // 2092
-  '4j3i5k4j5k5k6m7m7m7m6l6l', // 2093
-  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2094
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2095
-  '5k4i4j4j4k4k6m6m6m7m6l6l', // 2096
-  '4j3i5k4j5k5k6m6m7m7m6l6l', // 2097
-  '5j3i5k4j5k5l6m7m7m8n7m6l', // 2098
-  '5k3i5k4k5l5l7m7n7n8n7m7l', // 2099
-  '5k4i5k5k5l5l7n7n7n8n7m7m', // 2100
-]
-/* eslint-enable @stylistic/max-len */
+/**
+ * 每个节气位置的基准日（最小 day-of-month），与 TERM_INFO 索引对应。
+ * 实际日期 = BASE_DAYS[i] + 2-bit 偏移量（0-3）。
+ */
+const SOLAR_TERM_BASE_DAYS: number[] = [
+  4, 19, 3, 18, 4, 19, 4, 19, 4, 20, 4, 20,
+  6, 22, 6, 22, 6, 22, 7, 22, 6, 21, 6, 21,
+];
+
+/**
+ * 节气压缩数据（1901-2100，每年一个 48-bit 整数）。
+ *
+ * 编码方式：24 个节气 × 2 bit = 48 bit，低位在前。
+ *   bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）
+ *   实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset
+ *
+ * 与 LUNAR_INFO 相同风格的紧凑整数数组设计。
+ */
+const SOLAR_TERM_PACKED: bigint[] = [
+0x6aaaa6aa9a5an, // 1901
+  0xaaaaaabaaa6an, // 1902
+  0xaaabbabbafaan, // 1903
+  0x5aa665a65aabn, // 1904
+  0x6aaaa6aa9a5an, // 1905
+  0xaaaaaaaaaa6an, // 1906
+  0xaaabbabbafaan, // 1907
+  0x5aa665a65aabn, // 1908
+  0x6aaaa6aa9a5an, // 1909
+  0xaaaaaaaaaa6an, // 1910
+  0xaaabbabbafaan, // 1911
+  0x5aa665a65aabn, // 1912
+  0x6aaaa6aa9a56n, // 1913
+  0xaaaaaaaa9a5an, // 1914
+  0xaaabaabaaeaan, // 1915
+  0x569665a65aaan, // 1916
+  0x5aa6a6a69a56n, // 1917
+  0x6aaaaaaa9a5an, // 1918
+  0xaaabaabaaeaan, // 1919
+  0x569665a65aaan, // 1920
+  0x5aa6a6a65a56n, // 1921
+  0x6aaaaaaa9a5an, // 1922
+  0xaaabaabaaa6an, // 1923
+  0x569665a65aaan, // 1924
+  0x5aa6a6a65a56n, // 1925
+  0x6aaaa6aa9a5an, // 1926
+  0xaaaaaabaaa6an, // 1927
+  0x555665665aaan, // 1928
+  0x5aa665a65a56n, // 1929
+  0x6aaaa6aa9a5an, // 1930
+  0xaaaaaabaaa6an, // 1931
+  0x555665665aaan, // 1932
+  0x5aa665a65a56n, // 1933
+  0x6aaaa6aa9a5an, // 1934
+  0xaaaaaaaaaa6an, // 1935
+  0x555665665aaan, // 1936
+  0x5aa665a65a56n, // 1937
+  0x6aaaa6aa9a5an, // 1938
+  0xaaaaaaaaaa6an, // 1939
+  0x555665665aaan, // 1940
+  0x5aa665a65a56n, // 1941
+  0x6aaaa6aa9a5an, // 1942
+  0xaaaaaaaaaa6an, // 1943
+  0x555665655aaan, // 1944
+  0x569665a65a56n, // 1945
+  0x6aa6a6aa9a56n, // 1946
+  0xaaaaaaaa9a5an, // 1947
+  0x5556556559aan, // 1948
+  0x569665a65a55n, // 1949
+  0x6aa6a6a65a56n, // 1950
+  0xaaaaaaaa9a5an, // 1951
+  0x5556556559aan, // 1952
+  0x569665a65a55n, // 1953
+  0x5aa6a6a65a56n, // 1954
+  0x6aaaa6aa9a5an, // 1955
+  0x5556556555aan, // 1956
+  0x569665a65a55n, // 1957
+  0x5aa665a65a56n, // 1958
+  0x6aaaa6aa9a5an, // 1959
+  0x55555565556an, // 1960
+  0x555665665a55n, // 1961
+  0x5aa665a65a56n, // 1962
+  0x6aaaa6aa9a5an, // 1963
+  0x55555565556an, // 1964
+  0x555665665a55n, // 1965
+  0x5aa665a65a56n, // 1966
+  0x6aaaa6aa9a5an, // 1967
+  0x55555555556an, // 1968
+  0x555665665a55n, // 1969
+  0x5aa665a65a56n, // 1970
+  0x6aaaa6aa9a5an, // 1971
+  0x55555555556an, // 1972
+  0x555665655a55n, // 1973
+  0x5aa665a65a56n, // 1974
+  0x6aa6a6aa9a5an, // 1975
+  0x55555555456an, // 1976
+  0x555655655a55n, // 1977
+  0x5a9665a65a56n, // 1978
+  0x6aa6a6a69a5an, // 1979
+  0x55555555456an, // 1980
+  0x555655655a55n, // 1981
+  0x569665a65a56n, // 1982
+  0x6aa6a6a65a56n, // 1983
+  0x55555155455an, // 1984
+  0x555655655955n, // 1985
+  0x569665a65a55n, // 1986
+  0x5aa6a5a65a56n, // 1987
+  0x15555155455an, // 1988
+  0x555555655555n, // 1989
+  0x569665665a55n, // 1990
+  0x5aa665a65a56n, // 1991
+  0x15555155455an, // 1992
+  0x555555655515n, // 1993
+  0x555665665a55n, // 1994
+  0x5aa665a65a56n, // 1995
+  0x15555155455an, // 1996
+  0x555555555515n, // 1997
+  0x555665665a55n, // 1998
+  0x5aa665a65a56n, // 1999
+  0x15555155455an, // 2000
+  0x555555555515n, // 2001
+  0x555665665a55n, // 2002
+  0x5aa665a65a56n, // 2003
+  0x15555155455an, // 2004
+  0x555555555515n, // 2005
+  0x555655655a55n, // 2006
+  0x5aa665a65a56n, // 2007
+  0x15515155455an, // 2008
+  0x555555554515n, // 2009
+  0x555655655a55n, // 2010
+  0x5a9665a65a56n, // 2011
+  0x15515151455an, // 2012
+  0x555551554515n, // 2013
+  0x555655655a55n, // 2014
+  0x569665a65a56n, // 2015
+  0x155151510556n, // 2016
+  0x555551554505n, // 2017
+  0x555655655955n, // 2018
+  0x569665665a55n, // 2019
+  0x155110510556n, // 2020
+  0x155551554505n, // 2021
+  0x555555655555n, // 2022
+  0x569665665a55n, // 2023
+  0x055110510556n, // 2024
+  0x155551554505n, // 2025
+  0x555555555515n, // 2026
+  0x555665665a55n, // 2027
+  0x055110510556n, // 2028
+  0x155551554505n, // 2029
+  0x555555555515n, // 2030
+  0x555665665a55n, // 2031
+  0x055110510556n, // 2032
+  0x155551554505n, // 2033
+  0x555555555515n, // 2034
+  0x555655655a55n, // 2035
+  0x055110510556n, // 2036
+  0x155551554505n, // 2037
+  0x555555555515n, // 2038
+  0x555655655a55n, // 2039
+  0x055110510556n, // 2040
+  0x155151514505n, // 2041
+  0x555555554515n, // 2042
+  0x555655655a55n, // 2043
+  0x054110510556n, // 2044
+  0x155151510505n, // 2045
+  0x555551554515n, // 2046
+  0x555655655a55n, // 2047
+  0x014110110556n, // 2048
+  0x155110510501n, // 2049
+  0x555551554505n, // 2050
+  0x555555655555n, // 2051
+  0x014110110555n, // 2052
+  0x155110510501n, // 2053
+  0x555551554505n, // 2054
+  0x555555555555n, // 2055
+  0x014110110555n, // 2056
+  0x055110510501n, // 2057
+  0x155551554505n, // 2058
+  0x555555555555n, // 2059
+  0x000110110555n, // 2060
+  0x055110510501n, // 2061
+  0x155551554505n, // 2062
+  0x555555555515n, // 2063
+  0x000110110555n, // 2064
+  0x055110510501n, // 2065
+  0x155551554505n, // 2066
+  0x555555555515n, // 2067
+  0x000100100555n, // 2068
+  0x055110510501n, // 2069
+  0x155151514505n, // 2070
+  0x555555555515n, // 2071
+  0x000100100555n, // 2072
+  0x054110510501n, // 2073
+  0x155151514505n, // 2074
+  0x555551554515n, // 2075
+  0x000100100555n, // 2076
+  0x054110510501n, // 2077
+  0x155150510505n, // 2078
+  0x555551554515n, // 2079
+  0x000100100555n, // 2080
+  0x014110110501n, // 2081
+  0x155110510505n, // 2082
+  0x555551554505n, // 2083
+  0x000000100055n, // 2084
+  0x014110110500n, // 2085
+  0x155110510501n, // 2086
+  0x555551554505n, // 2087
+  0x000000000055n, // 2088
+  0x014110110500n, // 2089
+  0x055110510501n, // 2090
+  0x155551554505n, // 2091
+  0x000000000055n, // 2092
+  0x000110110500n, // 2093
+  0x055110510501n, // 2094
+  0x155551554505n, // 2095
+  0x000000000015n, // 2096
+  0x000100110500n, // 2097
+  0x055110510501n, // 2098
+  0x155551554505n, // 2099
+  0x555555555515n, // 2100
+];
+
 
 /**
  * 24 个节气按时间顺序排列的名称、黄经度数、对应月份。
@@ -870,14 +885,15 @@ const TERM_INFO: { name: string; longitude: number; month: number }[] = [
 ];
 
 /**
- * 解码 SOLAR_TERM_DAYS 中的字符为 day-of-month。
+ * 从压缩数据中解码指定节气的 day-of-month。
+ *
+ * @param packed 48-bit 压缩整数
+ * @param termIndex 节气索引（0-23）
+ * @returns day-of-month
  */
-function decodeSolarTermDay(ch: string): number {
-  const c = ch.charCodeAt(0);
-  // '1'-'9' → 1-9
-  if (c >= 49 && c <= 57) return c - 48;
-  // 'a'-'v' → 10-31
-  return c - 97 + 10;
+function decodeSolarTermDay(packed: bigint, termIndex: number): number {
+  const offset = Number((packed >> BigInt(termIndex * 2)) & 3n);
+  return SOLAR_TERM_BASE_DAYS[termIndex] + offset;
 }
 
 /**
@@ -893,11 +909,11 @@ function decodeSolarTermDay(ch: string): number {
 export function getSolarTerms(year: number): SolarTermInfo[] {
   // 数据表范围内：精确查表
   if (year >= SOLAR_TERM_DATA_START && year <= SOLAR_TERM_DATA_END) {
-    const encoded = SOLAR_TERM_DAYS[year - SOLAR_TERM_DATA_START];
+    const packed = SOLAR_TERM_PACKED[year - SOLAR_TERM_DATA_START];
     const results: SolarTermInfo[] = [];
     for (let i = 0; i < 24; i++) {
       const { name, longitude, month } = TERM_INFO[i];
-      const day = decodeSolarTermDay(encoded[i]);
+      const day = decodeSolarTermDay(packed, i);
       results.push({ name, longitude, date: [year, month, day] });
     }
     return results;
@@ -918,10 +934,10 @@ export function getSolarTerms(year: number): SolarTermInfo[] {
 export function getSolarTerm(solarYear: number, solarMonth: number, solarDay: number): string | null {
   // 数据表范围内：直接定位（无需遍历全部 24 个节气）
   if (solarYear >= SOLAR_TERM_DATA_START && solarYear <= SOLAR_TERM_DATA_END) {
-    const encoded = SOLAR_TERM_DAYS[solarYear - SOLAR_TERM_DATA_START];
+    const packed = SOLAR_TERM_PACKED[solarYear - SOLAR_TERM_DATA_START];
     for (let i = 0; i < 24; i++) {
       if (TERM_INFO[i].month === solarMonth) {
-        const day = decodeSolarTermDay(encoded[i]);
+        const day = decodeSolarTermDay(packed, i);
         if (day === solarDay) return TERM_INFO[i].name;
       }
     }
