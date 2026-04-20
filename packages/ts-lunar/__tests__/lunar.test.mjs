@@ -398,7 +398,7 @@ describe('二十四节气', () => {
     }
   });
 
-  it('CSV 全量验证（4,800 行，1901-2100 全部 24 节气）', () => {
+  it('CSV 全量验证（4,824 行，1900-2100 全部 24 节气）', () => {
     let checked = 0;
     // 按年分组验证
     let currentYear = null;
@@ -414,6 +414,6 @@ describe('二十四节气', () => {
       assert.equal(term.date[2], day, `${year} ${termName} 日期不匹配（期望 ${month}-${day}，实际 ${term.date[1]}-${term.date[2]}）`);
       checked++;
     }
-    assert.ok(checked >= 4800, `仅验证了 ${checked} 行，期望 ≥4800`);
+    assert.ok(checked >= 4824, `仅验证了 ${checked} 行，期望 ≥4824`);
   });
 });

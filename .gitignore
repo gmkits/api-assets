@@ -36,3 +36,5 @@ packages/ts-lunar/dist/
 
 # Generated compact data (intermediate build artifact)
 .solar-terms-compact.txt
+node_modules/
+.solar-terms-cache/

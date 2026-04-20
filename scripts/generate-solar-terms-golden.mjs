@@ -5,6 +5,7 @@
  *   1. Golden CSV 文件 (tests/solar-terms-golden.csv)
  *   2. 可直接嵌入 TS/Java 的压缩数据表
  *
+ * 注：1900 年 HKO 数据库无数据，需手动添加（使用 VSOP87 公式估算值）。
  * 数据来源: https://github.com/hungtcs/traditional-chinese-calendar-database
  * 原始数据来源: 香港天文台 (HKO) / 紫金山天文台天文年历
  *
@@ -21,7 +22,7 @@ import { parseArgs } from 'node:util';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = join(__dirname, '..', '.solar-terms-cache');
 
-const START_YEAR = 1901;
+const START_YEAR = 1900;
 const END_YEAR = 2100;
 const CONCURRENCY = 10;
 const MAX_RETRIES = 3;
