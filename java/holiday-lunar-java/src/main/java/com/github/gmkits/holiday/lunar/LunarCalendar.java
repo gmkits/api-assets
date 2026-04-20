@@ -1,5 +1,9 @@
 package com.github.gmkits.holiday.lunar;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import com.google.common.collect.ImmutableList;
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
@@ -20,7 +24,8 @@ import java.time.temporal.ChronoUnit;
  * <p>24 个节气 × 2 bit = 48 bit，低位在前。
  * bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）。
  * 实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset。
- * 数据来源：香港天文台 / 紫金山天文台，覆盖 1901-2100（200 年 ~1.2KB）。</p>
+ * 数据来源：香港天文台 / 紫金山天文台，覆盖 1900-2100（201 年 ~1.2KB）。
+ * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。</p>
  *
  * <h3>信息论最优性分析</h3>
  * <p>农历每年最少需编码：12 个月大小（12 bit）+ 闰月位置（4 bit）+ 闰月大小（1 bit）= 17 bit。
@@ -33,7 +38,7 @@ import java.time.temporal.ChronoUnit;
  *   <li>年前缀和数组（CUMULATIVE_DAYS）：solarToLunar 年份定位 O(log n) 二分查找</li>
  *   <li>每年月份偏移表（MONTH_OFFSETS / MONTH_META）：月份定位 O(1) 直接索引，消除热路径位运算</li>
  *   <li>朔日天文估算（estimateNewMoonJDE）：Jean Meeus 算法，可验证数据表正确性</li>
- *   <li>节气 O(1) 位运算解码：HKO 权威数据 + 2-bit 偏移压缩，1901-2100 准确日期</li>
+ *   <li>节气 O(1) 位运算解码：HKO 权威数据 + 2-bit 偏移压缩，1900-2100 准确日期</li>
  * </ol>
  *
  * <p>线程安全：所有方法均为无状态纯函数，可安全并发调用。</p>
@@ -216,9 +221,7 @@ public final class LunarCalendar {
      */
     public static int monthDays(int lunarYear, int month) {
         validateYear(lunarYear);
-        if (month < 1 || month > 12) {
-            throw new IllegalArgumentException("月份超出范围: " + month + "，应为 1-12");
-        }
+        checkArgument(month >= 1 && month <= 12, "月份超出范围: %s，应为 1-12", month);
         return (LUNAR_INFO[lunarYear - START_YEAR] & (LEAP_MONTH_BIG_MASK >> month)) != 0 ? 30 : 29;
     }
 
@@ -252,9 +255,7 @@ public final class LunarCalendar {
      */
     public static LunarInfo solarToLunar(LocalDate solarDate) {
         long offset = ChronoUnit.DAYS.between(BASE_DATE, solarDate);
-        if (offset < 0) {
-            throw new IllegalArgumentException("日期早于 1900-01-31，超出农历转换范围");
-        }
+        checkArgument(offset >= 0, "日期早于 1900-01-31，超出农历转换范围");
 
         // 二分查找定位农历年：找到最大的 i 使得 CUMULATIVE_DAYS[i] <= offset
         int lo = 0, hi = YEAR_COUNT;
@@ -268,9 +269,8 @@ public final class LunarCalendar {
         }
 
         int lunarYear = START_YEAR + lo;
-        if (lunarYear > END_YEAR) {
-            throw new IllegalArgumentException("日期超出农历转换范围（" + START_YEAR + "-" + END_YEAR + "）");
-        }
+        checkArgument(lunarYear <= END_YEAR,
+            "日期超出农历转换范围（%s-%s）", START_YEAR, END_YEAR);
         offset -= CUMULATIVE_DAYS[lo];
 
         // 使用预计算月份偏移表定位月份（无需位运算，纯数组索引）
@@ -306,12 +306,8 @@ public final class LunarCalendar {
      */
     public static LocalDate lunarToSolar(int lunarYear, int lunarMonth, int lunarDay, boolean isLeapMonth) {
         validateYear(lunarYear);
-        if (lunarMonth < 1 || lunarMonth > 12) {
-            throw new IllegalArgumentException("农历月份超出范围: " + lunarMonth);
-        }
-        if (lunarDay < 1 || lunarDay > 30) {
-            throw new IllegalArgumentException("农历日期超出范围: " + lunarDay);
-        }
+        checkArgument(lunarMonth >= 1 && lunarMonth <= 12, "农历月份超出范围: %s", lunarMonth);
+        checkArgument(lunarDay >= 1 && lunarDay <= 30, "农历日期超出范围: %s", lunarDay);
 
         int yi = lunarYear - START_YEAR;
         int[] meta = MONTH_META[yi];
@@ -328,18 +324,14 @@ public final class LunarCalendar {
             }
         }
 
-        if (slotIdx < 0) {
-            throw new IllegalArgumentException(
-                    "农历 " + lunarYear + " 年不存在" + (isLeapMonth ? "闰" : "") + lunarMonth + " 月");
-        }
+        checkArgument(slotIdx >= 0,
+            "农历 %s 年不存在%s%s 月", lunarYear, isLeapMonth ? "闰" : "", lunarMonth);
 
         // 校验日期不超过该月实际天数
         int slotDays = offsets[slotIdx + 1] - offsets[slotIdx];
-        if (lunarDay > slotDays) {
-            throw new IllegalArgumentException(
-                    "农历 " + lunarYear + " 年" + (isLeapMonth ? "闰" : "") + lunarMonth
-                            + " 月仅有 " + slotDays + " 天，日期 " + lunarDay + " 超出范围");
-        }
+        checkArgument(lunarDay <= slotDays,
+            "农历 %s 年%s%s 月仅有 %s 天，日期 %s 超出范围",
+            lunarYear, isLeapMonth ? "闰" : "", lunarMonth, slotDays, lunarDay);
 
         // 年前缀和 + 月内偏移 + 日偏移 → 总天数偏移
         long offset = CUMULATIVE_DAYS[yi] + offsets[slotIdx] + lunarDay - 1;
@@ -379,17 +371,13 @@ public final class LunarCalendar {
 
     /** 获取月份名称。 */
     public static String getMonthName(int month, boolean isLeapMonth) {
-        if (month < 1 || month > 12) {
-            throw new IllegalArgumentException("月份超出范围: " + month);
-        }
+        checkArgument(month >= 1 && month <= 12, "月份超出范围: %s", month);
         return (isLeapMonth ? "闰" : "") + MONTH_NAMES[month - 1] + "月";
     }
 
     /** 获取日期名称（如"初一"）。 */
     public static String getDayName(int day) {
-        if (day < 1 || day > 30) {
-            throw new IllegalArgumentException("日期超出范围: " + day);
-        }
+        checkArgument(day >= 1 && day <= 30, "日期超出范围: %s", day);
         return DAY_NAMES[day - 1];
     }
 
@@ -530,13 +518,14 @@ public final class LunarCalendar {
         10, 10, 11, 11, 12, 12
     };
 
-    // ─── 节气数据表（1901-2100，共 200 年，基于香港天文台 / 紫金山天文台数据）───
+    // ─── 节气数据表（1900-2100，共 201 年，基于香港天文台 / 紫金山天文台数据）───
     //
     // 使用 2-bit 偏移量压缩编码，每年仅需 48 位（1 个 long）。
     // 每个节气的 day-of-month = BASE_DAYS[i] + ((packed >> (i*2)) & 3)
     //
-    // 与 LUNAR_INFO 类似的紧凑整数设计，200 年仅 ~1.6KB（vs 原始字符串 4.8KB）。
-    private static final int SOLAR_TERM_DATA_START = 1901;
+    // 与 LUNAR_INFO 类似的紧凑整数设计，201 年仅 ~1.6KB（vs 原始字符串 4.8KB）。
+    // 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
+    private static final int SOLAR_TERM_DATA_START = 1900;
     private static final int SOLAR_TERM_DATA_END = 2100;
 
     /**
@@ -549,15 +538,17 @@ public final class LunarCalendar {
     };
 
     /**
-     * 节气压缩数据（1901-2100，每年一个 48-bit long）。
+     * 节气压缩数据（1900-2100，每年一个 48-bit long）。
      *
      * <p>编码方式：24 个节气 × 2 bit = 48 bit，低位在前。
      * bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）。
      * 实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset。</p>
      *
-     * <p>与 LUNAR_INFO 相同风格的紧凑整数数组设计。</p>
+     * <p>与 LUNAR_INFO 相同风格的紧凑整数数组设计。
+     * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。</p>
      */
     private static final long[] SOLAR_TERM_PACKED = {
+0x6aaaa6aa9a56L, // 1900 (VSOP87 估算)
 0x6aaaa6aa9a5aL, // 1901
         0xaaaaaabaaa6aL, // 1902
         0xaaabbabbafaaL, // 1903
@@ -802,7 +793,8 @@ public final class LunarCalendar {
     /**
      * 计算指定公历年的所有 24 节气日期。
      *
-     * <p>1901-2100 年使用权威天文台预计算数据（香港天文台 / 紫金山天文台），精度为准确日期。
+     * <p>1900-2100 年使用权威天文台预计算数据（香港天文台 / 紫金山天文台），精度为准确日期。
+     * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
      * 超出范围时回退到 VSOP87 太阳黄经公式估算（精度 ±1 天）。</p>
      *
      * @param year 公历年份
@@ -961,10 +953,8 @@ public final class LunarCalendar {
     // ===================================================================
 
     private static void validateYear(int year) {
-        if (year < START_YEAR || year > END_YEAR) {
-            throw new IllegalArgumentException(
-                "年份 " + year + " 超出范围，农历数据覆盖 " + START_YEAR + "-" + END_YEAR);
-        }
+        checkArgument(year >= START_YEAR && year <= END_YEAR,
+            "年份 %s 超出范围，农历数据覆盖 %s-%s", year, START_YEAR, END_YEAR);
     }
 
     private static LunarInfo buildLunarInfo(int year, int month, int day, boolean isLeapMonth) {

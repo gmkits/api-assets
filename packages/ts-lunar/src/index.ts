@@ -13,7 +13,8 @@
  *   24 个节气 × 2 bit = 48 bit，低位在前
  *   bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）
  *   实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset
- *   数据来源：香港天文台 / 紫金山天文台，覆盖 1901-2100（200 年 ~1.2KB）
+ *   数据来源：香港天文台 / 紫金山天文台，覆盖 1900-2100（201 年 ~1.2KB）
+ *   注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）
  *
  * ─── 信息论最优性分析 ───
  * 农历每年最少需编码：12 个月大小（12 bit）+ 闰月位置（4 bit）+ 闰月大小（1 bit）= 17 bit。
@@ -25,7 +26,7 @@
  * 2. 年前缀和数组（CUMULATIVE_DAYS）：solarToLunar 年份定位 O(log n) 二分查找
  * 3. 每年月份偏移表（MONTH_OFFSETS）：月份定位 O(1) 直接索引，消除热路径位运算
  * 4. 朔日天文估算（estimateNewMoonJDE）：Jean Meeus 算法，可验证数据表正确性
- * 5. 节气 O(1) 位运算解码：HKO 权威数据 + 2-bit 偏移压缩，1901-2100 准确日期
+ * 5. 节气 O(1) 位运算解码：HKO 权威数据 + 2-bit 偏移压缩，1900-2100 准确日期
  *
  * 基准日为 1900-01-31（庚子年正月初一）。
  *
@@ -625,15 +626,16 @@ export interface SolarTermInfo {
   date: [number, number, number];
 }
 
-// ─── 节气数据表（1901-2100，共 200 年，基于香港天文台 / 紫金山天文台数据）───
+// ─── 节气数据表（1900-2100，共 201 年，基于香港天文台 / 紫金山天文台数据）───
 //
 // 使用 2-bit 偏移量压缩编码，每年仅需 48 位（1 个 BigInt/long）。
 // 每个节气的 day-of-month = BASE_DAYS[i] + ((packed >> (i*2)) & 3)
 //
-// 与 LUNAR_INFO 类似的紧凑整数设计，200 年仅 ~1.2KB（vs 原始字符串 4.8KB）。
+// 与 LUNAR_INFO 类似的紧凑整数设计，201 年仅 ~1.2KB（vs 原始字符串 4.8KB）。
+// 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
 
 /** 节气数据覆盖起始年。 */
-const SOLAR_TERM_DATA_START = 1901;
+const SOLAR_TERM_DATA_START = 1900;
 
 /** 节气数据覆盖结束年。 */
 const SOLAR_TERM_DATA_END = 2100;
@@ -648,15 +650,17 @@ const SOLAR_TERM_BASE_DAYS: number[] = [
 ];
 
 /**
- * 节气压缩数据（1901-2100，每年一个 48-bit 整数）。
+ * 节气压缩数据（1900-2100，每年一个 48-bit 整数）。
  *
  * 编码方式：24 个节气 × 2 bit = 48 bit，低位在前。
  *   bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）
  *   实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset
  *
  * 与 LUNAR_INFO 相同风格的紧凑整数数组设计。
+ * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
  */
 const SOLAR_TERM_PACKED: bigint[] = [
+  0x6aaaa6aa9a56n, // 1900 (VSOP87 估算)
 0x6aaaa6aa9a5an, // 1901
   0xaaaaaabaaa6an, // 1902
   0xaaabbabbafaan, // 1903
@@ -907,7 +911,8 @@ function decodeSolarTermDay(packed: bigint, termIndex: number): number {
  * 计算指定公历年的所有 24 节气日期。
  *
  * ─── 数据来源 ───
- * 1901-2100 年使用权威天文台预计算数据（香港天文台 / 紫金山天文台），精度为准确日期。
+ * 1900-2100 年使用权威天文台预计算数据（香港天文台 / 紫金山天文台），精度为准确日期。
+ * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
  * 超出范围时回退到 VSOP87 太阳黄经公式估算（精度 ±1 天）。
  *
  * @param year 公历年份
