@@ -147,4 +147,55 @@ class HolidayApi25ApplicationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.requestId").value("test-trace-123"));
     }
+
+    @Test
+    void getManifest_shouldHonourIfNoneMatch() throws Exception {
+        // First request: capture ETag
+        String etag = mockMvc.perform(get("/api/v2/manifest"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("ETag"))
+                .andReturn()
+                .getResponse()
+                .getHeader("ETag");
+        // Second request with matching If-None-Match → 304 Not Modified
+        mockMvc.perform(get("/api/v2/manifest").header("If-None-Match", etag))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string("ETag", etag));
+    }
+
+    @Test
+    void getVersion_shouldHonourIfNoneMatch() throws Exception {
+        String etag = mockMvc.perform(get("/api/v2/version"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("ETag"))
+                .andReturn()
+                .getResponse()
+                .getHeader("ETag");
+        mockMvc.perform(get("/api/v2/version").header("If-None-Match", etag))
+                .andExpect(status().isNotModified());
+    }
+
+    @Test
+    void batchDays_shouldFanOutOnVirtualThreads() throws Exception {
+        String body = "{\"regionCode\":\"CN\",\"dates\":[\"2025-01-01\",\"2025-01-02\",\"2025-05-01\"]}";
+        mockMvc.perform(post("/api/v2/days:batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[0].date").value("2025-01-01"))
+                .andExpect(jsonPath("$.data[0].data.holiday").value(true))
+                .andExpect(jsonPath("$.data[2].date").value("2025-05-01"));
+    }
+
+    @Test
+    void batchDays_emptyDates_shouldReturn400() throws Exception {
+        mockMvc.perform(post("/api/v2/days:batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"regionCode\":\"CN\",\"dates\":[]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
 }

@@ -17,9 +17,13 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -74,15 +78,31 @@ public class HolidayQueryController {
     }
 
     @GetMapping("/version")
-    @Operation(summary = "查询版本信息")
-    public ApiResponse<VersionPayload> getVersion(HttpServletRequest request) {
-        return ApiResponses.success(cachedHolidayQueryService.getVersion(), request);
+    @Operation(summary = "查询版本信息",
+            description = "返回 manifest 派生的版本信息；支持 ETag/If-None-Match 304 协商。")
+    public ResponseEntity<ApiResponse<VersionPayload>> getVersion(
+            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch,
+            HttpServletRequest request) {
+        String etag = cachedHolidayQueryService.getManifestETag();
+        if (etag != null && etag.equals(ifNoneMatch)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
+        }
+        ApiResponse<VersionPayload> body = ApiResponses.success(cachedHolidayQueryService.getVersion(), request);
+        return ResponseEntity.ok().eTag(etag).body(body);
     }
 
     @GetMapping("/manifest")
-    @Operation(summary = "读取 manifest")
-    public ApiResponse<JsonNode> getManifest(HttpServletRequest request) {
-        return ApiResponses.success(cachedHolidayQueryService.getManifest(), request);
+    @Operation(summary = "读取 manifest",
+            description = "返回 manifest 完整 JSON；支持 ETag/If-None-Match 304 协商。")
+    public ResponseEntity<ApiResponse<JsonNode>> getManifest(
+            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch,
+            HttpServletRequest request) {
+        String etag = cachedHolidayQueryService.getManifestETag();
+        if (etag != null && etag.equals(ifNoneMatch)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
+        }
+        ApiResponse<JsonNode> body = ApiResponses.success(cachedHolidayQueryService.getManifest(), request);
+        return ResponseEntity.ok().eTag(etag).body(body);
     }
 
     @GetMapping("/bundles/{regionCode}/{year}/metadata")

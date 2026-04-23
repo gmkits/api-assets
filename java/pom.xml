@@ -96,6 +96,7 @@
                 <jdk>[25,)</jdk>
             </activation>
             <modules>
+                <module>holiday-sdk-j25</module>
                 <module>holiday-api-j25</module>
             </modules>
         </profile>
