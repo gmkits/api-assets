@@ -7,6 +7,10 @@ coverage/
 *.log
 .DS_Store
 
+# VitePress
+apps/docs-site/.vitepress/cache/
+apps/docs-site/.vitepress/dist/
+
 # Java build artifacts
 java/**/build/
 java/**/.gradle/
