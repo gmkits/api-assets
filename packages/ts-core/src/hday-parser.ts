@@ -371,5 +371,14 @@ export function parseHdayBundle(data: ArrayBuffer): HdayBundle {
   const strings = parseStringTable(view, stringSection);
   const nameLists = parseNameListTable(view, nameListSection);
 
-  return { header, days, strings, nameLists };
+  // Freeze the bundle to prevent accidental mutation by consumers.
+  // Caches share parsed bundles across queries, so mutating any field
+  // would corrupt unrelated callers.  Object.freeze is shallow + cheap;
+  // the inner arrays only contain primitives or already-frozen records.
+  return Object.freeze({
+    header: Object.freeze(header),
+    days: Object.freeze(days),
+    strings: Object.freeze(strings),
+    nameLists: Object.freeze(nameLists),
+  }) as HdayBundle;
 }
