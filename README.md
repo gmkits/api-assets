@@ -89,7 +89,8 @@ HTTP API 暴露给内网系统
 | `holiday-lunar-java` | 农历转换 + 二十四节气精确查表（HKO 数据 + 2-bit 偏移压缩，Java 8+） |
 | `holiday-spring-starter` | Spring Boot 自动配置 |
 | `holiday-api-j8` | Java 8 / Spring Boot 2.7 兼容 API |
-| `holiday-api-j25` | Java 25 / Spring Boot 4 高性能 API（虚拟线程、分层缓存、审计日志、限流） |
+| `holiday-api-j25` | Java 25 / Spring Boot 4 高性能 API（虚拟线程、分层缓存、审计日志、限流、ETag、`POST /api/v2/days:batch` 批量端点） |
+| `holiday-sdk-j25` | **JDK 25 SDK** —— 纯 JDK 客户端（无 Spring 依赖），HTTP/2 + 虚拟线程，提供同步 / 异步 / 批量三套 API |
 
 ### 前端应用
 
@@ -97,6 +98,58 @@ HTTP API 暴露给内网系统
 | --- | --- |
 | `apps/admin-web` | Vue 3 管理后台 |
 | `apps/demo-web` | 浏览器演示应用 |
+| `apps/docs-site` | VitePress 文档站点（快速开始 / API 参考 / 农历 & 节气 / JDK25 SDK） |
+
+---
+
+## 5 分钟试一下 JDK 25 SDK
+
+`holiday-sdk-j25` 是一个**无 Spring 依赖**的纯 JDK 客户端：HTTP/2 + 虚拟线程，
+对外同时提供同步、`CompletableFuture` 异步与虚拟线程并行批量三套 API。
+
+**1. 引依赖**（Maven）
+
+```xml
+<dependency>
+  <groupId>com.github.gmkits</groupId>
+  <artifactId>holiday-sdk-j25</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+**2. 三行代码即可使用**
+
+```java
+import com.github.gmkits.holiday.sdk.j25.HolidayClient;
+import java.time.LocalDate;
+import java.util.List;
+
+try (HolidayClient client = HolidayClient.builder()
+        .endpoint("https://holiday.example.com")
+        .timeout(java.time.Duration.ofSeconds(3))
+        .maxInflight(64)               // Semaphore 限并发，防止打爆后端
+        .build()) {
+
+    // 同步
+    var info = client.getDay(LocalDate.of(2025, 1, 1));
+
+    // 异步（CompletableFuture，运行在虚拟线程上）
+    var future = client.getDayAsync(LocalDate.of(2025, 1, 2));
+
+    // 批量 fan-out（虚拟线程并行，单条失败不影响其它）
+    List<HolidayClient.BatchItem> batch = client.batchDays(List.of(
+            LocalDate.of(2025, 1, 1),
+            LocalDate.of(2025, 5, 1),
+            LocalDate.of(2025, 10, 1)));
+    batch.forEach(item -> System.out.println(item.date() + " → "
+            + (item.isSuccess() ? item.data().statutoryHoliday() : item.error())));
+}
+```
+
+> 当 `java.util.concurrent.StructuredTaskScope` 在未来 JDK 转正后，可平滑替换为
+> `StructuredTaskScope.open(Joiner.awaitAll())` 形态，语义完全一致。
+
+详见 [`apps/docs-site`](apps/docs-site) 文档站点（VitePress）。
 
 ---
 
