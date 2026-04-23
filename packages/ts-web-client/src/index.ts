@@ -1,2 +1,7 @@
-export { HolidayApiClient } from './client.js';
-export type { HolidayApiClientOptions } from './client.js';
+export { HolidayApiClient, HolidayApiError } from './client.js';
+export type {
+  HolidayApiClientOptions,
+  RequestOptions,
+  RetryPolicy,
+  CachePolicy,
+} from './client.js';

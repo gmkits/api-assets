@@ -148,4 +148,83 @@ describe('HolidayApiClient', () => {
     assert.equal(urls[0], 'https://api.example.com/api/v1/bundle/CN/2025');
     assert.deepEqual(Array.from(new Uint8Array(bundle)), Array.from(bytes));
   });
+
+  it('应在 5xx 时按指数退避重试，并最终成功', async () => {
+    let calls = 0;
+    const client = new HolidayApiClient({
+      baseUrl: 'https://api.example.com',
+      retry: { maxRetries: 3, baseDelayMs: 1, maxDelayMs: 5 },
+      cache: { maxEntries: 0 },
+      fetchFn: async () => {
+        calls += 1;
+        if (calls < 3) {
+          return { ok: false, status: 503, statusText: 'Service Unavailable', async text() { return 'down'; } };
+        }
+        return createJsonResponse(['CN']);
+      },
+    });
+    const regions = await client.getRegions();
+    assert.deepEqual(regions, ['CN']);
+    assert.equal(calls, 3, 'expected 2 retries before success');
+  });
+
+  it('应在客户端缓存命中时不再发起请求', async () => {
+    let calls = 0;
+    const payload = ['CN'];
+    const client = new HolidayApiClient({
+      baseUrl: 'https://api.example.com',
+      cache: { maxEntries: 8, ttlMs: 60_000 },
+      fetchFn: async () => {
+        calls += 1;
+        return createJsonResponse(payload);
+      },
+    });
+    const a = await client.getRegions();
+    const b = await client.getRegions();
+    assert.deepEqual(a, payload);
+    assert.deepEqual(b, payload);
+    assert.equal(calls, 1, 'expected single fetch with cache hit');
+    client.clearCache();
+    await client.getRegions();
+    assert.equal(calls, 2, 'expected fetch after clearCache()');
+  });
+
+  it('应支持 AbortSignal 立即取消未完成的请求', async () => {
+    const client = new HolidayApiClient({
+      baseUrl: 'https://api.example.com',
+      cache: { maxEntries: 0 },
+      retry: { maxRetries: 0 },
+      fetchFn: (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const reason = init.signal.reason;
+            reject(reason instanceof Error ? reason : new Error('aborted'));
+          });
+        }),
+    });
+    const ac = new AbortController();
+    const pending = client.getRegions({ signal: ac.signal });
+    ac.abort(new Error('cancelled by user'));
+    await assert.rejects(pending, /cancelled by user/);
+  });
+
+  it('5xx 失败应抛出 HolidayApiError 并保留状态码', async () => {
+    const client = new HolidayApiClient({
+      baseUrl: 'https://api.example.com',
+      retry: { maxRetries: 0 },
+      cache: { maxEntries: 0 },
+      fetchFn: async () => ({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        async text() { return 'boom'; },
+      }),
+    });
+    await assert.rejects(client.getRegions(), (err) => {
+      assert.equal(err.name, 'HolidayApiError');
+      assert.equal(err.status, 500);
+      assert.equal(err.body, 'boom');
+      return true;
+    });
+  });
 });
