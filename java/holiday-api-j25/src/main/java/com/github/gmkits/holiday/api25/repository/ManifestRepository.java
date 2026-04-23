@@ -13,8 +13,12 @@ import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -68,6 +72,16 @@ public class ManifestRepository {
         return getSnapshot().publishedAt();
     }
 
+    /**
+     * 返回 manifest 当前快照的稳定弱 ETag。
+     *
+     * <p>基于 {@code specVersion}、{@code bundleFormatVersion}、{@code publishedAt}
+     * 计算 SHA-256 前 16 位十六进制；同一份 manifest 文件在重载前 ETag 不变。</p>
+     */
+    public String getETag() {
+        return getSnapshot().etag();
+    }
+
     private ManifestSnapshot getSnapshot() {
         ManifestSnapshot current = snapshot;
         if (current != null) {
@@ -115,6 +129,7 @@ public class ManifestRepository {
         private final String specVersion;
         private final String bundleFormatVersion;
         private final String publishedAt;
+        private final String etag;
 
         private ManifestSnapshot(JsonNode manifest,
                                  List<String> supportedRegions,
@@ -125,6 +140,22 @@ public class ManifestRepository {
             this.specVersion = manifest.path("specVersion").asText("");
             this.bundleFormatVersion = manifest.path("bundleFormatVersion").asText("");
             this.publishedAt = manifest.path("publishedAt").asText("");
+            this.etag = computeETag(specVersion, bundleFormatVersion, publishedAt);
+        }
+
+        private static String computeETag(String specVersion, String bundleFormatVersion, String publishedAt) {
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                byte[] payload = (specVersion + '|' + bundleFormatVersion + '|' + publishedAt)
+                        .getBytes(StandardCharsets.UTF_8);
+                byte[] hash = digest.digest(payload);
+                String hex = HexFormat.of().formatHex(hash, 0, 8);
+                // Weak ETag: contents are derived from a snapshot identity hint, not byte-for-byte.
+                return "W/\"" + hex + "\"";
+            } catch (NoSuchAlgorithmException ex) {
+                // SHA-256 is mandated by the JLS; fall back to a string hashCode if absent.
+                return "W/\"" + Integer.toHexString((specVersion + bundleFormatVersion + publishedAt).hashCode()) + "\"";
+            }
         }
 
         static ManifestSnapshot from(JsonNode manifest) {
@@ -164,6 +195,10 @@ public class ManifestRepository {
 
         String publishedAt() {
             return publishedAt;
+        }
+
+        String etag() {
+            return etag;
         }
 
         JsonNode findBundleMetadata(String regionCode, int year) {

@@ -68,6 +68,11 @@ public class CachedHolidayQueryService {
         return manifestRepository.getManifest();
     }
 
+    /** 当前 manifest 快照的弱 ETag，可用于 HTTP 条件请求。 */
+    public String getManifestETag() {
+        return manifestRepository.getETag();
+    }
+
     public JsonNode reloadManifest() {
         return manifestRepository.reloadManifest();
     }
