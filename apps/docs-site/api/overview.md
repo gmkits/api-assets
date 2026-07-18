@@ -21,10 +21,10 @@ cn-holiday-kit 暴露两套 HTTP API：
 | GET | `/api/v2/version` | 版本信息（支持 ETag） |
 | GET | `/api/v2/manifest` | manifest 全量 JSON（支持 ETag） |
 | GET | `/api/v2/bundles/{regionCode}/{year}/metadata` | bundle 元信息 |
-| **POST** | `/api/v2/days:batch` | **批量按日期查询（虚拟线程 fan-out，最多 100 个）** |
+| **POST** | `/api/v2/days:batch` | **批量按日期查询（最多 100 个）** |
 | POST | `/api/v2/ops/cache/clear` | 运维：清空缓存 |
 | POST | `/api/v2/ops/cache/warmup` | 运维：预热 |
-| POST | `/api/v2/ops/manifest/reload` | 运维：重载 manifest |
+| POST | `/api/v2/ops/manifest/reload` | 运维：重载 manifest、bundle 和查询缓存 |
 
 ## 限流与审计
 

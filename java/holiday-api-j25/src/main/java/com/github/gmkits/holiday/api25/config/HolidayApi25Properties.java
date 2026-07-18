@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * holiday-api-j25 全量配置。
  *
- * <p>包含：缓存、限流、Redis 二级缓存、审计日志、预热等。</p>
+ * <p>包含：缓存、限流、审计日志、预热等。</p>
  */
 @Data
 @ConfigurationProperties(prefix = "holiday.api")
@@ -43,9 +43,6 @@ public class HolidayApi25Properties {
     /** 本地缓存配置 */
     private Cache cache = new Cache();
 
-    /** Redis 二级缓存配置 */
-    private RedisCache redisCache = new RedisCache();
-
     /** 限流配置 */
     private RateLimit rateLimit = new RateLimit();
 
@@ -65,18 +62,6 @@ public class HolidayApi25Properties {
 
         /** 本地缓存写入后过期时间 */
         private Duration expireAfterWrite = Duration.ofMinutes(30);
-    }
-
-    @Data
-    public static class RedisCache {
-        /** 是否启用 Redis 二级缓存 */
-        private boolean enabled = false;
-
-        /** Redis 缓存 key 前缀 */
-        private String keyPrefix = "holiday:";
-
-        /** Redis 缓存 TTL（默认 2 小时） */
-        private Duration ttl = Duration.ofHours(2);
     }
 
     @Data

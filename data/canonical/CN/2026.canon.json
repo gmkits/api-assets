@@ -30,7 +30,7 @@
       "id": "gov-notice-2026",
       "type": "GOV_NOTICE",
       "title": "国务院办公厅关于2026年部分节假日安排的通知",
-      "url": "https://www.gov.cn/zhengce/content/202511/content_2026.htm",
+      "url": "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm",
       "publishedAt": "2025-11-04"
     }
   ],
@@ -69,7 +69,7 @@
         "gov-notice-2026"
       ],
       "from": "2026-02-15",
-      "to": "2026-02-21"
+      "to": "2026-02-23"
     },
     {
       "id": "tomb-sweeping-2026",
@@ -397,7 +397,7 @@
       "sourceRefs": [
         "gov-notice-2026"
       ],
-      "date": "2026-02-22"
+      "date": "2026-02-28"
     },
     {
       "id": "labour-day-2026-makeup-1",
@@ -414,7 +414,7 @@
       "sourceRefs": [
         "gov-notice-2026"
       ],
-      "date": "2026-04-26"
+      "date": "2026-05-09"
     },
     {
       "id": "national-day-2026-makeup-1",
@@ -431,7 +431,7 @@
       "sourceRefs": [
         "gov-notice-2026"
       ],
-      "date": "2026-09-28"
+      "date": "2026-09-20"
     },
     {
       "id": "national-day-2026-makeup-2",

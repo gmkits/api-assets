@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+node "$ROOT/scripts/generate-hko-golden.mjs" --output "$TMP_DIR/lunar.csv"
+cmp "$TMP_DIR/lunar.csv" "$ROOT/tests/lunar-golden.csv"
+
+node "$ROOT/scripts/generate-hko-solar-terms.mjs" \
+  --output "$TMP_DIR/solar-terms.csv" \
+  --java-output "$TMP_DIR/solar-terms.csv"
+cmp "$TMP_DIR/solar-terms.csv" "$ROOT/tests/solar-terms.csv"
+
+echo "✓ Lunar dates and solar terms match freshly downloaded HKO data (1901-2100)"

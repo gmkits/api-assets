@@ -172,6 +172,11 @@ final class HolidayServiceImpl implements HolidayService {
         return null;
     }
 
+    @Override
+    public void clearCache() {
+        cache.clear();
+    }
+
     private static int estimateRangeCapacity(LocalDate from, LocalDate to) {
         long dayCount = to.toEpochDay() - from.toEpochDay() + 1;
         if (dayCount >= Integer.MAX_VALUE) {

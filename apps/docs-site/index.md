@@ -36,7 +36,7 @@ features:
     linkText: 响应模型
   - icon: ⚡️
     title: 缓存友好
-    details: 服务端 Caffeine + 可选 Redis 二级缓存；TS Web Client 内置 in-flight dedup + LRU + 指数退避重试。
+    details: 服务端 Caffeine 本地缓存；TS Web Client 内置 in-flight dedup + LRU + 指数退避重试。
   - icon: 🌐
     title: 真正多端
     details: Browser / Node / JVM / Spring Boot 4 starter，按需挑选你的运行时。

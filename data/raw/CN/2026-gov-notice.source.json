@@ -1,7 +1,7 @@
 {
   "sourceType": "GOV_NOTICE",
   "title": "国务院办公厅关于2026年部分节假日安排的通知",
-  "url": "https://www.gov.cn/zhengce/content/202511/content_2026.htm",
+  "url": "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm",
   "publishedAt": "2025-11-04",
   "regionCode": "CN",
   "year": 2026,
@@ -22,9 +22,11 @@
         "2026-02-18",
         "2026-02-19",
         "2026-02-20",
-        "2026-02-21"
+        "2026-02-21",
+        "2026-02-22",
+        "2026-02-23"
       ],
-      "adjustedWorkdays": ["2026-02-14", "2026-02-22"]
+      "adjustedWorkdays": ["2026-02-14", "2026-02-28"]
     },
     {
       "name": "清明节",
@@ -42,7 +44,7 @@
         "2026-05-04",
         "2026-05-05"
       ],
-      "adjustedWorkdays": ["2026-04-26"]
+      "adjustedWorkdays": ["2026-05-09"]
     },
     {
       "name": "端午节",
@@ -68,7 +70,7 @@
         "2026-10-06",
         "2026-10-07"
       ],
-      "adjustedWorkdays": ["2026-09-28", "2026-10-10"]
+      "adjustedWorkdays": ["2026-09-20", "2026-10-10"]
     }
   ]
 }

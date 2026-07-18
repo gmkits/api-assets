@@ -4,6 +4,8 @@ import com.github.gmkits.holiday.api25.config.HolidayApi25Properties;
 import com.github.gmkits.holiday.api25.config.RequestIdFilter;
 import com.github.gmkits.holiday.api25.dto.ApiErrorResponse;
 import com.github.gmkits.holiday.api25.dto.ApiResponses;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,15 +20,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 基于令牌桶算法的简易限流器，保护小机器不被高并发打崩。
  *
  * <p>按客户端 IP 限流，支持全局 QPS 上限和单 IP QPS 上限。
- * 使用 {@link ConcurrentHashMap} 和虚拟线程友好的无锁结构，
- * 不引入外部依赖。</p>
+ * IP 桶由有容量和过期策略的 Caffeine 缓存管理，令牌消费使用 CAS，
+ * 避免长时间运行时被不同来源 IP 撑大内存。</p>
  *
  * <p>当限流触发时返回 HTTP 429 和统一错误格式。</p>
  */
@@ -42,7 +44,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final TokenBucket globalBucket = new TokenBucket();
 
     /** 按 IP 的令牌桶 */
-    private final ConcurrentHashMap<String, TokenBucket> ipBuckets = new ConcurrentHashMap<>();
+    private final Cache<String, TokenBucket> ipBuckets = Caffeine.newBuilder()
+            .maximumSize(100_000)
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .build();
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -63,7 +68,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         // 单 IP 限流检查
-        TokenBucket ipBucket = ipBuckets.computeIfAbsent(clientIp, k -> new TokenBucket());
+        TokenBucket ipBucket = ipBuckets.get(clientIp, k -> new TokenBucket());
         if (!ipBucket.tryConsume(properties.getRateLimit().getPerIpQps())) {
             writeRateLimitResponse(response, request, "IP_RATE_LIMITED",
                     "当前 IP 请求过于频繁，请稍后重试");

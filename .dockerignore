@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+node_modules
+**/node_modules
+**/target
+**/dist
+apps
+dotnet
+packages
+tests

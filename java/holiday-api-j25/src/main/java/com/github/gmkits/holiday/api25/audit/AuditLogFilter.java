@@ -1,6 +1,7 @@
 package com.github.gmkits.holiday.api25.audit;
 
 import com.github.gmkits.holiday.api25.config.RequestIdFilter;
+import com.github.gmkits.holiday.api25.config.HolidayApi25Properties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,9 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -29,12 +30,14 @@ import java.time.Instant;
 public class AuditLogFilter extends OncePerRequestFilter {
 
     private final AuditLogWriter auditLogWriter;
+    private final HolidayApi25Properties properties;
+    private final AsyncTaskExecutor applicationTaskExecutor;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         // 只审计 API 请求，忽略 actuator、swagger 等
-        return !path.startsWith("/api/");
+        return !path.startsWith("/api/") || !properties.getAudit().isEnabled();
     }
 
     @Override
@@ -42,11 +45,10 @@ public class AuditLogFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         long startTime = System.nanoTime();
-        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
         String errorMessage = null;
 
         try {
-            filterChain.doFilter(request, responseWrapper);
+            filterChain.doFilter(request, response);
         } catch (Exception ex) {
             errorMessage = ex.getMessage();
             throw ex;
@@ -61,23 +63,35 @@ public class AuditLogFilter extends OncePerRequestFilter {
                     .queryString(request.getQueryString())
                     .clientIp(resolveClientIp(request))
                     .userAgent(request.getHeader("User-Agent"))
-                    .statusCode(responseWrapper.getStatus())
+                    .statusCode(response.getStatus())
                     .durationMs(durationMs)
-                    .responseSize(responseWrapper.getContentSize())
+                    .responseSize(resolveResponseSize(response))
                     .errorMessage(errorMessage)
                     .build();
 
-            // 先把响应体写回客户端
-            responseWrapper.copyBodyToResponse();
+            try {
+                applicationTaskExecutor.execute(() -> {
+                    try {
+                        auditLogWriter.write(auditLog);
+                    } catch (Exception ex) {
+                        log.warn("审计日志写入失败: {}", ex.getMessage());
+                    }
+                });
+            } catch (RuntimeException ex) {
+                log.warn("审计日志任务提交失败: {}", ex.getMessage());
+            }
+        }
+    }
 
-            // 异步写审计日志 — 利用虚拟线程不阻塞
-            Thread.startVirtualThread(() -> {
-                try {
-                    auditLogWriter.write(auditLog);
-                } catch (Exception ex) {
-                    log.warn("审计日志写入失败: {}", ex.getMessage());
-                }
-            });
+    private static int resolveResponseSize(HttpServletResponse response) {
+        String contentLength = response.getHeader("Content-Length");
+        if (contentLength == null) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(contentLength);
+        } catch (NumberFormatException ex) {
+            return -1;
         }
     }
 

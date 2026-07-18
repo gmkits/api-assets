@@ -18,6 +18,7 @@
         <module>holiday-lunar-java</module>
         <module>holiday-spring-starter</module>
         <module>holiday-api-j8</module>
+        <module>holiday-benchmarks</module>
         <!-- holiday-api-j25 需要 Java 25，使用独立 profile 构建 -->
     </modules>
 

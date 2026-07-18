@@ -91,6 +91,7 @@ HTTP API 暴露给内网系统
 | `holiday-api-j8` | Java 8 / Spring Boot 2.7 兼容 API |
 | `holiday-api-j25` | Java 25 / Spring Boot 4 高性能 API（虚拟线程、分层缓存、审计日志、限流、ETag、`POST /api/v2/days:batch` 批量端点） |
 | `holiday-sdk-j25` | **JDK 25 SDK** —— 纯 JDK 客户端（无 Spring 依赖），HTTP/2 + 虚拟线程，提供同步 / 异步 / 批量三套 API |
+| `holiday-benchmarks` | JMH 核心查询基准（固定 4 GiB 堆，可复现吞吐测试） |
 
 ### 前端应用
 
@@ -530,11 +531,26 @@ mvn -pl holiday-api-j8 spring-boot:run
 
 ### 高性能服务（Java 25 / Spring Boot 4）
 
-适合内网部署，支持虚拟线程、分层缓存、OpenAPI 文档、审计日志、限流等：
+最简单的启动方式是 Docker Compose：
+
+```bash
+docker compose up --build -d
+curl 'http://localhost:18080/api/v2/day?date=2026-10-01'
+```
+
+服务把 `./data` 只读挂载进容器。更新 Canonical 数据后执行：
+
+```bash
+./scripts/update-bundles.sh
+curl -X POST http://localhost:18080/api/v2/ops/manifest/reload
+```
+
+这会重新生成 materialized、`.hday`、manifest，校验各层一致性，并让运行中的
+服务清空 bundle/cache 后重新加载。直接运行源码也可以：
 
 ```bash
 cd java
-mvn -Pj25 -pl holiday-api-j25 spring-boot:run
+mvn -Pj25 -pl holiday-api-j25 -am spring-boot:run
 ```
 
 **内置能力**：
@@ -563,11 +579,13 @@ mvn -Pj25 -pl holiday-api-j25 spring-boot:run
 | GET | `/api/v2/bundles/{regionCode}/{year}/metadata` | 查询 bundle 元信息 |
 | POST | `/api/v2/ops/cache/clear` | 清理缓存 |
 | POST | `/api/v2/ops/cache/warmup` | 预热缓存 |
-| POST | `/api/v2/ops/manifest/reload` | 重载 manifest |
+| POST | `/api/v2/ops/manifest/reload` | 重载 manifest、bundle 和查询缓存 |
 
 ---
 
 ## 编译器命令行
+
+日常更新建议直接执行 `./scripts/update-bundles.sh`，下面是各阶段的底层命令：
 
 ```bash
 # 校验 Canonical 数据格式

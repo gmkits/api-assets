@@ -166,4 +166,24 @@ class HolidayServiceTest {
         assertNotNull(info);
         assertEquals("CN", info.getRegionCode());
     }
+
+    @Test
+    void official2026Schedule_matchesGovernmentNotice() {
+        assertTrue(service.isHoliday(LocalDate.of(2026, 2, 23)));
+        assertAdjustedWorkday(LocalDate.of(2026, 2, 28));
+        assertAdjustedWorkday(LocalDate.of(2026, 5, 9));
+        assertAdjustedWorkday(LocalDate.of(2026, 9, 20));
+
+        assertFalse(service.isAdjustedWorkday(LocalDate.of(2026, 2, 22)));
+        assertFalse(service.isAdjustedWorkday(LocalDate.of(2026, 4, 26)));
+        assertFalse(service.isAdjustedWorkday(LocalDate.of(2026, 9, 28)));
+    }
+
+    private static void assertAdjustedWorkday(LocalDate date) {
+        DayInfo info = service.getDayInfo(date);
+        assertNotNull(info);
+        assertTrue(info.isAdjustedWorkday(), date + " should be an adjusted workday");
+        assertTrue(info.isWorkday(), date + " should be a workday");
+        assertFalse(info.isHoliday(), date + " should not be a holiday");
+    }
 }

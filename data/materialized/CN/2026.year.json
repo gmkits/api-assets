@@ -621,32 +621,42 @@
       ]
     },
     "2026-02-22": {
-      "isHoliday": false,
-      "isWorkday": true,
+      "isHoliday": true,
+      "isWorkday": false,
       "isWeekend": true,
       "isStatutoryHoliday": false,
-      "isAdjustedWorkday": true,
+      "isAdjustedWorkday": false,
       "holidayNames": {
         "zh-CN": [
-          "春节调休"
+          "春节"
         ],
         "en-US": [
-          "Spring Festival makeup"
+          "Spring Festival"
         ]
       },
       "labels": [
         "SPRING_FESTIVAL",
-        "ADJUSTED_WORKDAY"
+        "STATUTORY"
       ]
     },
     "2026-02-23": {
-      "isHoliday": false,
-      "isWorkday": true,
+      "isHoliday": true,
+      "isWorkday": false,
       "isWeekend": false,
       "isStatutoryHoliday": false,
       "isAdjustedWorkday": false,
-      "holidayNames": {},
-      "labels": []
+      "holidayNames": {
+        "zh-CN": [
+          "春节"
+        ],
+        "en-US": [
+          "Spring Festival"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ]
     },
     "2026-02-24": {
       "isHoliday": false,
@@ -686,12 +696,22 @@
     },
     "2026-02-28": {
       "isHoliday": false,
-      "isWorkday": false,
+      "isWorkday": true,
       "isWeekend": true,
       "isStatutoryHoliday": false,
-      "isAdjustedWorkday": false,
-      "holidayNames": {},
-      "labels": []
+      "isAdjustedWorkday": true,
+      "holidayNames": {
+        "zh-CN": [
+          "春节调休"
+        ],
+        "en-US": [
+          "Spring Festival makeup"
+        ]
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "ADJUSTED_WORKDAY"
+      ]
     },
     "2026-03-01": {
       "isHoliday": false,
@@ -1229,22 +1249,12 @@
     },
     "2026-04-26": {
       "isHoliday": false,
-      "isWorkday": true,
+      "isWorkday": false,
       "isWeekend": true,
       "isStatutoryHoliday": false,
-      "isAdjustedWorkday": true,
-      "holidayNames": {
-        "zh-CN": [
-          "劳动节调休"
-        ],
-        "en-US": [
-          "Labour Day makeup"
-        ]
-      },
-      "labels": [
-        "LABOUR_DAY",
-        "ADJUSTED_WORKDAY"
-      ]
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
     },
     "2026-04-27": {
       "isHoliday": false,
@@ -1406,12 +1416,22 @@
     },
     "2026-05-09": {
       "isHoliday": false,
-      "isWorkday": false,
+      "isWorkday": true,
       "isWeekend": true,
       "isStatutoryHoliday": false,
-      "isAdjustedWorkday": false,
-      "holidayNames": {},
-      "labels": []
+      "isAdjustedWorkday": true,
+      "holidayNames": {
+        "zh-CN": [
+          "劳动节调休"
+        ],
+        "en-US": [
+          "Labour Day makeup"
+        ]
+      },
+      "labels": [
+        "LABOUR_DAY",
+        "ADJUSTED_WORKDAY"
+      ]
     },
     "2026-05-10": {
       "isHoliday": false,
@@ -2642,12 +2662,22 @@
     },
     "2026-09-20": {
       "isHoliday": false,
-      "isWorkday": false,
+      "isWorkday": true,
       "isWeekend": true,
       "isStatutoryHoliday": false,
-      "isAdjustedWorkday": false,
-      "holidayNames": {},
-      "labels": []
+      "isAdjustedWorkday": true,
+      "holidayNames": {
+        "zh-CN": [
+          "国庆节调休"
+        ],
+        "en-US": [
+          "National Day makeup"
+        ]
+      },
+      "labels": [
+        "NATIONAL_DAY",
+        "ADJUSTED_WORKDAY"
+      ]
     },
     "2026-09-21": {
       "isHoliday": false,
@@ -2747,19 +2777,9 @@
       "isWorkday": true,
       "isWeekend": false,
       "isStatutoryHoliday": false,
-      "isAdjustedWorkday": true,
-      "holidayNames": {
-        "zh-CN": [
-          "国庆节调休"
-        ],
-        "en-US": [
-          "National Day makeup"
-        ]
-      },
-      "labels": [
-        "NATIONAL_DAY",
-        "ADJUSTED_WORKDAY"
-      ]
+      "isAdjustedWorkday": false,
+      "holidayNames": {},
+      "labels": []
     },
     "2026-09-29": {
       "isHoliday": false,

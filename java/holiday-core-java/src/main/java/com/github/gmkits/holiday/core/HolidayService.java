@@ -91,4 +91,11 @@ public interface HolidayService {
      * 从指定日期（含）起查找指定地区的下一个法定节假日。
      */
     DayInfo getNextHoliday(String regionCode, LocalDate from);
+
+    /**
+     * 清空已加载的年度 bundle，使后续查询从数据源重新加载。
+     *
+     * <p>替换外部 {@code .hday} 文件后调用此方法即可热更新数据，无需重建服务实例。</p>
+     */
+    void clearCache();
 }

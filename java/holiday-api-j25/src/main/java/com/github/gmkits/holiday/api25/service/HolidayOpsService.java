@@ -2,6 +2,7 @@ package com.github.gmkits.holiday.api25.service;
 
 import com.github.gmkits.holiday.api25.config.HolidayApi25Properties;
 import com.github.gmkits.holiday.api25.dto.OperationResult;
+import com.github.gmkits.holiday.core.HolidayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -28,6 +29,7 @@ public class HolidayOpsService {
     private final CacheManager holidayCacheManager;
     private final HolidayApi25Properties properties;
     private final CachedHolidayQueryService cachedHolidayQueryService;
+    private final HolidayService holidayService;
     private final ObjectProvider<CachedHolidayQueryService> selfProvider;
 
     public OperationResult clearCaches(boolean reloadManifest) {
@@ -37,6 +39,7 @@ public class HolidayOpsService {
                 cache.clear();
             }
         }
+        holidayService.clearCache();
         if (reloadManifest) {
             cachedHolidayQueryService.reloadManifest();
         }
@@ -49,9 +52,16 @@ public class HolidayOpsService {
 
     public OperationResult reloadManifest() {
         cachedHolidayQueryService.reloadManifest();
+        holidayService.clearCache();
+        for (String cacheName : holidayCacheManager.getCacheNames()) {
+            Cache cache = holidayCacheManager.getCache(cacheName);
+            if (cache != null) {
+                cache.clear();
+            }
+        }
         return OperationResult.builder()
                 .operation("reloadManifest")
-                .message("manifest 已重新加载")
+                .message("manifest 和 bundle 数据已重新加载")
                 .warmedKeys(NO_WARMED_KEYS)
                 .build();
     }
