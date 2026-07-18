@@ -16,6 +16,9 @@ public class HolidayProperties {
     /** bundle 数据目录，格式为 {@code {dataPath}/{regionCode}/{year}.hday}。 */
     private String dataPath;
 
+    /** 统一离线资产根目录；配置后优先于 dataPath。 */
+    private String assetPath;
+
     /** 找不到文件系统 bundle 时是否回退到 classpath。 */
     private boolean classpathFallback = true;
 }

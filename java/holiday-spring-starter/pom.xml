@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>com.github.gmkits</groupId>
-            <artifactId>holiday-core-java</artifactId>
+            <artifactId>cn-holiday-kit</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -25,10 +25,6 @@
             <artifactId>spring-boot-autoconfigure</artifactId>
             <version>2.7.18</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

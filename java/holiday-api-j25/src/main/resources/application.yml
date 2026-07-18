@@ -49,9 +49,10 @@ holiday:
   api:
     api-version: 2.0.0
     default-region: CN
+    asset-path: ${HOLIDAY_ASSET_PATH:}
     data-path: ${HOLIDAY_DATA_PATH:}
     classpath-fallback: true
-    manifest-location: ${HOLIDAY_MANIFEST_LOCATION:classpath:manifest.json}
+    manifest-location: ${HOLIDAY_MANIFEST_LOCATION:classpath:cn-holiday-kit/assets/holidays/manifest.json}
     preload-current-and-next-year: true
     preload-regions:
       - CN

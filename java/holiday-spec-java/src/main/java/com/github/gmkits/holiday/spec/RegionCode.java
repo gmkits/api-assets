@@ -1,7 +1,5 @@
 package com.github.gmkits.holiday.spec;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -31,10 +29,13 @@ public final class RegionCode {
      *                                  或包含字母、数字、连字符之外的字符时抛出
      */
     public RegionCode(String code) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(code),
-                "区域代码不能为 null 或空字符串");
-        Preconditions.checkArgument(VALID_PATTERN.matcher(code).matches(),
-                "无效的区域代码: '%s'，仅允许字母、数字和连字符", code);
+        if (code == null || code.isEmpty()) {
+            throw new IllegalArgumentException("区域代码不能为 null 或空字符串");
+        }
+        if (!VALID_PATTERN.matcher(code).matches()) {
+            throw new IllegalArgumentException(
+                    "无效的区域代码: '" + code + "'，仅允许字母、数字和连字符");
+        }
         this.code = code;
     }
 }

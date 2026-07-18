@@ -25,11 +25,14 @@ public class HolidayApi25Properties {
     /** 数据文件路径（为空时使用 classpath） */
     private String dataPath;
 
+    /** 统一离线资产根目录（优先于 dataPath） */
+    private String assetPath;
+
     /** 是否回退到 classpath 加载数据 */
     private boolean classpathFallback = true;
 
     /** manifest 文件位置 */
-    private String manifestLocation = "classpath:manifest.json";
+    private String manifestLocation = "classpath:cn-holiday-kit/assets/holidays/manifest.json";
 
     /** 启动时是否预热当前年和下一年 */
     private boolean preloadCurrentAndNextYear = true;

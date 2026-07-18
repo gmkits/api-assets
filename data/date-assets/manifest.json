@@ -1,0 +1,31 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-07-18T17:21:34.010Z",
+  "calendar": {
+    "lunarYears": {
+      "path": "calendar/lunar-years.hex",
+      "startYear": 1900,
+      "endYear": 2100,
+      "bytes": 2002,
+      "sha256": "b8888297a21d8f8571ffdb09bde77dfb717418534fc6a97532acf72fe3f6303a"
+    },
+    "solarTerms": {
+      "path": "calendar/solar-terms.csv",
+      "startYear": 1900,
+      "endYear": 2100,
+      "bytes": 99333,
+      "sha256": "7d90e7cf8ddb87d2ab406a293d3b8f574238b724745c5a547155d43667a4ad34"
+    }
+  },
+  "holidays": {
+    "region": "CN",
+    "manifest": {
+      "path": "holidays/manifest.json",
+      "startYear": 2025,
+      "endYear": 2026,
+      "bytes": 609,
+      "sha256": "ab831c16c81e73c2e4a076703cab068b8799979bacca98d2fe6d14c8fd574b27"
+    },
+    "bundleRoot": "holidays/bundles"
+  }
+}

@@ -2,14 +2,13 @@ package com.github.gmkits.holiday.core;
 
 import com.github.gmkits.holiday.spec.DayInfo;
 
-import com.google.common.collect.ImmutableList;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -78,7 +77,7 @@ final class HolidayServiceImpl implements HolidayService {
     @Override
     public List<DayInfo> getRange(String regionCode, LocalDate from, LocalDate to) {
         if (from.isAfter(to)) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
 
         List<DayInfo> result = new ArrayList<>(estimateRangeCapacity(from, to));
@@ -103,7 +102,7 @@ final class HolidayServiceImpl implements HolidayService {
     public List<DayInfo> getYear(String regionCode, int year) {
         HdayBundle bundle = resolveBundle(regionCode, year);
         if (bundle == null) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
         return bundle.getDayInfos();
     }
@@ -117,7 +116,7 @@ final class HolidayServiceImpl implements HolidayService {
     public List<DayInfo> getMonth(String regionCode, int year, int month) {
         HdayBundle bundle = resolveBundle(regionCode, year);
         if (bundle == null) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
         LocalDate first = LocalDate.of(year, month, 1);
         LocalDate last = first.withDayOfMonth(first.lengthOfMonth());
@@ -209,12 +208,21 @@ final class HolidayServiceImpl implements HolidayService {
         try {
             return HdayReader.read(file);
         } catch (IOException e) {
-            return null;
+            throw new IllegalStateException("Failed to read holiday bundle " + file, e);
         }
     }
 
     private HdayBundle loadFromClasspath(String region, int year) {
-        String resource = "bundles/" + region + "/" + year + ".hday";
+        String assetResource = "cn-holiday-kit/assets/holidays/bundles/"
+                + region + "/" + year + ".hday";
+        HdayBundle bundle = readClasspathBundle(assetResource);
+        if (bundle != null) {
+            return bundle;
+        }
+        return readClasspathBundle("bundles/" + region + "/" + year + ".hday");
+    }
+
+    private HdayBundle readClasspathBundle(String resource) {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream(resource)) {
             if (in == null) {
                 return null;

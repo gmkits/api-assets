@@ -29,7 +29,7 @@
     <dependencies>
         <dependency>
             <groupId>com.github.gmkits</groupId>
-            <artifactId>holiday-core-java</artifactId>
+            <artifactId>cn-holiday-kit</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -40,10 +40,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

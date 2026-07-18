@@ -1,11 +1,10 @@
 package com.github.gmkits.holiday.spec;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,22 +42,22 @@ public final class DayInfo {
         this.statutoryHoliday = b.statutoryHoliday;
         this.adjustedWorkday = b.adjustedWorkday;
         this.holidayNames = freezeNames(b.holidayNames);
-        this.labels = b.labels == null ? ImmutableList.of()
-                : ImmutableList.copyOf(b.labels);
+        this.labels = b.labels == null ? Collections.<String>emptyList()
+                : Collections.unmodifiableList(new ArrayList<>(b.labels));
         this.sourceVersion = b.sourceVersion;
-        this.extensions = b.extensions == null ? ImmutableMap.of()
-                : ImmutableMap.copyOf(b.extensions);
+        this.extensions = b.extensions == null ? Collections.<String, Object>emptyMap()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(b.extensions));
     }
 
     private static Map<String, List<String>> freezeNames(Map<String, List<String>> src) {
         if (src == null || src.isEmpty()) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
-        ImmutableMap.Builder<String, List<String>> copy = ImmutableMap.builder();
+        Map<String, List<String>> copy = new LinkedHashMap<>();
         for (Map.Entry<String, List<String>> e : src.entrySet()) {
-            copy.put(e.getKey(), ImmutableList.copyOf(e.getValue()));
+            copy.put(e.getKey(), Collections.unmodifiableList(new ArrayList<>(e.getValue())));
         }
-        return copy.build();
+        return Collections.unmodifiableMap(copy);
     }
 
     @Override

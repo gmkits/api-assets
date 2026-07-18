@@ -7,12 +7,12 @@ import com.github.gmkits.holiday.spec.DayInfo;
 import com.github.gmkits.holiday.spec.LunarDateInfo;
 import com.github.gmkits.holiday.spec.SolarTermInfo;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +43,7 @@ public final class HdayBundle {
     private final String[] strings;
     private final int[][][] nameLists;
     private final DayInfo[] dayInfos;
-    private final ImmutableList<DayInfo> yearView;
+    private final List<DayInfo> yearView;
 
     HdayBundle(int year, String regionCode, CalendarSystem calendarSystem,
                int dayCount, int majorVersion, int minorVersion,
@@ -58,7 +58,7 @@ public final class HdayBundle {
         this.strings = strings;
         this.nameLists = nameLists;
         this.dayInfos = buildDayInfos();
-        this.yearView = ImmutableList.copyOf(this.dayInfos);
+        this.yearView = Collections.unmodifiableList(Arrays.asList(this.dayInfos));
     }
 
     /**
@@ -97,12 +97,12 @@ public final class HdayBundle {
      */
     public List<DayInfo> getRange(int startDayIndex, int endDayIndex) {
         if (startDayIndex > endDayIndex) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
         int start = Math.max(0, startDayIndex);
         int end = Math.min(dayCount - 1, endDayIndex);
         if (start > end) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
         if (start == 0 && end == dayCount - 1) {
             return yearView;
@@ -186,16 +186,16 @@ public final class HdayBundle {
         LunarDateInfo lunarInfo = resolveLunarDateInfo(date);
         SolarTermInfo solarTermInfo = SolarTermTable.lookup(date.getYear(), dayIndex);
         if (lunarInfo == null && solarTermInfo == null) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
-        ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+        Map<String, Object> result = new LinkedHashMap<>();
         if (lunarInfo != null) {
-            builder.put("lunar", lunarInfo);
+            result.put("lunar", lunarInfo);
         }
         if (solarTermInfo != null) {
-            builder.put("solarTerm", solarTermInfo);
+            result.put("solarTerm", solarTermInfo);
         }
-        return builder.build();
+        return result;
     }
 
     private LunarDateInfo resolveLunarDateInfo(LocalDate date) {
@@ -217,7 +217,7 @@ public final class HdayBundle {
 
     private Map<String, List<String>> resolveNames(int listIndex) {
         if (listIndex == NO_INDEX || nameLists == null || listIndex >= nameLists.length) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
         int[][] pairs = nameLists[listIndex];
         Map<String, List<String>> result = new LinkedHashMap<>();
@@ -239,14 +239,14 @@ public final class HdayBundle {
             list.add(value);
         }
         if (result.isEmpty()) {
-            return ImmutableMap.of();
+            return Collections.emptyMap();
         }
         return result;
     }
 
     private List<String> resolveLabels(int listIndex) {
         if (listIndex == NO_INDEX || nameLists == null || listIndex >= nameLists.length) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
         int[][] pairs = nameLists[listIndex];
         List<String> result = new ArrayList<>();
@@ -262,7 +262,7 @@ public final class HdayBundle {
             result.add(strings[valIdx]);
         }
         if (result.isEmpty()) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
         return result;
     }

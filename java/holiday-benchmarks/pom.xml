@@ -21,7 +21,7 @@
     <dependencies>
         <dependency>
             <groupId>com.github.gmkits</groupId>
-            <artifactId>holiday-core-java</artifactId>
+            <artifactId>cn-holiday-kit</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

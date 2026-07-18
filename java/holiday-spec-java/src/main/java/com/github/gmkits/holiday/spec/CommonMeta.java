@@ -1,11 +1,12 @@
 package com.github.gmkits.holiday.spec;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,11 +67,11 @@ public final class CommonMeta {
         this.calendarSystem = calendarSystem;
         this.timezone = timezone;
         this.weekendMask = weekendMask;
-        this.locales = locales == null ? ImmutableList.of()
-                : ImmutableList.copyOf(locales);
+        this.locales = locales == null ? Collections.<String>emptyList()
+                : Collections.unmodifiableList(new ArrayList<>(locales));
         this.sourceVersion = sourceVersion;
         this.generatedAt = generatedAt;
-        this.extensions = extensions == null ? ImmutableMap.of()
-                : ImmutableMap.copyOf(extensions);
+        this.extensions = extensions == null ? Collections.<String, Object>emptyMap()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(extensions));
     }
 }

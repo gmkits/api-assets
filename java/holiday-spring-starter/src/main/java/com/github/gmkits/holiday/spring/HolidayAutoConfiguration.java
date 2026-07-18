@@ -7,8 +7,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.google.common.base.Strings;
-
 import java.nio.file.Paths;
 
 /**
@@ -27,9 +25,15 @@ public class HolidayAutoConfiguration {
         HolidayServiceBuilder builder = new HolidayServiceBuilder()
                 .defaultRegion(properties.getDefaultRegion())
                 .enableClasspathFallback(properties.isClasspathFallback());
-        if (!Strings.isNullOrEmpty(properties.getDataPath())) {
+        if (hasText(properties.getAssetPath())) {
+            builder.assetPath(Paths.get(properties.getAssetPath()));
+        } else if (hasText(properties.getDataPath())) {
             builder.dataPath(Paths.get(properties.getDataPath()));
         }
         return builder.build();
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

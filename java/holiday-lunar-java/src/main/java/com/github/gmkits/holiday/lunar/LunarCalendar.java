@@ -1,9 +1,8 @@
 package com.github.gmkits.holiday.lunar;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 
 /**
  * 中国农历转换器。
@@ -34,7 +33,7 @@ import java.time.temporal.ChronoUnit;
  * <ol>
  *   <li>年天数缓存（YEAR_DAYS_CACHE）：yearDays() O(1) 查表</li>
  *   <li>年前缀和数组（CUMULATIVE_DAYS）：solarToLunar 年份定位 O(log n) 二分查找</li>
- *   <li>每年月份偏移表（MONTH_OFFSETS / MONTH_META）：月份定位 O(1) 直接索引，消除热路径位运算</li>
+ *   <li>日序号/月键直达表：双向转换的月份定位均为 O(1)，消除最多 13 次扫描</li>
  *   <li>朔日天文估算（estimateNewMoonJDE）：Jean Meeus 算法，可验证数据表正确性</li>
  *   <li>节气 O(1) 位运算解码：HKO 权威数据 + 2-bit 偏移压缩，1900-2100 准确日期</li>
  * </ol>
@@ -42,6 +41,12 @@ import java.time.temporal.ChronoUnit;
  * <p>线程安全：所有方法均为无状态纯函数，可安全并发调用。</p>
  */
 public final class LunarCalendar {
+
+    private static void checkArgument(boolean valid, String message, Object... arguments) {
+        if (!valid) {
+            throw new IllegalArgumentException(String.format(message, arguments));
+        }
+    }
 
     /** 数据覆盖起始年。 */
     public static final int START_YEAR = 1900;
@@ -67,7 +72,7 @@ public final class LunarCalendar {
      * 农历数据表（1900-2100，共 201 年，每年一个压缩整数）。
      * 数据来源：香港天文台 / 紫金山天文台天文年历。
      */
-    private static final int[] LUNAR_INFO = {
+    private static final int[] EMBEDDED_LUNAR_INFO = {
         0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
         0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
         0x04970, 0x0a4b0, 0x0b4b5, 0x06a50, 0x06d40, 0x1ab54, 0x02b60, 0x09570, 0x052f2, 0x04970,
@@ -90,6 +95,10 @@ public final class LunarCalendar {
         0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
         0x0d520,
     };
+
+    /** 资产文件优先；嵌入表仅作为旧模块兼容回退。 */
+    private static final int[] LUNAR_INFO =
+            CalendarAssetLoader.loadLunarYears(EMBEDDED_LUNAR_INFO);
 
     private LunarCalendar() {
         // 工具类不可实例化
@@ -134,6 +143,12 @@ public final class LunarCalendar {
      */
     private static final int[][] MONTH_META = new int[YEAR_COUNT][];
 
+    /** 年内日序号直接映射到月份槽，公历转农历无需扫描。 */
+    private static final byte[][] DAY_SLOT_LOOKUP = new byte[YEAR_COUNT][];
+
+    /** 普通月/闰月编码直接映射到月份槽，农历转公历无需扫描。 */
+    private static final byte[][] MONTH_SLOT_LOOKUP = new byte[YEAR_COUNT][32];
+
     static {
         // 一次性预计算所有年份天数、前缀和和月份偏移表
         CUMULATIVE_DAYS[0] = 0;
@@ -172,6 +187,15 @@ public final class LunarCalendar {
             MONTH_META[yi] = new int[slotCount];
             System.arraycopy(offsets, 0, MONTH_OFFSETS[yi], 0, slotCount);
             System.arraycopy(meta, 0, MONTH_META[yi], 0, slotCount);
+
+            byte[] monthSlots = MONTH_SLOT_LOOKUP[yi];
+            Arrays.fill(monthSlots, (byte) -1);
+            byte[] daySlots = new byte[cum];
+            for (int slot = 0; slot < slotCount - 1; slot++) {
+                monthSlots[meta[slot]] = (byte) slot;
+                Arrays.fill(daySlots, offsets[slot], offsets[slot + 1], (byte) slot);
+            }
+            DAY_SLOT_LOOKUP[yi] = daySlots;
         }
     }
 
@@ -243,10 +267,10 @@ public final class LunarCalendar {
      * <ol>
      *   <li>计算公历日期与基准日的天数偏移 offset</li>
      *   <li>二分查找 CUMULATIVE_DAYS → O(log 201) ≈ 8 次比较定位农历年</li>
-     *   <li>查预计算 MONTH_OFFSETS 表 → O(13) 单次扫描定位月槽（无需位运算）</li>
+     *   <li>查预计算 DAY_SLOT_LOOKUP 表 → O(1) 定位月槽（无需扫描或位运算）</li>
      *   <li>组装结果</li>
      * </ol>
-     * 总时间 &lt; 1μs（二分 8 步 + 月份扫描 ≤13 步，全部为数组索引操作）。</p>
+     * 总时间 &lt; 1μs（二分最多 8 步 + O(1) 月份定位，全部为数组索引操作）。</p>
      *
      * @param solarDate 公历日期
      * @return 农历完整信息
@@ -271,20 +295,10 @@ public final class LunarCalendar {
             "日期超出农历转换范围（%s-%s）", START_YEAR, END_YEAR);
         offset -= CUMULATIVE_DAYS[lo];
 
-        // 使用预计算月份偏移表定位月份（无需位运算，纯数组索引）
+        // 年内日序号直接定位月份槽
         int[] offsets = MONTH_OFFSETS[lo];
         int[] meta = MONTH_META[lo];
-        int slotCount = offsets.length - 1; // 最后一个是哨兵
-
-        // 从后往前扫描找到 offset 所在的月槽
-        // 不变式：offsets[0] = 0，因此至少会命中 slot 0
-        int slot = 0;
-        for (int s = slotCount - 1; s >= 0; s--) {
-            if (offsets[s] <= offset) {
-                slot = s;
-                break;
-            }
-        }
+        int slot = Byte.toUnsignedInt(DAY_SLOT_LOOKUP[lo][(int) offset]);
 
         int m = meta[slot];
         int lunarMonth = m & 0xF;
@@ -308,19 +322,10 @@ public final class LunarCalendar {
         checkArgument(lunarDay >= 1 && lunarDay <= 30, "农历日期超出范围: %s", lunarDay);
 
         int yi = lunarYear - START_YEAR;
-        int[] meta = MONTH_META[yi];
         int[] offsets = MONTH_OFFSETS[yi];
-        int slotCount = offsets.length - 1;
 
-        // 查找目标月份在月槽表中的位置
         int targetMeta = (lunarMonth & 0xF) | (isLeapMonth ? 0x10 : 0);
-        int slotIdx = -1;
-        for (int s = 0; s < slotCount; s++) {
-            if (meta[s] == targetMeta) {
-                slotIdx = s;
-                break;
-            }
-        }
+        int slotIdx = MONTH_SLOT_LOOKUP[yi][targetMeta];
 
         checkArgument(slotIdx >= 0,
             "农历 %s 年不存在%s%s 月", lunarYear, isLeapMonth ? "闰" : "", lunarMonth);
@@ -545,7 +550,7 @@ public final class LunarCalendar {
      * <p>与 LUNAR_INFO 相同风格的紧凑整数数组设计。
      * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。</p>
      */
-    private static final long[] SOLAR_TERM_PACKED = {
+    private static final long[] EMBEDDED_SOLAR_TERM_PACKED = {
 0x6aaaa6aa9a56L, // 1900 (VSOP87 估算)
 0x6aaaa6aa9a5aL, // 1901
         0xaaaaaabaaa6aL, // 1902
@@ -749,6 +754,18 @@ public final class LunarCalendar {
         0x555555555515L, // 2100
     };
 
+    /** 统一节气 CSV 优先；嵌入压缩表仅作为旧模块兼容回退。 */
+    private static final long[] SOLAR_TERM_PACKED = CalendarAssetLoader.loadSolarTerms(
+            SOLAR_TERM_DATA_START, SOLAR_TERM_DATA_END,
+            SOLAR_TERM_BASE_DAYS, EMBEDDED_SOLAR_TERM_PACKED);
+
+    /**
+     * 当前农历和节气资产来源。
+     */
+    public static String getAssetSource() {
+        return CalendarAssetLoader.sourceDescription();
+    }
+
     /**
      * 节气信息。
      */
@@ -830,11 +847,13 @@ public final class LunarCalendar {
             long packed = SOLAR_TERM_PACKED[year - SOLAR_TERM_DATA_START];
             int month = date.getMonthValue();
             int dayOfMonth = date.getDayOfMonth();
-            for (int i = 0; i < 24; i++) {
-                if (SOLAR_TERM_MONTHS[i] == month) {
-                    int day = decodeSolarTermDay(packed, i);
-                    if (day == dayOfMonth) return SOLAR_TERM_NAMES[i];
-                }
+            int firstTerm = (month - 1) * 2;
+            if (decodeSolarTermDay(packed, firstTerm) == dayOfMonth) {
+                return SOLAR_TERM_NAMES[firstTerm];
+            }
+            int secondTerm = firstTerm + 1;
+            if (decodeSolarTermDay(packed, secondTerm) == dayOfMonth) {
+                return SOLAR_TERM_NAMES[secondTerm];
             }
             return null;
         }

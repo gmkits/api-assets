@@ -19,7 +19,9 @@ public class HolidayCoreConfiguration {
         HolidayServiceBuilder builder = new HolidayServiceBuilder()
                 .defaultRegion(properties.getDefaultRegion())
                 .enableClasspathFallback(properties.isClasspathFallback());
-        if (!Strings.isNullOrEmpty(properties.getDataPath())) {
+        if (!Strings.isNullOrEmpty(properties.getAssetPath())) {
+            builder.assetPath(Paths.get(properties.getAssetPath()));
+        } else if (!Strings.isNullOrEmpty(properties.getDataPath())) {
             builder.dataPath(Paths.get(properties.getDataPath()));
         }
         return builder.build();

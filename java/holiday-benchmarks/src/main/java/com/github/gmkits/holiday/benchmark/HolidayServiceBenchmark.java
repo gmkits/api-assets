@@ -1,7 +1,7 @@
 package com.github.gmkits.holiday.benchmark;
 
+import com.github.gmkits.holiday.CnHolidayKit;
 import com.github.gmkits.holiday.core.HolidayService;
-import com.github.gmkits.holiday.core.HolidayServiceBuilder;
 import com.github.gmkits.holiday.spec.DayInfo;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -45,17 +45,15 @@ public class HolidayServiceBenchmark {
 
         @Setup(Level.Trial)
         public void setup() {
-            Path dataPath = Paths.get(System.getProperty("holiday.data.path", "../data/bundles"))
+            Path dataPath = Paths.get(System.getProperty(
+                            "cn.holiday.assets.path", "../data/date-assets"))
                     .toAbsolutePath().normalize();
-            service = new HolidayServiceBuilder()
-                    .dataPath(dataPath)
-                    .enableClasspathFallback(false)
-                    .build();
+            service = CnHolidayKit.fromAssets(dataPath);
             day = LocalDate.of(2026, 10, 1);
             rangeStart = LocalDate.of(2026, 1, 1);
             rangeEnd = LocalDate.of(2026, 12, 31);
             if (service.getDayInfo(day) == null) {
-                throw new IllegalStateException("Benchmark data not found under " + dataPath);
+                throw new IllegalStateException("Benchmark assets not found under " + dataPath);
             }
         }
     }

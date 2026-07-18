@@ -16,6 +16,7 @@
         <module>holiday-spec-java</module>
         <module>holiday-core-java</module>
         <module>holiday-lunar-java</module>
+        <module>cn-holiday-kit</module>
         <module>holiday-spring-starter</module>
         <module>holiday-api-j8</module>
         <module>holiday-benchmarks</module>

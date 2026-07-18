@@ -84,9 +84,8 @@ HTTP API 暴露给内网系统
 
 | 模块 | 说明 |
 | --- | --- |
-| `holiday-spec-java` | 共享 DTO / 枚举（含 `LunarDateInfo`） |
-| `holiday-core-java` | `.hday` 读取与高性能查询核心 |
-| `holiday-lunar-java` | 农历转换 + 二十四节气精确查表（HKO 数据 + 2-bit 偏移压缩，Java 8+） |
+| `cn-holiday-kit` | **推荐的唯一 Java 依赖**：节假日、农历、节气与内置离线资产统一入口（Java 8+） |
+| `holiday-spec-java` / `holiday-core-java` / `holiday-lunar-java` | 内部兼容模块，保留原包名供已有调用方平滑升级 |
 | `holiday-spring-starter` | Spring Boot 自动配置 |
 | `holiday-api-j8` | Java 8 / Spring Boot 2.7 兼容 API |
 | `holiday-api-j25` | Java 25 / Spring Boot 4 高性能 API（虚拟线程、分层缓存、审计日志、限流、ETag、`POST /api/v2/days:batch` 批量端点） |
@@ -168,7 +167,7 @@ pnpm run lint            # 类型检查
 pnpm run test            # 运行所有测试
 ```
 
-**Java（需要 JDK 17+）**
+**Java（最低 JDK 8）**
 
 ```bash
 cd java
@@ -207,16 +206,27 @@ const nextHoliday = await service.getNextHoliday('2025-07-01');
 
 ### Java 查询示例
 
+Maven 只需声明一个依赖：
+
+```xml
+<dependency>
+  <groupId>com.github.gmkits</groupId>
+  <artifactId>cn-holiday-kit</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
 ```java
+import com.github.gmkits.holiday.CnHolidayKit;
 import com.github.gmkits.holiday.core.HolidayService;
-import com.github.gmkits.holiday.core.HolidayServiceBuilder;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 
-HolidayService service = new HolidayServiceBuilder()
-        .defaultRegion("CN")
-        .dataPath(Paths.get("./data/bundles"))
-        .build();
+// 零配置：使用 JAR 内置离线资产
+HolidayService service = CnHolidayKit.create();
+
+// 或整体替换农历、节气、国内节假日资产
+HolidayService external = CnHolidayKit.fromAssets(Paths.get("./data/date-assets"));
 
 // 查询国庆节当天
 service.getDayInfo("CN", LocalDate.of(2025, 10, 1));
@@ -229,7 +239,16 @@ service.getYear("CN", 2026);
 service.getMonth("CN", 2025, 10);
 service.countWorkdays("CN", LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31));
 service.getNextHoliday("CN", LocalDate.of(2025, 7, 1));
+
+// 农历统一入口
+CnHolidayKit.solarToLunar(LocalDate.of(2026, 2, 17));
+CnHolidayKit.getSolarTerm(LocalDate.of(2025, 2, 3)); // 立春
 ```
+
+统一资产目录是 `data/date-assets`。其中 `calendar` 放农历与节气，
+`holidays/bundles/CN` 放国内法定节假日 `.hday`，运行
+`node scripts/build-date-assets.mjs` 可从仓库权威数据重新生成。日历表在 JVM
+首次使用时加载，替换后需重启；节假日 bundle 可调用 `service.clearCache()` 重新加载。
 
 ---
 
@@ -623,6 +642,7 @@ cn-holiday-kit/
 │   ├── canonical/                 # Canonical 规范数据
 │   ├── materialized/              # 年度展开数据
 │   ├── bundles/                   # .hday 二进制包
+│   ├── date-assets/               # 可整体替换的运行时日期资产（农历/节气/国内节假日）
 │   └── manifest.json              # 包清单
 ├── packages/                      # TypeScript 包
 │   ├── ts-spec/                   # 共享类型与常量
@@ -632,6 +652,7 @@ cn-holiday-kit/
 │   ├── ts-web-client/             # HTTP 客户端
 │   └── ts-vue/                    # Vue 组件
 ├── java/                          # Java 多模块工程
+│   ├── cn-holiday-kit/             # 推荐的单一对外依赖与统一入口
 │   ├── holiday-spec-java/         # 共享类型
 │   ├── holiday-core-java/         # 查询核心
 │   ├── holiday-lunar-java/        # 农历转换 + 节气计算
@@ -652,16 +673,17 @@ cn-holiday-kit/
 
 | 模块 | 最低 Java 版本 | Spring Boot 版本 | 说明 |
 | --- | --- | --- | --- |
+| `cn-holiday-kit` | Java 8 | — | 推荐的单一对外依赖，内置统一离线资产 |
 | `holiday-spec-java` | Java 8 | — | 纯 DTO 与枚举 |
-| `holiday-core-java` | Java 8 | — | 查询核心（依赖 Guava） |
-| `holiday-lunar-java` | Java 8 | — | 纯算法（仅依赖 Lombok） |
+| `holiday-core-java` | Java 8 | — | 无第三方运行时依赖的查询核心 |
+| `holiday-lunar-java` | Java 8 | — | 无第三方运行时依赖的纯算法 |
 | `holiday-spring-starter` | Java 8 | — | 自动配置 |
 | `holiday-api-j8` | Java 8 | 2.7.18 | 兼容旧环境 |
 | `holiday-api-j25` | Java 25 | 4.0.5 | 独立 profile `-Pj25` 构建 |
 
 **注意事项**：
 
-- 默认构建（`mvn test`）仅编译 Java 8 兼容模块，但需要 JDK 17+ 运行 Maven。
+- 默认构建（`mvn test`）可直接在 Liberica JDK 8 上编译和测试 Java 8 兼容模块。
 - J25 模块通过 `-Pj25` profile 单独激活，需要 JDK 25+。
 - 所有 Java 8 模块严格使用 Java 8 API（如使用 Guava 的 `ImmutableList.of()` 而非 Java 9+ 的 `List.of()`）。
 
@@ -675,7 +697,7 @@ cn-holiday-kit/
 | --- | --- |
 | **校验 JSON Schema** | 使用 `ajv-cli` + `ajv-formats` 验证所有 Schema 文件格式正确 |
 | **TypeScript 构建与测试** | 全量构建 + 类型检查 + 测试 + 编译器流水线验证 |
-| **Java 构建与测试** | JDK 17（默认模块）+ JDK 25（J25 模块）矩阵构建 |
+| **Java 构建与测试** | Liberica JDK 8（兼容模块）+ Liberica JDK 25（全模块）矩阵构建 |
 | **Bundle 完整性校验** | 检查 `.hday` 文件魔数（`HDAY`）+ SHA256 哈希比对 |
 
 ---
@@ -688,7 +710,7 @@ pnpm run build              # 构建所有 TypeScript 包
 pnpm run lint               # 类型检查
 pnpm run test               # 运行所有测试
 
-# ── Java（需要 JDK 17+）──
+# ── Java（兼容模块最低 JDK 8）──
 cd java
 mvn -B clean test                              # 测试所有 Java 8 兼容模块
 mvn -B clean test -pl holiday-lunar-java       # 仅测试农历模块

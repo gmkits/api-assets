@@ -85,3 +85,7 @@ jobs:
         run: node scripts/verify-holiday-sources.mjs
       - name: 校验 bundle 文件完整性
         run: bash scripts/verify-bundles.sh
+      - name: 校验统一日期资产已同步
+        run: |
+          node scripts/build-date-assets.mjs
+          git diff --exit-code -- data/date-assets

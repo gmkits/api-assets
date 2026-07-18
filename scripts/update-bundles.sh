@@ -22,16 +22,10 @@ node "$CLI" build-manifest \
   --bundles-dir "$ROOT/data/bundles" \
   --output "$ROOT/data/manifest.json"
 
-for resources in \
-  "$ROOT/java/holiday-core-java/src/test/resources" \
-  "$ROOT/java/holiday-api-j8/src/main/resources" \
-  "$ROOT/java/holiday-api-j8/src/test/resources" \
-  "$ROOT/java/holiday-api-j25/src/main/resources"; do
-  mkdir -p "$resources/bundles/CN"
-  cp "$ROOT"/data/bundles/CN/*.hday "$resources/bundles/CN/"
-done
-cp "$ROOT/data/manifest.json" "$ROOT/java/holiday-api-j25/src/main/resources/manifest.json"
+mkdir -p "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN"
+cp "$ROOT"/data/bundles/CN/*.hday "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN/"
+node "$ROOT/scripts/build-date-assets.mjs"
 
 node "$ROOT/scripts/verify-holiday-sources.mjs"
 bash "$ROOT/scripts/verify-bundles.sh"
-echo "✓ Bundles, manifest, and API resources are synchronized"
+echo "✓ Bundles, manifest, and unified offline date assets are synchronized"

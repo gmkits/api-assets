@@ -10,9 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.google.common.collect.ImmutableList;
-
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -64,11 +63,11 @@ public class DayController {
 
     @GetMapping("/regions")
     public List<String> getRegions() {
-        return ImmutableList.of("CN");
+        return Collections.singletonList("CN");
     }
 
     @GetMapping("/version")
     public VersionInfo getVersion() {
-        return new VersionInfo("1.0.0", "1.0.0-SNAPSHOT", ImmutableList.of("CN"));
+        return new VersionInfo("1.0.0", "1.0.0-SNAPSHOT", Collections.singletonList("CN"));
     }
 }
