@@ -173,10 +173,18 @@ class HolidayServiceTest {
         assertAdjustedWorkday(LocalDate.of(2026, 2, 28));
         assertAdjustedWorkday(LocalDate.of(2026, 5, 9));
         assertAdjustedWorkday(LocalDate.of(2026, 9, 20));
+        assertStatutoryHoliday(LocalDate.of(2026, 2, 19));
+        assertStatutoryHoliday(LocalDate.of(2026, 5, 2));
 
         assertFalse(service.isAdjustedWorkday(LocalDate.of(2026, 2, 22)));
         assertFalse(service.isAdjustedWorkday(LocalDate.of(2026, 4, 26)));
         assertFalse(service.isAdjustedWorkday(LocalDate.of(2026, 9, 28)));
+    }
+
+    @Test
+    void revisedStatutorySchedule2025_includesAddedDays() {
+        assertStatutoryHoliday(LocalDate.of(2025, 1, 31));
+        assertStatutoryHoliday(LocalDate.of(2025, 5, 2));
     }
 
     private static void assertAdjustedWorkday(LocalDate date) {
@@ -185,5 +193,13 @@ class HolidayServiceTest {
         assertTrue(info.isAdjustedWorkday(), date + " should be an adjusted workday");
         assertTrue(info.isWorkday(), date + " should be a workday");
         assertFalse(info.isHoliday(), date + " should not be a holiday");
+    }
+
+    private static void assertStatutoryHoliday(LocalDate date) {
+        DayInfo info = service.getDayInfo(date);
+        assertNotNull(info);
+        assertTrue(info.isStatutoryHoliday(), date + " should be a statutory holiday");
+        assertTrue(info.isHoliday(), date + " should be a holiday");
+        assertFalse(info.isWorkday(), date + " should not be a workday");
     }
 }

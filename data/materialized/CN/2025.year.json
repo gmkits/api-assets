@@ -356,14 +356,16 @@
       "isHoliday": true,
       "isWorkday": false,
       "isWeekend": false,
-      "isStatutoryHoliday": false,
+      "isStatutoryHoliday": true,
       "isAdjustedWorkday": false,
       "holidayNames": {
         "zh-CN": [
-          "春节"
+          "春节",
+          "春节（初三）"
         ],
         "en-US": [
-          "Spring Festival"
+          "Spring Festival",
+          "Spring Festival (Day 3)"
         ]
       },
       "labels": [
@@ -1285,14 +1287,15 @@
       "isHoliday": true,
       "isWorkday": false,
       "isWeekend": false,
-      "isStatutoryHoliday": false,
+      "isStatutoryHoliday": true,
       "isAdjustedWorkday": false,
       "holidayNames": {
         "zh-CN": [
           "劳动节"
         ],
         "en-US": [
-          "Labour Day"
+          "Labour Day",
+          "Labour Day (Day 2)"
         ]
       },
       "labels": [

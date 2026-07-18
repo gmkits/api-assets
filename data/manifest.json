@@ -2,22 +2,22 @@
   "specVersion": "1.0.0",
   "bundleFormatVersion": "1",
   "defaultRegion": "CN",
-  "publishedAt": "2026-07-18T17:00:04.189Z",
+  "publishedAt": "2026-07-18T17:21:34.010Z",
   "bundles": {
     "CN": {
       "2025": {
         "file": "CN/2025.hday",
-        "sha256": "09b0c6fe0205c67d2c6effc1b621a7feab025e92b6ee92ca74a5bfb090e5d8e2",
-        "crc32": "0e22ac33",
+        "sha256": "4d8752db5a57c7848a47ebbffbfa3f7258c0817ba09ad9fb45ac6dd4b8a9ef5f",
+        "crc32": "572b58e0",
         "sourceVersion": "",
-        "size": 3909
+        "size": 4006
       },
       "2026": {
         "file": "CN/2026.hday",
-        "sha256": "d95f5092712b7d60c90c6ea779470c6f787ab651b21d7dc182a0593b79deb66f",
-        "crc32": "9c75b993",
+        "sha256": "d7e9d43ce6143e7c0ba334503ec1265d793c72ebf783e180c33b25208566abba",
+        "crc32": "9ae6009a",
         "sourceVersion": "",
-        "size": 3882
+        "size": 3979
       }
     }
   }

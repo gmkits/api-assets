@@ -32,6 +32,13 @@
       "title": "国务院办公厅关于2025年部分节假日安排的通知",
       "url": "https://www.gov.cn/zhengce/zhengceku/202411/content_6986383.htm",
       "publishedAt": "2024-11-12"
+    },
+    {
+      "id": "national-holiday-regulation-2024",
+      "type": "GOV_NOTICE",
+      "title": "国务院关于修改《全国年节及纪念日放假办法》的决定",
+      "url": "https://www.gov.cn/zhengce/zhengceku/202411/content_6986381.htm",
+      "publishedAt": "2024-11-12"
     }
   ],
   "rules": [
@@ -212,6 +219,23 @@
       "date": "2025-01-30"
     },
     {
+      "id": "spring-festival-2025-statutory-4",
+      "type": "FIXED_DATE",
+      "dayKind": "STATUTORY_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "春节（初三）",
+        "en-US": "Spring Festival (Day 3)"
+      },
+      "labels": [
+        "SPRING_FESTIVAL",
+        "STATUTORY"
+      ],
+      "sourceRefs": [
+        "national-holiday-regulation-2024"
+      ],
+      "date": "2025-01-31"
+    },
+    {
       "id": "tomb-sweeping-2025-statutory",
       "type": "FIXED_DATE",
       "dayKind": "STATUTORY_HOLIDAY",
@@ -244,6 +268,23 @@
         "gov-notice-2025"
       ],
       "date": "2025-05-01"
+    },
+    {
+      "id": "labour-day-2025-statutory-2",
+      "type": "FIXED_DATE",
+      "dayKind": "STATUTORY_HOLIDAY",
+      "displayNames": {
+        "zh-CN": "劳动节",
+        "en-US": "Labour Day (Day 2)"
+      },
+      "labels": [
+        "LABOUR_DAY",
+        "STATUTORY"
+      ],
+      "sourceRefs": [
+        "national-holiday-regulation-2024"
+      ],
+      "date": "2025-05-02"
     },
     {
       "id": "dragon-boat-2025-statutory",
