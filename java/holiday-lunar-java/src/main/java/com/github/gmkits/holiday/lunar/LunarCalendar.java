@@ -10,26 +10,26 @@ import java.util.Arrays;
  * <p>基于香港天文台（HKO）和紫金山天文台数据，覆盖 1900-2100 年的公历↔农历转换。
  * 每年仅用一个 20-bit 整数编码，201 年数据总共约 800 字节。</p>
  *
- * <h3>农历编码格式（每年一个整数）</h3>
+ * <h2>农历编码格式（每年一个整数）</h2>
  * <ul>
  *   <li>bit 0-3：闰月月份（0 = 无闰月，1-12 = 闰几月）</li>
  *   <li>bit 4：闰月天数（0 = 29 天，1 = 30 天）</li>
  *   <li>bit 5-16：正常 1-12 月的天数（0 = 29 天，1 = 30 天）</li>
  * </ul>
  *
- * <h3>节气编码格式（每年一个 48-bit long）</h3>
+ * <h2>节气编码格式（每年一个 48-bit long）</h2>
  * <p>24 个节气 × 2 bit = 48 bit，低位在前。
  * bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）。
  * 实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset。
  * 数据来源：香港天文台 / 紫金山天文台，覆盖 1900-2100（201 年 ~1.2KB）。
  * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。</p>
  *
- * <h3>信息论最优性分析</h3>
+ * <h2>信息论最优性分析</h2>
  * <p>农历每年最少需编码：12 个月大小（12 bit）+ 闰月位置（4 bit）+ 闰月大小（1 bit）= 17 bit。
  * 实际使用 20 bit，仅多 3 bit 用于编码冗余校验，已接近理论下限。
  * 201 年 × 20 bit = 4020 bit ≈ 503 字节（实际用 int32 存储为 804 字节）。</p>
  *
- * <h3>算法优化层次</h3>
+ * <h2>算法优化层次</h2>
  * <ol>
  *   <li>年天数缓存（YEAR_DAYS_CACHE）：yearDays() O(1) 查表</li>
  *   <li>年前缀和数组（CUMULATIVE_DAYS）：solarToLunar 年份定位 O(log n) 二分查找</li>
@@ -220,6 +220,8 @@ public final class LunarCalendar {
 
     /**
      * 获取指定农历年的闰月月份。
+     *
+     * @param lunarYear 农历年，范围 1900–2100
      * @return 闰月月份（1-12），0 表示该年无闰月。
      */
     public static int leapMonth(int lunarYear) {
@@ -229,6 +231,8 @@ public final class LunarCalendar {
 
     /**
      * 获取指定农历年闰月的天数。
+     *
+     * @param lunarYear 农历年，范围 1900–2100
      * @return 29 或 30，若无闰月返回 0。
      */
     public static int leapMonthDays(int lunarYear) {
@@ -238,6 +242,8 @@ public final class LunarCalendar {
 
     /**
      * 获取指定农历年某月的天数（不含闰月）。
+     *
+     * @param lunarYear 农历年，范围 1900–2100
      * @param month 月份 1-12
      * @return 29 或 30
      */
@@ -250,6 +256,9 @@ public final class LunarCalendar {
     /**
      * 获取指定农历年的总天数。
      * 使用预计算缓存，O(1) 时间复杂度。
+     *
+     * @param lunarYear 农历年，范围 1900–2100
+     * @return 当前农历年的总天数
      */
     public static int yearDays(int lunarYear) {
         validateYear(lunarYear);
@@ -263,14 +272,14 @@ public final class LunarCalendar {
     /**
      * 公历日期转农历日期。
      *
-     * <p>算法步骤：
+     * <p>算法步骤：</p>
      * <ol>
      *   <li>计算公历日期与基准日的天数偏移 offset</li>
      *   <li>二分查找 CUMULATIVE_DAYS → O(log 201) ≈ 8 次比较定位农历年</li>
      *   <li>查预计算 DAY_SLOT_LOOKUP 表 → O(1) 定位月槽（无需扫描或位运算）</li>
      *   <li>组装结果</li>
      * </ol>
-     * 总时间 &lt; 1μs（二分最多 8 步 + O(1) 月份定位，全部为数组索引操作）。</p>
+     * <p>总时间 &lt; 1μs（二分最多 8 步 + O(1) 月份定位，全部为数组索引操作）。</p>
      *
      * @param solarDate 公历日期
      * @return 农历完整信息
@@ -315,6 +324,13 @@ public final class LunarCalendar {
     /**
      * 农历日期转公历日期。
      * 使用前缀和 + 预计算月份偏移表，年份和月份累计天数均为 O(1) 查表。
+     *
+     * @param lunarYear 农历年，范围 1900–2100
+     * @param lunarMonth 农历月，范围 1–12
+     * @param lunarDay 农历日，范围 1–30
+     * @param isLeapMonth 是否指定闰月
+     * @return 对应的公历日期
+     * @throws IllegalArgumentException 农历日期不存在或超出数据范围时抛出
      */
     public static LocalDate lunarToSolar(int lunarYear, int lunarMonth, int lunarDay, boolean isLeapMonth) {
         validateYear(lunarYear);
@@ -343,6 +359,12 @@ public final class LunarCalendar {
 
     /**
      * 农历日期转公历日期（非闰月）。
+     *
+     * @param lunarYear 农历年，范围 1900–2100
+     * @param lunarMonth 农历月，范围 1–12
+     * @param lunarDay 农历日，范围 1–30
+     * @return 对应的公历日期
+     * @throws IllegalArgumentException 农历日期不存在或超出数据范围时抛出
      */
     public static LocalDate lunarToSolar(int lunarYear, int lunarMonth, int lunarDay) {
         return lunarToSolar(lunarYear, lunarMonth, lunarDay, false);
@@ -352,33 +374,64 @@ public final class LunarCalendar {
     // 天干地支 / 生肖
     // ===================================================================
 
-    /** 获取天干。 */
+    /**
+     * 获取指定农历年的天干。
+     *
+     * @param lunarYear 农历年
+     * @return 单个天干字符
+     */
     public static String getTianGan(int lunarYear) {
         return TIAN_GAN[((lunarYear - 4) % 10 + 10) % 10];
     }
 
-    /** 获取地支。 */
+    /**
+     * 获取指定农历年的地支。
+     *
+     * @param lunarYear 农历年
+     * @return 单个地支字符
+     */
     public static String getDiZhi(int lunarYear) {
         return DI_ZHI[((lunarYear - 4) % 12 + 12) % 12];
     }
 
-    /** 获取干支名称（如"乙巳"）。 */
+    /**
+     * 获取干支名称。
+     *
+     * @param lunarYear 农历年
+     * @return 干支名称，例如“乙巳”
+     */
     public static String getGanZhi(int lunarYear) {
         return getTianGan(lunarYear) + getDiZhi(lunarYear);
     }
 
-    /** 获取生肖。 */
+    /**
+     * 获取生肖。
+     *
+     * @param lunarYear 农历年
+     * @return 生肖中文名
+     */
     public static String getShengXiao(int lunarYear) {
         return SHENG_XIAO[((lunarYear - 4) % 12 + 12) % 12];
     }
 
-    /** 获取月份名称。 */
+    /**
+     * 获取农历月份中文名。
+     *
+     * @param month 农历月，范围 1–12
+     * @param isLeapMonth 是否为闰月
+     * @return 月份中文名，例如“正月”或“闰六月”
+     */
     public static String getMonthName(int month, boolean isLeapMonth) {
         checkArgument(month >= 1 && month <= 12, "月份超出范围: %s", month);
         return (isLeapMonth ? "闰" : "") + MONTH_NAMES[month - 1] + "月";
     }
 
-    /** 获取日期名称（如"初一"）。 */
+    /**
+     * 获取农历日期中文名。
+     *
+     * @param day 农历日，范围 1–30
+     * @return 日期中文名，例如“初一”
+     */
     public static String getDayName(int day) {
         checkArgument(day >= 1 && day <= 30, "日期超出范围: %s", day);
         return DAY_NAMES[day - 1];
@@ -429,6 +482,9 @@ public final class LunarCalendar {
     /**
      * 儒略日数转公历日期。
      * 基于 Meeus《Astronomical Algorithms》第 7 章。
+     *
+     * @param jde 儒略历书日
+     * @return 对应公历日期
      */
     public static LocalDate jdeToGregorian(double jde) {
         int Z = (int) Math.floor(jde + 0.5);
@@ -761,6 +817,8 @@ public final class LunarCalendar {
 
     /**
      * 当前农历和节气资产来源。
+     *
+     * @return classpath 资源位置或外部资产绝对路径
      */
     public static String getAssetSource() {
         return CalendarAssetLoader.sourceDescription();
@@ -780,13 +838,32 @@ public final class LunarCalendar {
             this.date = date;
         }
 
-        /** 节气名称。 */
+        /**
+         * 返回节气中文名。
+         *
+         * @return 节气中文名
+         */
         public String getName() { return name; }
-        /** 对应的太阳黄经度数（0-345，步长 15）。 */
+
+        /**
+         * 返回对应的太阳黄经度数。
+         *
+         * @return 太阳黄经度数，范围 0–345、步长 15
+         */
         public int getLongitude() { return longitude; }
-        /** 公历日期。 */
+
+        /**
+         * 返回节气对应的公历日期。
+         *
+         * @return 节气对应的公历日期
+         */
         public LocalDate getDate() { return date; }
 
+        /**
+         * 返回由节气名称和日期组成的简短字符串。
+         *
+         * @return 由节气名称和日期组成的简短字符串
+         */
         @Override
         public String toString() {
             return name + "(" + date + ")";

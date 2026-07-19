@@ -84,8 +84,8 @@ HTTP API 暴露给内网系统
 
 | 模块 | 说明 |
 | --- | --- |
-| `cn-holiday-kit` | **推荐的唯一 Java 依赖**：节假日、农历、节气与内置离线资产统一入口（Java 8+） |
-| `holiday-spec-java` / `holiday-core-java` / `holiday-lunar-java` | 内部兼容模块，保留原包名供已有调用方平滑升级 |
+| `cn-holiday-kit` | **推荐的唯一 Java 依赖和唯一物理 JAR**：节假日、农历、节气与内置离线资产统一入口（Java 8+） |
+| `holiday-spec-java` / `holiday-core-java` / `holiday-lunar-java` | 仅用于源码分层和独立测试，打包时合入 `cn-holiday-kit.jar`，不会成为使用方的传递依赖 |
 | `holiday-spring-starter` | Spring Boot 自动配置 |
 | `holiday-api-j8` | Java 8 / Spring Boot 2.7 兼容 API |
 | `holiday-api-j25` | Java 25 / Spring Boot 4 高性能 API（虚拟线程、分层缓存、审计日志、限流、ETag、`POST /api/v2/days:batch` 批量端点） |
@@ -215,6 +215,11 @@ Maven 只需声明一个依赖：
   <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
+
+最终发布物是一个约 80 KiB 的 Java 8 class 文件 JAR，包含全部实现和离线资产，
+无第三方运行时依赖。JDK 9+ 可用稳定自动模块名
+`com.github.gmkits.holiday` 放入 module path；详细边界见
+[`java/ARCHITECTURE.md`](java/ARCHITECTURE.md)。
 
 ```java
 import com.github.gmkits.holiday.CnHolidayKit;
@@ -673,7 +678,7 @@ cn-holiday-kit/
 
 | 模块 | 最低 Java 版本 | Spring Boot 版本 | 说明 |
 | --- | --- | --- | --- |
-| `cn-holiday-kit` | Java 8 | — | 推荐的单一对外依赖，内置统一离线资产 |
+| `cn-holiday-kit` | Java 8 | — | 单一对外 JAR，内置实现与统一离线资产；JDK 9+ 自动模块名 `com.github.gmkits.holiday` |
 | `holiday-spec-java` | Java 8 | — | 纯 DTO 与枚举 |
 | `holiday-core-java` | Java 8 | — | 无第三方运行时依赖的查询核心 |
 | `holiday-lunar-java` | Java 8 | — | 无第三方运行时依赖的纯算法 |
@@ -685,7 +690,7 @@ cn-holiday-kit/
 
 - 默认构建（`mvn test`）可直接在 Liberica JDK 8 上编译和测试 Java 8 兼容模块。
 - J25 模块通过 `-Pj25` profile 单独激活，需要 JDK 25+。
-- 所有 Java 8 模块严格使用 Java 8 API（如使用 Guava 的 `ImmutableList.of()` 而非 Java 9+ 的 `List.of()`）。
+- 所有 Java 8 兼容模块严格使用 Java 8 API；对外 `cn-holiday-kit.jar` 仅依赖 `java.base`，不含 Guava、Lombok 或 Spring 运行时依赖。
 
 ---
 

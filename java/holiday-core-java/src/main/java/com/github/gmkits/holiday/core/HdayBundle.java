@@ -7,8 +7,6 @@ import com.github.gmkits.holiday.spec.DayInfo;
 import com.github.gmkits.holiday.spec.LunarDateInfo;
 import com.github.gmkits.holiday.spec.SolarTermInfo;
 
-import lombok.Getter;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,16 +26,11 @@ public final class HdayBundle {
     /** 二进制格式中的“无索引”哨兵值。 */
     static final int NO_INDEX = 0xFFFF;
 
-    @Getter
     private final int year;
-    @Getter
     private final String regionCode;
     private final CalendarSystem calendarSystem;
-    @Getter
     private final int dayCount;
-    @Getter
     private final int majorVersion;
-    @Getter
     private final int minorVersion;
     private final DayEntry[] days;
     private final String[] strings;
@@ -62,7 +55,46 @@ public final class HdayBundle {
     }
 
     /**
+     * 返回数据包所属公历年份。
+     *
+     * @return 数据包所属公历年份
+     */
+    public int getYear() { return year; }
+
+    /**
+     * 返回数据包所属区域代码。
+     *
+     * @return 数据包所属区域代码
+     */
+    public String getRegionCode() { return regionCode; }
+
+    /**
+     * 返回数据包内实际包含的日期数量。
+     *
+     * @return 数据包内实际包含的日期数量
+     */
+    public int getDayCount() { return dayCount; }
+
+    /**
+     * 返回 {@code .hday} 格式主版本号。
+     *
+     * @return {@code .hday} 格式主版本号
+     */
+    public int getMajorVersion() { return majorVersion; }
+
+    /**
+     * 返回 {@code .hday} 格式次版本号。
+     *
+     * @return {@code .hday} 格式次版本号
+     */
+    public int getMinorVersion() { return minorVersion; }
+
+    /**
      * 按 dayIndex 直接返回预构建结果。
+     *
+     * @param dayIndex 从 0 开始的年内日期索引
+     * @return 对应的不可变单日信息
+     * @throws IndexOutOfBoundsException 索引超出数据包范围时抛出
      */
     public DayInfo getDayInfo(int dayIndex) {
         if (dayIndex < 0 || dayIndex >= dayCount) {
@@ -73,6 +105,9 @@ public final class HdayBundle {
 
     /**
      * 按日期查询，超出年份范围时返回 {@code null}。
+     *
+     * @param date 待查询公历日期
+     * @return 对应单日信息；日期不属于当前数据包年份时返回 {@code null}
      */
     public DayInfo getDayInfo(LocalDate date) {
         if (date.getYear() != year) {
@@ -87,6 +122,8 @@ public final class HdayBundle {
 
     /**
      * 返回整年视图。
+     *
+     * @return 复用内部预构建对象的不可变整年列表
      */
     public List<DayInfo> getDayInfos() {
         return yearView;
@@ -94,6 +131,10 @@ public final class HdayBundle {
 
     /**
      * 返回闭区间 dayIndex 范围。
+     *
+     * @param startDayIndex 起始年内索引，包含
+     * @param endDayIndex 结束年内索引，包含
+     * @return 截断到有效范围后的不可变列表
      */
     public List<DayInfo> getRange(int startDayIndex, int endDayIndex) {
         if (startDayIndex > endDayIndex) {
@@ -127,6 +168,10 @@ public final class HdayBundle {
     /**
      * 统计闭区间 dayIndex 范围内的工作日数量。
      * 直接在预构建数组上计数，避免创建中间列表。
+     *
+     * @param startDayIndex 起始年内索引，包含
+     * @param endDayIndex 结束年内索引，包含
+     * @return 有效范围内的工作日数量
      */
     public int countWorkdays(int startDayIndex, int endDayIndex) {
         int start = Math.max(0, startDayIndex);

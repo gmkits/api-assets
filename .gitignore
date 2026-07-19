@@ -15,6 +15,7 @@ apps/docs-site/.vitepress/dist/
 java/**/build/
 java/**/.gradle/
 java/**/target/
+java/**/dependency-reduced-pom-*.xml
 .gradle/
 
 # Admin web build

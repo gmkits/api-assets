@@ -15,7 +15,7 @@ import java.util.zip.CRC32;
 /**
  * 读取 {@code .hday} 二进制数据包文件并生成 {@link HdayBundle} 实例。
  *
- * <h3>二进制布局</h3>
+ * <h2>二进制布局</h2>
  * <pre>
  * 文件头（32 字节）
  *   magic          : 4B，固定为 "HDAY"

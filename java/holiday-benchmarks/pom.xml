@@ -66,6 +66,29 @@
                             <finalName>benchmarks</finalName>
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!--
+                              cn-holiday-kit 已经把三个内部实现模块合并进单一 JAR。
+                              Reactor 构建仍会把内部模块放到编译类路径，因此组装 JMH
+                              可执行包时必须排除它们，避免同一 class 被打包两次。
+                            -->
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>com.github.gmkits:holiday-core-java</exclude>
+                                    <exclude>com.github.gmkits:holiday-lunar-java</exclude>
+                                    <exclude>com.github.gmkits:holiday-spec-java</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.openjdk.jmh.Main</mainClass>

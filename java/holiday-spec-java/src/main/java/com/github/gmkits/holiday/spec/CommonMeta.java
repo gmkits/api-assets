@@ -1,8 +1,5 @@
 package com.github.gmkits.holiday.spec;
 
-import lombok.Getter;
-import lombok.ToString;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,8 +12,6 @@ import java.util.Map;
  *
  * <p>所有字段均遵循 cn-holiday-kit 规范，构造完成后不可变。</p>
  */
-@Getter
-@ToString
 public final class CommonMeta {
 
     private final String specVersion;
@@ -73,5 +68,114 @@ public final class CommonMeta {
         this.generatedAt = generatedAt;
         this.extensions = extensions == null ? Collections.<String, Object>emptyMap()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(extensions));
+    }
+
+    /**
+     * 返回数据遵循的规范版本。
+     *
+     * @return 数据遵循的规范版本
+     */
+    public String getSpecVersion() { return specVersion; }
+
+    /**
+     * 返回数据包唯一标识。
+     *
+     * @return 数据包唯一标识
+     */
+    public String getBundleId() { return bundleId; }
+
+    /**
+     * 返回数据包所属的主区域代码。
+     *
+     * @return 数据包所属的主区域代码
+     */
+    public RegionCode getRegionCode() { return regionCode; }
+
+    /**
+     * 返回上级区域代码。
+     *
+     * @return 上级区域代码；没有上级区域时返回 {@code null}
+     */
+    public RegionCode getParentRegionCode() { return parentRegionCode; }
+
+    /**
+     * 返回数据包所属公历年份。
+     *
+     * @return 数据包所属公历年份
+     */
+    public int getYear() { return year; }
+
+    /**
+     * 返回数据有效区间的起始日期。
+     *
+     * @return 数据有效区间的起始日期
+     */
+    public LocalDate getValidFrom() { return validFrom; }
+
+    /**
+     * 返回数据有效区间的结束日期。
+     *
+     * @return 数据有效区间的结束日期
+     */
+    public LocalDate getValidTo() { return validTo; }
+
+    /**
+     * 返回数据包采用的历法体系。
+     *
+     * @return 数据包采用的历法体系
+     */
+    public CalendarSystem getCalendarSystem() { return calendarSystem; }
+
+    /**
+     * 返回 IANA 时区标识。
+     *
+     * @return IANA 时区标识
+     */
+    public String getTimezone() { return timezone; }
+
+    /**
+     * 返回表示周末星期的位掩码。
+     *
+     * @return 表示周末星期的位掩码
+     */
+    public int getWeekendMask() { return weekendMask; }
+
+    /**
+     * 返回受支持的语言区域标签。
+     *
+     * @return 不可变的受支持语言区域标签列表
+     */
+    public List<String> getLocales() { return locales; }
+
+    /**
+     * 返回上游数据源版本。
+     *
+     * @return 上游数据源版本
+     */
+    public String getSourceVersion() { return sourceVersion; }
+
+    /**
+     * 返回数据包生成时间。
+     *
+     * @return ISO-8601 格式的数据包生成时间
+     */
+    public String getGeneratedAt() { return generatedAt; }
+
+    /**
+     * 返回扩展字段。
+     *
+     * @return 不可变扩展字段映射
+     */
+    public Map<String, Object> getExtensions() { return extensions; }
+
+    /**
+     * 返回便于日志查看的元数据摘要。
+     *
+     * @return 包含 bundle、区域和年份的字符串
+     */
+    @Override
+    public String toString() {
+        return "CommonMeta{bundleId='" + bundleId + "', regionCode=" + regionCode
+                + ", year=" + year + ", sourceVersion='" + sourceVersion + "'}";
     }
 }
