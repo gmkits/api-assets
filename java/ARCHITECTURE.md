@@ -72,6 +72,9 @@ failures.
 # Complete Java 8 build, tests, strict Javadocs, and standalone single-JAR test
 mvn -B -f java/pom.xml clean verify
 
+# The same command is also a compatibility gate on JDK 17 and JDK 21. On
+# JDK 9+, verify additionally compiles and runs the module-path consumer.
+
 # Complete JDK 25 build, including modern API and a real module-path consumer
 mvn -B -f java/pom.xml clean verify -Pj25
 

@@ -688,7 +688,7 @@ cn-holiday-kit/
 
 **注意事项**：
 
-- 默认构建（`mvn test`）可直接在 Liberica JDK 8 上编译和测试 Java 8 兼容模块。
+- 默认构建（`mvn test`）可在 Liberica JDK 8、17、21、25 上编译和测试 Java 8 兼容模块。
 - J25 模块通过 `-Pj25` profile 单独激活，需要 JDK 25+。
 - 所有 Java 8 兼容模块严格使用 Java 8 API；对外 `cn-holiday-kit.jar` 仅依赖 `java.base`，不含 Guava、Lombok 或 Spring 运行时依赖。
 
@@ -702,7 +702,7 @@ cn-holiday-kit/
 | --- | --- |
 | **校验 JSON Schema** | 使用 `ajv-cli` + `ajv-formats` 验证所有 Schema 文件格式正确 |
 | **TypeScript 构建与测试** | 全量构建 + 类型检查 + 测试 + 编译器流水线验证 |
-| **Java 构建与测试** | Liberica JDK 8（兼容模块）+ Liberica JDK 25（全模块）矩阵构建 |
+| **Java 构建与测试** | Liberica JDK 8、17、21、25 矩阵；8/17/21 验证兼容模块，25 额外验证 JDK 25 SDK/API |
 | **Bundle 完整性校验** | 检查 `.hday` 文件魔数（`HDAY`）+ SHA256 哈希比对 |
 
 ---
