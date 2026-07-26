@@ -94,6 +94,12 @@ export interface HdayBundle {
   strings: string[];
   /** Name-list entries (used for both names and labels). */
   nameLists: NameListEntry[];
+  /** 可选 EXT_JSON 中的审计元数据。 */
+  metadata?: {
+    specVersion?: string;
+    sourceVersion?: string;
+    generatedAt?: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -370,6 +376,17 @@ export function parseHdayBundle(data: ArrayBuffer): HdayBundle {
   const days = parseDayTable(view, daySection, header.dayCount);
   const strings = parseStringTable(view, stringSection);
   const nameLists = parseNameListTable(view, nameListSection);
+  const extSection = findSection(sections, SECTION_TYPES.EXT_JSON);
+  let metadata: HdayBundle['metadata'] = {};
+  if (extSection) {
+    const length = view.getUint32(extSection.offset, true);
+    const bytes = new Uint8Array(
+      view.buffer,
+      view.byteOffset + extSection.offset + 4,
+      length,
+    );
+    metadata = JSON.parse(utf8Decoder.decode(bytes)) as HdayBundle['metadata'];
+  }
 
   // Freeze the bundle to prevent accidental mutation by consumers.
   // Caches share parsed bundles across queries, so mutating any field
@@ -380,5 +397,6 @@ export function parseHdayBundle(data: ArrayBuffer): HdayBundle {
     days: Object.freeze(days),
     strings: Object.freeze(strings),
     nameLists: Object.freeze(nameLists),
+    metadata: Object.freeze(metadata),
   }) as HdayBundle;
 }

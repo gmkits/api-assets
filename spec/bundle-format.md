@@ -147,7 +147,8 @@ Header 之后紧跟 `sectionCount` 个 8 字节 section 表项：
 | `0x00` | 4 | `jsonLength` | `u32` | JSON 字节长度 |
 | `0x04` | `jsonLength` | `jsonData` | bytes | UTF-8 JSON 对象 |
 
-它主要用于存放构建元数据、调试信息或额外提示。运行时可以完全忽略该段。
+当前编译器写入 `specVersion`、`sourceVersion` 和 `generatedAt`。读取器可以用它们
+做审计与版本展示，也必须能够忽略未知字段或整个可选段。
 
 ## 8. CRC32
 

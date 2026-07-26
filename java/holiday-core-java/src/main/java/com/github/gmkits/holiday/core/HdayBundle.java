@@ -35,12 +35,16 @@ public final class HdayBundle {
     private final DayEntry[] days;
     private final String[] strings;
     private final int[][][] nameLists;
+    private final String sourceVersion;
     private final DayInfo[] dayInfos;
     private final List<DayInfo> yearView;
+    private final int[] workdayPrefix;
+    private final int[] nextStatutoryIndex;
 
     HdayBundle(int year, String regionCode, CalendarSystem calendarSystem,
                int dayCount, int majorVersion, int minorVersion,
-               DayEntry[] days, String[] strings, int[][][] nameLists) {
+               DayEntry[] days, String[] strings, int[][][] nameLists,
+               String sourceVersion) {
         this.year = year;
         this.regionCode = regionCode;
         this.calendarSystem = calendarSystem;
@@ -50,8 +54,11 @@ public final class HdayBundle {
         this.days = days;
         this.strings = strings;
         this.nameLists = nameLists;
+        this.sourceVersion = sourceVersion;
         this.dayInfos = buildDayInfos();
         this.yearView = Collections.unmodifiableList(Arrays.asList(this.dayInfos));
+        this.workdayPrefix = buildWorkdayPrefix();
+        this.nextStatutoryIndex = buildNextStatutoryIndex();
     }
 
     /**
@@ -179,13 +186,7 @@ public final class HdayBundle {
         if (start > end) {
             return 0;
         }
-        int count = 0;
-        for (int i = start; i <= end; i++) {
-            if (dayInfos[i].isWorkday()) {
-                count++;
-            }
-        }
-        return count;
+        return workdayPrefix[end + 1] - workdayPrefix[start];
     }
 
     /**
@@ -196,12 +197,8 @@ public final class HdayBundle {
         if (start >= dayCount) {
             return null;
         }
-        for (int i = start; i < dayCount; i++) {
-            if (dayInfos[i].isStatutoryHoliday()) {
-                return dayInfos[i];
-            }
-        }
-        return null;
+        int index = nextStatutoryIndex[start];
+        return index < 0 ? null : dayInfos[index];
     }
 
     private DayInfo[] buildDayInfos() {
@@ -209,6 +206,9 @@ public final class HdayBundle {
         LocalDate cursor = LocalDate.of(year, 1, 1);
         for (int i = 0; i < dayCount; i++) {
             DayEntry entry = days[i];
+            Map<String, Object> extensions = resolveExtensions(cursor, i);
+            LunarDateInfo lunar = (LunarDateInfo) extensions.get("lunar");
+            SolarTermInfo solarTerm = (SolarTermInfo) extensions.get("solarTerm");
             result[i] = new DayInfo.Builder()
                     .date(cursor)
                     .regionCode(regionCode)
@@ -220,11 +220,33 @@ public final class HdayBundle {
                     .adjustedWorkday(entry.isAdjustedWorkday())
                     .holidayNames(resolveNames(entry.nameListIndex))
                     .labels(resolveLabels(entry.labelListIndex))
-                    .extensions(resolveExtensions(cursor, i))
+                    .festivals(FestivalResolver.resolve(cursor, lunar, solarTerm))
+                    .sourceVersion(sourceVersion)
+                    .extensions(extensions)
                     .build();
             cursor = cursor.plusDays(1);
         }
         return result;
+    }
+
+    private int[] buildWorkdayPrefix() {
+        int[] prefix = new int[dayCount + 1];
+        for (int i = 0; i < dayCount; i++) {
+            prefix[i + 1] = prefix[i] + (dayInfos[i].isWorkday() ? 1 : 0);
+        }
+        return prefix;
+    }
+
+    private int[] buildNextStatutoryIndex() {
+        int[] indexes = new int[dayCount];
+        int next = -1;
+        for (int i = dayCount - 1; i >= 0; i--) {
+            if (dayInfos[i].isStatutoryHoliday()) {
+                next = i;
+            }
+            indexes[i] = next;
+        }
+        return indexes;
     }
 
     private Map<String, Object> resolveExtensions(LocalDate date, int dayIndex) {

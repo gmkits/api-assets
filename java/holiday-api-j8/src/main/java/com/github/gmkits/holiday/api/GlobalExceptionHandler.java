@@ -8,9 +8,18 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+/**
+ * 将控制器异常归一化为稳定的 JSON 错误响应。
+ */
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * 处理缺少必填查询参数。
+     *
+     * @param ex Spring 参数绑定异常
+     * @return HTTP 400 错误响应
+     */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException ex) {
         ErrorResponse error = new ErrorResponse(
@@ -19,6 +28,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    /**
+     * 处理查询参数类型或日期格式错误。
+     *
+     * @param ex Spring 参数类型异常
+     * @return HTTP 400 错误响应
+     */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         ErrorResponse error = new ErrorResponse(
@@ -27,6 +42,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    /**
+     * 处理业务参数校验错误。
+     *
+     * @param ex 参数异常
+     * @return HTTP 400 错误响应
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         ErrorResponse error = new ErrorResponse(
@@ -35,6 +56,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    /**
+     * 隐藏未预期异常的内部细节。
+     *
+     * @param ex 未预期异常
+     * @return HTTP 500 错误响应
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
         ErrorResponse error = new ErrorResponse(

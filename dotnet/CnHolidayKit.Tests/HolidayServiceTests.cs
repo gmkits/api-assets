@@ -84,6 +84,8 @@ public sealed class HolidayServiceTests
         var info = Service.GetDayInfo(new DateOnly(2025, 1, 4));
         Assert.IsNotNull(info);
         Assert.IsTrue(info.IsWeekend);
+        Assert.IsTrue(info.IsHoliday);
+        Assert.IsFalse(info.IsOfficialHoliday);
         Assert.IsFalse(info.IsWorkday);
     }
 

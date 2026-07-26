@@ -9,6 +9,7 @@ import { parseHdayBundle, queryDay, queryYear, queryRange, dayOfYear } from '../
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BUNDLE_2025 = resolve(__dirname, '../../../data/bundles/CN/2025.hday');
 const BUNDLE_2026 = resolve(__dirname, '../../../data/bundles/CN/2026.hday');
+const BUNDLE_2000 = resolve(__dirname, '../../../data/bundles/CN/2000.hday');
 
 let bundle2025 = null;
 let bundle2026 = null;
@@ -103,7 +104,19 @@ describe('queryDay — CN 2025 holidays', () => {
     const info = queryDay(bundle2025, '2025-01-04');
     assert.ok(info);
     assert.equal(info.isWeekend, true);
+    assert.equal(info.isHoliday, true);
+    assert.equal(info.isOfficialHoliday, false);
     assert.equal(info.isWorkday, false);
+  });
+
+  it('should combine official status, lunar date, festival and source version', () => {
+    assert.ok(bundle2025);
+    const info = queryDay(bundle2025, '2025-10-06');
+    assert.ok(info);
+    assert.equal(info.isOfficialHoliday, true);
+    assert.ok(info.festivals.some((festival) => festival.code === 'MID_AUTUMN'));
+    assert.ok(info.extensions.lunar);
+    assert.ok(info.sourceVersion.length > 0);
   });
 
   it('should return Jan 26 as adjusted workday (Spring Festival makeup)', () => {
@@ -143,6 +156,18 @@ describe('queryDay — CN 2025 holidays', () => {
   it('should return null for wrong year', () => {
     assert.ok(bundle2025);
     assert.equal(queryDay(bundle2025, '2026-01-01'), null);
+  });
+});
+
+describe('parseHdayBundle — CN 2000', () => {
+  it('should keep the first supported year fully offline', async () => {
+    const bundle = await loadBundle(BUNDLE_2000);
+    assert.ok(bundle);
+    assert.equal(bundle.header.dayCount, 366);
+    const info = queryDay(bundle, '2000-10-01');
+    assert.ok(info);
+    assert.equal(info.isOfficialHoliday, true);
+    assert.equal(info.isStatutoryHoliday, true);
   });
 });
 

@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-07-18T17:21:34.010Z",
+  "generatedAt": "2026-07-26T15:48:02.846Z",
   "calendar": {
     "lunarYears": {
       "path": "calendar/lunar-years.hex",
@@ -21,10 +21,10 @@
     "region": "CN",
     "manifest": {
       "path": "holidays/manifest.json",
-      "startYear": 2025,
+      "startYear": 2000,
       "endYear": 2026,
-      "bytes": 609,
-      "sha256": "ab831c16c81e73c2e4a076703cab068b8799979bacca98d2fe6d14c8fd574b27"
+      "bytes": 6597,
+      "sha256": "d98d39f19a903d429e5c226a2e2d51f5de3ae640d8678e432132969b685b8bad"
     },
     "bundleRoot": "holidays/bundles"
   }

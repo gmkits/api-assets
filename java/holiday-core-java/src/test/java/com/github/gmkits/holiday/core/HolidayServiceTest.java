@@ -109,7 +109,29 @@ class HolidayServiceTest {
         DayInfo info = service.getDayInfo(date);
         assertNotNull(info);
         assertTrue(info.isWeekend(), "Jan 4 (Saturday) should be a weekend");
+        assertTrue(info.isHoliday(), "A normal weekend is a day off");
+        assertFalse(info.isOfficialHoliday(), "A normal weekend is not an official holiday period");
         assertFalse(info.isWorkday(), "Jan 4 should not be a workday");
+    }
+
+    @Test
+    void combinedCalendarInfo_exposesFestivalAndSourceVersion() {
+        DayInfo info = service.getDayInfo(LocalDate.of(2025, 10, 6));
+        assertNotNull(info);
+        assertTrue(info.isOfficialHoliday());
+        assertTrue(info.getFestivals().stream()
+                .anyMatch(festival -> "MID_AUTUMN".equals(festival.getCode())));
+        assertFalse(info.getSourceVersion().isEmpty());
+        assertTrue(info.getExtensions().containsKey("lunar"));
+    }
+
+    @Test
+    void archivedYear2000_isAvailableOffline() {
+        DayInfo info = service.getDayInfo(LocalDate.of(2000, 10, 1));
+        assertNotNull(info);
+        assertTrue(info.isOfficialHoliday());
+        assertTrue(info.isStatutoryHoliday());
+        assertEquals(366, service.getYear(2000).size());
     }
 
     @Test

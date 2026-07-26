@@ -162,8 +162,10 @@ export interface DayInfo {
   regionCode: string;
   /** 历法体系。 */
   calendarSystem: CalendarSystem;
-  /** 是否为休息日。 */
+  /** 是否为休息日；包含自然周末和官方放假安排。 */
   isHoliday: boolean;
+  /** 是否属于官方公布的放假安排。 */
+  isOfficialHoliday: boolean;
   /** 是否为工作日。 */
   isWorkday: boolean;
   /** 是否为默认周末。 */
@@ -176,10 +178,20 @@ export interface DayInfo {
   holidayNames: MultiLangNames;
   /** 标签列表。 */
   labels: string[];
+  /** 当天命中的传统节日、公共节日和纪念日；不代表一定放假。 */
+  festivals: FestivalInfo[];
   /** 数据版本。 */
   sourceVersion: string;
   /** 扩展数据。 */
   extensions: Record<string, unknown>;
+}
+
+/** 与工作日状态相互独立的节日或纪念日。 */
+export interface FestivalInfo {
+  /** 稳定的大写英文代码。 */
+  code: string;
+  /** 多语言显示名称。 */
+  names: Record<string, string>;
 }
 
 // --- Canonical Types ---

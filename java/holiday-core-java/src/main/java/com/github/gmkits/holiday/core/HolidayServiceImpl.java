@@ -10,25 +10,29 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * {@link HolidayService} 默认实现。
  *
- * <p>bundle 以 `(region, year)` 为粒度懒加载并放入 LRU 缓存；区间和整年查询会优先走 bundle 级批量路径，
- * 避免逐日重复查单天。</p>
+ * <p>bundle 以 {@code (region, year)} 为粒度懒加载并放入无锁并发缓存；
+ * 未安装的年份也会负缓存。区间和整年查询优先走 bundle 级批量路径，
+ * 避免逐日重复查询和中间集合。</p>
  */
 final class HolidayServiceImpl implements HolidayService {
 
     private final String defaultRegion;
     private final Path dataPath;
     private final boolean classpathFallback;
-    private final LRUCache<String, HdayBundle> cache;
+    private final ConcurrentMap<String, Optional<HdayBundle>> cache;
 
     HolidayServiceImpl(String defaultRegion, Path dataPath, boolean classpathFallback) {
         this.defaultRegion = defaultRegion;
         this.dataPath = dataPath;
         this.classpathFallback = classpathFallback;
-        this.cache = new LRUCache<>();
+        this.cache = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -186,7 +190,8 @@ final class HolidayServiceImpl implements HolidayService {
 
     private HdayBundle resolveBundle(String region, int year) {
         String key = region + "/" + year;
-        return cache.get(key, ignored -> loadBundle(region, year));
+        return cache.computeIfAbsent(
+                key, ignored -> Optional.ofNullable(loadBundle(region, year))).orElse(null);
     }
 
     private HdayBundle loadBundle(String region, int year) {

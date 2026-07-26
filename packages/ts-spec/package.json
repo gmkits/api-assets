@@ -1,6 +1,7 @@
 {
   "name": "@holiday/spec",
   "version": "1.0.0",
+  "private": true,
   "description": "Holiday Data Platform — shared type definitions and constants",
   "license": "Apache-2.0",
   "type": "module",

@@ -8,6 +8,9 @@ import * as crypto from 'node:crypto';
 import type { Manifest, BundleEntry } from '@holiday/spec';
 import {
   HDAY_MAGIC,
+  HDAY_HEADER_SIZE,
+  HDAY_SECTION_ENTRY_SIZE,
+  SECTION_TYPES,
 } from '@holiday/spec';
 
 /**
@@ -36,7 +39,12 @@ function findHdayFiles(
 /**
  * Parse region code and year from an .hday file header.
  */
-function parseHdayHeader(buf: Buffer): { regionCode: string; year: number } {
+function parseHdayHeader(buf: Buffer): {
+  regionCode: string;
+  year: number;
+  sourceVersion: string;
+  generatedAt: string;
+} {
   const magic = buf.subarray(0, 4).toString('ascii');
   if (magic !== HDAY_MAGIC) {
       throw new Error('.hday 文件无效');
@@ -44,7 +52,19 @@ function parseHdayHeader(buf: Buffer): { regionCode: string; year: number } {
   const year = buf.readUInt16LE(8);
   const regionCodeLen = buf.readUInt8(10);
   const regionCode = buf.subarray(11, 11 + regionCodeLen).toString('utf-8');
-  return { regionCode, year };
+  const sectionCount = buf.readUInt16LE(30);
+  let sourceVersion = '';
+  let generatedAt = '';
+  for (let index = 0; index < sectionCount; index++) {
+    const entry = HDAY_HEADER_SIZE + index * HDAY_SECTION_ENTRY_SIZE;
+    if (buf.readUInt16LE(entry) !== SECTION_TYPES.EXT_JSON) continue;
+    const offset = buf.readUInt32LE(entry + 2);
+    const length = buf.readUInt32LE(offset);
+    const json = JSON.parse(buf.subarray(offset + 4, offset + 4 + length).toString('utf8'));
+    sourceVersion = String(json.sourceVersion ?? '');
+    generatedAt = String(json.generatedAt ?? '');
+  }
+  return { regionCode, year, sourceVersion, generatedAt };
 }
 
 /**
@@ -69,16 +89,19 @@ export function buildManifest(
     specVersion?: string;
     bundleFormatVersion?: string;
     defaultRegion?: string;
+    publishedAt?: string;
   },
 ): Manifest {
   const hdayFiles = findHdayFiles(bundlesDir, bundlesDir);
   const bundles: Record<string, Record<string, BundleEntry>> = {};
+  let latestGeneratedAt = '';
 
   for (const { relativePath, absolutePath } of hdayFiles) {
     const buf = fs.readFileSync(absolutePath);
     const stat = fs.statSync(absolutePath);
 
-    const { regionCode, year } = parseHdayHeader(buf);
+    const { regionCode, year, sourceVersion, generatedAt } = parseHdayHeader(buf);
+    if (generatedAt > latestGeneratedAt) latestGeneratedAt = generatedAt;
 
     const sha256 = crypto.createHash('sha256').update(buf).digest('hex');
     // Read the embedded CRC32 from the last 4 bytes of the .hday file
@@ -93,7 +116,7 @@ export function buildManifest(
       file: relativePath,
       sha256,
       crc32: crcHex,
-      sourceVersion: '',
+      sourceVersion,
       size: stat.size,
     };
   }
@@ -102,7 +125,7 @@ export function buildManifest(
     specVersion: options?.specVersion ?? '1.0.0',
     bundleFormatVersion: options?.bundleFormatVersion ?? '1',
     defaultRegion: options?.defaultRegion ?? Object.keys(bundles)[0] ?? 'CN',
-    publishedAt: new Date().toISOString(),
+    publishedAt: options?.publishedAt ?? latestGeneratedAt,
     bundles,
   };
 }

@@ -14,6 +14,10 @@
     <name>holiday-spec-java</name>
     <description>节假日数据平台 —— Java 类型定义</description>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <build>
         <plugins>
             <plugin>

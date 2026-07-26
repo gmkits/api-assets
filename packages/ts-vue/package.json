@@ -1,6 +1,7 @@
 {
   "name": "@holiday/vue",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",

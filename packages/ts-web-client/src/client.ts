@@ -343,17 +343,26 @@ function normalizeDayInfoArray(value: unknown): DayInfo[] {
 
 function normalizeDayInfo(value: unknown): DayInfo {
   const r = rec(value, 'DayInfo');
+  const holidayNames = readNames(r);
+  const isHoliday = bool(r, 'isHoliday', 'holiday');
   return {
     date: str(r, 'date'),
     regionCode: str(r, 'regionCode'),
     calendarSystem: readCalSys(r),
-    isHoliday: bool(r, 'isHoliday', 'holiday'),
+    isHoliday,
+    isOfficialHoliday:
+      typeof r.isOfficialHoliday === 'boolean'
+        ? r.isOfficialHoliday
+        : isHoliday && Object.keys(holidayNames).length > 0,
     isWorkday: bool(r, 'isWorkday', 'workday'),
     isWeekend: bool(r, 'isWeekend', 'weekend'),
     isStatutoryHoliday: bool(r, 'isStatutoryHoliday', 'statutoryHoliday'),
     isAdjustedWorkday: bool(r, 'isAdjustedWorkday', 'adjustedWorkday'),
-    holidayNames: readNames(r),
+    holidayNames,
     labels: arr(r.labels, 'labels', (v): v is string => typeof v === 'string'),
+    festivals: Array.isArray(r.festivals)
+      ? r.festivals as DayInfo['festivals']
+      : [],
     sourceVersion: str(r, 'sourceVersion'),
     extensions: normalizeExt(r.extensions),
   };

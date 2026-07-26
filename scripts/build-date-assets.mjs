@@ -27,6 +27,11 @@ for (const name of readdirSync(join(root, 'data/bundles/CN')).filter((file) => f
   copyFileSync(join(root, 'data/bundles/CN', name), join(holidayBundleDir, name));
 }
 
+const holidayYears = Object.keys(holidayManifest.bundles.CN ?? {}).map(Number).sort((a, b) => a - b);
+if (holidayYears.length === 0) {
+  throw new Error('No CN holiday bundles found');
+}
+
 const manifest = {
   formatVersion: 1,
   generatedAt: holidayManifest.publishedAt,
@@ -36,7 +41,11 @@ const manifest = {
   },
   holidays: {
     region: 'CN',
-    manifest: asset('holidays/manifest.json', 2025, 2026),
+    manifest: asset(
+      'holidays/manifest.json',
+      holidayYears[0],
+      holidayYears[holidayYears.length - 1],
+    ),
     bundleRoot: 'holidays/bundles',
   },
 };

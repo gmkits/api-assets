@@ -14,6 +14,10 @@
     <name>holiday-lunar-java</name>
     <description>节假日数据平台 —— 农历转换模块（1900-2100，位压缩存储）</description>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <build>
         <plugins>
             <plugin>

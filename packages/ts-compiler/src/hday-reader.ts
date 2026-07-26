@@ -148,6 +148,7 @@ export function readHday(buf: Buffer): MaterializedYearData {
   const dayTableSection = sections.find(s => s.type === SECTION_TYPES.DAY_TABLE);
   const strTableSection = sections.find(s => s.type === SECTION_TYPES.STRING_TABLE);
   const nameListSection = sections.find(s => s.type === SECTION_TYPES.NAME_LIST_TABLE);
+  const extJsonSection = sections.find(s => s.type === SECTION_TYPES.EXT_JSON);
 
   if (!dayTableSection || !strTableSection || !nameListSection) {
       throw new Error('.hday 文件缺少必需的段');
@@ -202,9 +203,17 @@ export function readHday(buf: Buffer): MaterializedYearData {
     };
   }
 
-  // Build a minimal CommonMeta from the header info
+  let extMeta: Record<string, unknown> = {};
+  if (extJsonSection) {
+    const length = buf.readUInt32LE(extJsonSection.offset);
+    extMeta = JSON.parse(
+      buf.subarray(extJsonSection.offset + 4, extJsonSection.offset + 4 + length).toString('utf8'),
+    );
+  }
+
+  // Build a minimal CommonMeta from the header and optional metadata section.
   const meta: CommonMeta = {
-    specVersion: '1.0.0',
+    specVersion: String(extMeta.specVersion ?? '1.0.0'),
     bundleId: `${regionCode}-${year}`,
     regionCode,
     parentRegionCode: null,
@@ -215,8 +224,8 @@ export function readHday(buf: Buffer): MaterializedYearData {
     timezone: '',
     weekendMask: ['SAT', 'SUN'],
     locales: [],
-    sourceVersion: '',
-    generatedAt: '',
+    sourceVersion: String(extMeta.sourceVersion ?? ''),
+    generatedAt: String(extMeta.generatedAt ?? ''),
     generator: { name: '', version: '' },
     extensions: {},
   };

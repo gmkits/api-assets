@@ -28,15 +28,19 @@ split packages: every package is owned by the single
 `com.github.gmkits.holiday` runtime module.
 
 The Maven projects `holiday-spec-java`, `holiday-lunar-java`, and
-`holiday-core-java` are internal build partitions. They allow focused tests and
-short dependency directions while the shade step merges them into the final
-artifact and removes them from its published POM.
+`holiday-core-java` are internal build partitions, not separate product
+releases. They allow focused tests and short dependency directions while the
+shade step merges them into the final artifact and removes them from its
+published POM. Spring APIs and JMH are deployment/test tools and are also
+outside the library publication boundary.
+Their POMs set `maven.deploy.skip=true`, so a reactor deploy cannot
+accidentally publish them as independent products.
 
 ## JDK compatibility
 
 The complete library is compiled with `--release 8`, produces Java 8 class
-files, and depends only on `java.base`. It contains no Lombok, Guava, Spring, or
-other third-party runtime code.
+files, and uses only JDK classes at runtime. It contains no Lombok, Guava,
+Spring, Caffeine, or other third-party runtime code.
 
 JDK 8 uses the JAR on the ordinary classpath:
 

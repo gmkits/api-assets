@@ -23,6 +23,7 @@ apps/admin-web/dist/
 
 # Test outputs
 tests/cross-lang/output/
+/target/
 
 # Vue tsc build info
 *.tsbuildinfo

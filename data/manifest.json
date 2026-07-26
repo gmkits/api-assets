@@ -2,22 +2,197 @@
   "specVersion": "1.0.0",
   "bundleFormatVersion": "1",
   "defaultRegion": "CN",
-  "publishedAt": "2026-07-18T17:21:34.010Z",
+  "publishedAt": "2026-07-26T15:48:02.846Z",
   "bundles": {
     "CN": {
+      "2000": {
+        "file": "CN/2000.hday",
+        "sha256": "7363eec14333c787e174ca3c90b8d67eb2e5b63f7821352a584de575cbb91518",
+        "crc32": "d252eb81",
+        "sourceVersion": "2000.RECONSTRUCTED",
+        "size": 3432
+      },
+      "2001": {
+        "file": "CN/2001.hday",
+        "sha256": "0fe10fa358d74ef3265a7380ac707942c0f967a455e8b52e416dbba7406a96d4",
+        "crc32": "507f3a21",
+        "sourceVersion": "2001.ARCHIVED_NOTICE",
+        "size": 3420
+      },
+      "2002": {
+        "file": "CN/2002.hday",
+        "sha256": "8d323e48c46e7a8b6753868c9f567d6c83f22e88c5be3d70f0ba77e4643211cb",
+        "crc32": "2950fae2",
+        "sourceVersion": "2002.ARCHIVED_NOTICE",
+        "size": 3426
+      },
+      "2003": {
+        "file": "CN/2003.hday",
+        "sha256": "eac98ab094ecc8f7d156f9c667932bab1ce7d215f259dbf1134305fa4c633f8a",
+        "crc32": "6b7ca939",
+        "sourceVersion": "2003.ARCHIVED_NOTICE",
+        "size": 3426
+      },
+      "2004": {
+        "file": "CN/2004.hday",
+        "sha256": "dc5a7502e88b7e761f5c1d8fe5ea31ebff32259be14dbeac21b2a343ef5e7c9a",
+        "crc32": "fe98d2f7",
+        "sourceVersion": "2004.ARCHIVED_NOTICE",
+        "size": 3428
+      },
+      "2005": {
+        "file": "CN/2005.hday",
+        "sha256": "07bac4f313f3cc91378b51a06d31e0e4bc581b77945f40b3a31e792d08ad7129",
+        "crc32": "818ba930",
+        "sourceVersion": "2005.ARCHIVED_NOTICE",
+        "size": 3426
+      },
+      "2006": {
+        "file": "CN/2006.hday",
+        "sha256": "acc2fa6e45fe4fef9297729fc0a3312d83c871cf0f8bcbd3f9474c3afb9dd629",
+        "crc32": "59bc64fb",
+        "sourceVersion": "2006.ARCHIVED_NOTICE",
+        "size": 3436
+      },
+      "2007": {
+        "file": "CN/2007.hday",
+        "sha256": "0aac9c97f47a9ecd0e6a42d8cfa474ac27f52c05108b3c33a217ecf9782844d6",
+        "crc32": "61f32e67",
+        "sourceVersion": "2007.GOV_NOTICE",
+        "size": 3431
+      },
+      "2008": {
+        "file": "CN/2008.hday",
+        "sha256": "f58b122fc4863ba10a8e5680c6073f4f6444b4cf1954251353b3806c295a882e",
+        "crc32": "0d49dc0a",
+        "sourceVersion": "2008.GOV_NOTICE",
+        "size": 3636
+      },
+      "2009": {
+        "file": "CN/2009.hday",
+        "sha256": "8fdcdbea012a0c0fb3540e8e90a6b163c027a244b0190c753c3d3fab8b4ef59d",
+        "crc32": "c908fdcf",
+        "sourceVersion": "2009.GOV_NOTICE",
+        "size": 3638
+      },
+      "2010": {
+        "file": "CN/2010.hday",
+        "sha256": "1627e81876d536aee349764b3005a3b405192ca6bdfc75413b87807008bbe399",
+        "crc32": "e6ea7ebf",
+        "sourceVersion": "2010.GOV_NOTICE",
+        "size": 3644
+      },
+      "2011": {
+        "file": "CN/2011.hday",
+        "sha256": "3bcb3830c3c213e8684a815cc4378efc7df8020e65b558c98730126fcae49c77",
+        "crc32": "48f9a8ae",
+        "sourceVersion": "2011.GOV_NOTICE",
+        "size": 3644
+      },
+      "2012": {
+        "file": "CN/2012.hday",
+        "sha256": "d76cb396e720505a00d561085bbe254b904b97faaf784a102d334e0856e59166",
+        "crc32": "4bf3f5a1",
+        "sourceVersion": "2012.GOV_NOTICE",
+        "size": 3636
+      },
+      "2013": {
+        "file": "CN/2013.hday",
+        "sha256": "11aba72c4a813292fc12a30f7d5bcd4b953daf6fab6121864040683e3ccaa65d",
+        "crc32": "be8498a9",
+        "sourceVersion": "2013.GOV_NOTICE",
+        "size": 3674
+      },
+      "2014": {
+        "file": "CN/2014.hday",
+        "sha256": "682c9e2fb41c2571d3bdb43ee1722ef655f6f5b25f426233155afeec144a913e",
+        "crc32": "ea1ad3ac",
+        "sourceVersion": "2014.GOV_NOTICE",
+        "size": 3616
+      },
+      "2015": {
+        "file": "CN/2015.hday",
+        "sha256": "0e03ac6a981d906b5c84eba295545275fd7cb649050130e9f97561dc9e458cec",
+        "crc32": "e945c8c0",
+        "sourceVersion": "2015.GOV_NOTICE",
+        "size": 3770
+      },
+      "2016": {
+        "file": "CN/2016.hday",
+        "sha256": "6e3bcf544cbea11f5906754966b6fed1e3578ddc6351e84f51eb02380f2770ca",
+        "crc32": "cd1e087e",
+        "sourceVersion": "2016.GOV_NOTICE",
+        "size": 3640
+      },
+      "2017": {
+        "file": "CN/2017.hday",
+        "sha256": "b1358e97697bbce87e9d30335650f34017c2a99bfb92d77d244392539131de09",
+        "crc32": "c07ba84b",
+        "sourceVersion": "2017.GOV_NOTICE",
+        "size": 3632
+      },
+      "2018": {
+        "file": "CN/2018.hday",
+        "sha256": "7fb238514afdc8de20ea419fdf5049a8d272d28b98819d4e5e307c7a9f1a7dc6",
+        "crc32": "816b1424",
+        "sourceVersion": "2018.GOV_NOTICE",
+        "size": 3642
+      },
+      "2019": {
+        "file": "CN/2019.hday",
+        "sha256": "5d9deff229ab3276293cf1ffecbe70b78288fe15d7fe0d16dbd48dcc154ee3a3",
+        "crc32": "193973e6",
+        "sourceVersion": "2019.GOV_NOTICE",
+        "size": 3628
+      },
+      "2020": {
+        "file": "CN/2020.hday",
+        "sha256": "78530d6caf81a60c442935b1bfaaa1cc18ca0d8b5cc89c78379c8b9115f49105",
+        "crc32": "74bf39fd",
+        "sourceVersion": "2020.GOV_NOTICE",
+        "size": 3576
+      },
+      "2021": {
+        "file": "CN/2021.hday",
+        "sha256": "4b9d93d08d4aa507fc1de29933ba441228e203e9d792db7cc26f8b1f78ccbff1",
+        "crc32": "11912071",
+        "sourceVersion": "2021.GOV_NOTICE",
+        "size": 3644
+      },
+      "2022": {
+        "file": "CN/2022.hday",
+        "sha256": "e33a5500613ab2ae3ecabc78ae9e615211372d67f5136753ef4d8cdb47da0e87",
+        "crc32": "296e42f8",
+        "sourceVersion": "2022.GOV_NOTICE",
+        "size": 3644
+      },
+      "2023": {
+        "file": "CN/2023.hday",
+        "sha256": "95ec14c14273a186c4c8befed114515c21d0dbc6991e256f5c11d4461a130ed1",
+        "crc32": "b541a1aa",
+        "sourceVersion": "2023.GOV_NOTICE",
+        "size": 3632
+      },
+      "2024": {
+        "file": "CN/2024.hday",
+        "sha256": "79b55b1a121e2c916f72373e37f35f0bb2cacc2e3a109bed61f9b4f21deca5de",
+        "crc32": "cb360d60",
+        "sourceVersion": "2024.GOV_NOTICE",
+        "size": 3650
+      },
       "2025": {
         "file": "CN/2025.hday",
-        "sha256": "4d8752db5a57c7848a47ebbffbfa3f7258c0817ba09ad9fb45ac6dd4b8a9ef5f",
-        "crc32": "572b58e0",
-        "sourceVersion": "",
-        "size": 4006
+        "sha256": "ccc8565eab36d06b6d2fae53b067b959d8e65da339e4e7039842aa534a3e3c61",
+        "crc32": "0865f134",
+        "sourceVersion": "2025.GOV_NOTICE",
+        "size": 3622
       },
       "2026": {
         "file": "CN/2026.hday",
-        "sha256": "d7e9d43ce6143e7c0ba334503ec1265d793c72ebf783e180c33b25208566abba",
-        "crc32": "9ae6009a",
-        "sourceVersion": "",
-        "size": 3979
+        "sha256": "ad3662b7cf17a72f386bd93d9d204dd3b3ce947e94afa7353311b6361c0ef9b6",
+        "crc32": "efc3b918",
+        "sourceVersion": "2026.GOV_NOTICE",
+        "size": 3644
       }
     }
   }

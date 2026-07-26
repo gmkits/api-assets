@@ -10,7 +10,9 @@ import type { HdayBundle } from './hday-parser.js';
 import { parseHdayBundle } from './hday-parser.js';
 import { LRUCache } from './lru-cache.js';
 import {
+  countBundleWorkdays,
   dayOfYear,
+  findBundleStatutoryHoliday,
   parseDate,
   queryDay,
   queryRange,
@@ -237,10 +239,18 @@ class HolidayServiceImpl implements HolidayService {
     to: string,
     regionCode?: string,
   ): Promise<number> {
-    const days = await this.getRange(from, to, regionCode);
+    const region = regionCode ?? this.defaultRegion;
+    const [fromYear, fromMonth, fromDay] = parseDate(from);
+    const [toYear, toMonth, toDay] = parseDate(to);
+    if (from > to) return 0;
     let count = 0;
-    for (const d of days) {
-      if (d.isWorkday) count++;
+    for (let year = fromYear; year <= toYear; year++) {
+      const bundle = await this.getBundle(region, year);
+      const start = year === fromYear ? dayOfYear(year, fromMonth, fromDay) : 0;
+      const end = year === toYear
+        ? dayOfYear(year, toMonth, toDay)
+        : bundle.days.length - 1;
+      count += countBundleWorkdays(bundle, start, end);
     }
     return count;
   }
@@ -255,22 +265,13 @@ class HolidayServiceImpl implements HolidayService {
 
     // 先在当年内搜索
     const bundle = await this.getBundle(region, year);
-    const view = queryRange(bundle, startIndex, bundle.days.length - 1);
-    for (const d of view) {
-      if (d.isHoliday && d.isStatutoryHoliday) {
-        return d;
-      }
-    }
+    const current = findBundleStatutoryHoliday(bundle, startIndex);
+    if (current) return current;
 
     // 当年没找到，搜索下一年
     try {
       const nextBundle = await this.getBundle(region, year + 1);
-      const nextView = queryYear(nextBundle);
-      for (const d of nextView) {
-        if (d.isHoliday && d.isStatutoryHoliday) {
-          return d;
-        }
-      }
+      return findBundleStatutoryHoliday(nextBundle, 0);
     } catch {
       // 下一年没有数据
     }

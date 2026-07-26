@@ -51,6 +51,8 @@ public sealed class HdayBundle
     private readonly NameListEntry[] _nameLists;
     private readonly DayInfo[] _dayInfos;
     private readonly ReadOnlyCollection<DayInfo> _yearView;
+    private readonly int[] _workdayPrefix;
+    private readonly int[] _nextStatutoryIndex;
 
     public HdayBundle(
         BundleHeader header,
@@ -73,6 +75,8 @@ public sealed class HdayBundle
         NameLists = Array.AsReadOnly(_nameLists);
         _dayInfos = BuildDayInfos();
         _yearView = Array.AsReadOnly(_dayInfos);
+        _workdayPrefix = BuildWorkdayPrefix();
+        _nextStatutoryIndex = BuildNextStatutoryIndex();
     }
 
     public BundleHeader Header { get; }
@@ -168,16 +172,7 @@ public sealed class HdayBundle
             return 0;
         }
 
-        var count = 0;
-        for (var index = start; index <= end; index++)
-        {
-            if (_dayInfos[index].IsWorkday)
-            {
-                count++;
-            }
-        }
-
-        return count;
+        return _workdayPrefix[end + 1] - _workdayPrefix[start];
     }
 
     internal DayInfo? FindStatutoryHoliday(int startDayIndex)
@@ -188,15 +183,36 @@ public sealed class HdayBundle
             return null;
         }
 
-        for (var index = start; index < _dayInfos.Length; index++)
+        var index = _nextStatutoryIndex[start];
+        return index < 0 ? null : _dayInfos[index];
+    }
+
+    private int[] BuildWorkdayPrefix()
+    {
+        var prefix = new int[_dayInfos.Length + 1];
+        for (var index = 0; index < _dayInfos.Length; index++)
+        {
+            prefix[index + 1] = prefix[index] + (_dayInfos[index].IsWorkday ? 1 : 0);
+        }
+
+        return prefix;
+    }
+
+    private int[] BuildNextStatutoryIndex()
+    {
+        var result = new int[_dayInfos.Length];
+        var next = -1;
+        for (var index = _dayInfos.Length - 1; index >= 0; index--)
         {
             if (_dayInfos[index].IsStatutoryHoliday)
             {
-                return _dayInfos[index];
+                next = index;
             }
+
+            result[index] = next;
         }
 
-        return null;
+        return result;
     }
 
     private DayInfo[] BuildDayInfos()

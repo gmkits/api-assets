@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <name>cn-holiday-kit-java</name>
-    <description>中国节假日数据平台 —— Java SDK 多模块</description>
+    <description>cn-holiday-kit 内部构建反应堆；对外仅发布单一 Java JAR</description>
 
     <modules>
         <module>holiday-spec-java</module>
@@ -20,7 +20,6 @@
         <module>holiday-spring-starter</module>
         <module>holiday-api-j8</module>
         <module>holiday-benchmarks</module>
-        <!-- holiday-api-j25 需要 Java 25，使用独立 profile 构建 -->
     </modules>
 
     <properties>
@@ -101,17 +100,4 @@
         </plugins>
     </build>
 
-    <profiles>
-        <!-- Java 25 模块需要 JDK 25+ -->
-        <profile>
-            <id>j25</id>
-            <activation>
-                <jdk>[25,)</jdk>
-            </activation>
-            <modules>
-                <module>holiday-sdk-j25</module>
-                <module>holiday-api-j25</module>
-            </modules>
-        </profile>
-    </profiles>
 </project>

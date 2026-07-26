@@ -15,13 +15,14 @@ date-assets/
 
 - `calendar/lunar-years.hex`: compressed lunar-year descriptors for 1900–2100.
 - `calendar/solar-terms.csv`: 24 solar-term dates per year for 1900–2100.
-- `holidays/bundles/CN`: replaceable Chinese statutory-holiday bundles.
+- `holidays/bundles/CN`: replaceable Chinese holiday bundles for 2000–2026.
 - `manifest.json`: byte sizes, year ranges, and SHA-256 hashes for calendar assets.
 
-Rebuild it from the canonical repository data:
+Rebuild it from the single universal CSV source
+`data/source/CN/holidays.csv`:
 
 ```bash
-node scripts/build-date-assets.mjs
+bash scripts/update-bundles.sh
 ```
 
 Java applications can load this directory with:
@@ -34,3 +35,7 @@ Calendar assets are initialized once per JVM, so configure the asset root before
 the first lunar or solar-term call and restart the process after replacing them.
 Holiday bundles are cached by year and can be reloaded with
 `HolidayService.clearCache()`.
+
+The directory contains runtime artifacts only. Do not edit bundles or manifests
+by hand; update the source CSV (or run `scripts/sync-cn-holidays.mjs`) and
+rebuild instead.

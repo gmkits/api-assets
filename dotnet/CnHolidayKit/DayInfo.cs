@@ -52,6 +52,8 @@ public sealed class DayInfo
 
     public bool IsHoliday { get; }
 
+    public bool IsOfficialHoliday => IsHoliday && HolidayNames.Count > 0;
+
     public bool IsWorkday { get; }
 
     public bool IsWeekend { get; }

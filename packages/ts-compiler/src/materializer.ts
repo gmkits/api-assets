@@ -172,7 +172,9 @@ export function materialize(doc: CanonicalDocument): MaterializedYearData {
     const isWeekend = weekendSet.has(weekday);
 
     days[dateStr] = {
-      isHoliday: false,
+      // “holiday”统一表示无需工作的休息日，包含自然周末和放假安排。
+      // 是否属于官方放假安排可由 holidayNames/labels 判断。
+      isHoliday: isWeekend,
       isWorkday: !isWeekend,
       isWeekend,
       isStatutoryHoliday: false,

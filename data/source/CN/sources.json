@@ -1,0 +1,216 @@
+{
+  "formatVersion": 1,
+  "region": "CN",
+  "startYear": 2000,
+  "endYear": 2026,
+  "generatedAt": "2026-07-26T15:48:02.846Z",
+  "providers": {
+    "chineseDays": {
+      "version": "1.5.9",
+      "license": "MIT",
+      "url": "https://github.com/vsme/chinese-days",
+      "sha256": "237a587b041d4e7b0bc99785c2a4fc75bb1783364de68449fd8576cf9883fd74"
+    },
+    "holidayCalendar": {
+      "commit": "6384dcbfc7da04d5a8beb0f093170aec02370689",
+      "license": "MIT",
+      "url": "https://github.com/cg-zhou/holiday-calendar",
+      "sha256": "03cc44c7051555c604ccc101f75d7b0d8f6f1dbc022698b96f04dd70a7eebf7b"
+    },
+    "holidayCn": {
+      "commit": "e110da903058bcd0d4010c4690ccdf56f7033b49",
+      "license": "MIT",
+      "url": "https://github.com/NateScarlet/holiday-cn",
+      "sha256": "8c120048efc2aab507be22a2c15f13f19cd86b13fc0a29019784b27d24a89c54"
+    }
+  },
+  "years": {
+    "2000": {
+      "confidence": "RECONSTRUCTED",
+      "papers": [
+        "https://www.gov.cn/gongbao/shuju/1999/gwyb199933.pdf"
+      ]
+    },
+    "2001": {
+      "confidence": "ARCHIVED_NOTICE",
+      "papers": [
+        "https://zh.wikisource.org/wiki/国务院办公厅关于2001年春节、“五一”、“十一”放假安排的通知"
+      ]
+    },
+    "2002": {
+      "confidence": "ARCHIVED_NOTICE",
+      "papers": [
+        "https://zh.wikisource.org/wiki/国务院办公厅关于2002年部分节假日休息安排的通知"
+      ]
+    },
+    "2003": {
+      "confidence": "ARCHIVED_NOTICE",
+      "papers": [
+        "https://zh.wikisource.org/wiki/国务院办公厅关于2003年部分节假日休息安排的通知"
+      ]
+    },
+    "2004": {
+      "confidence": "ARCHIVED_NOTICE",
+      "papers": [
+        "https://zh.wikisource.org/wiki/国务院办公厅关于2004年部分节假日安排的通知"
+      ]
+    },
+    "2005": {
+      "confidence": "ARCHIVED_NOTICE",
+      "papers": [
+        "https://zh.wikisource.org/wiki/国务院办公厅关于2005年部分节假日安排的通知"
+      ]
+    },
+    "2006": {
+      "confidence": "ARCHIVED_NOTICE",
+      "papers": [
+        "https://www.gov.cn/jrzg/2005-12/22/content_133837.htm"
+      ]
+    },
+    "2007": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2008-03/28/content_1761.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2008-03/28/content_1645.htm"
+      ]
+    },
+    "2008": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2008-03/28/content_1645.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2008-12/10/content_1572.htm"
+      ]
+    },
+    "2009": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2008-12/10/content_1572.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2009-12/08/content_1476.htm"
+      ]
+    },
+    "2010": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2009-12/08/content_1476.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2010-12/10/content_1423.htm"
+      ]
+    },
+    "2011": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2010-12/10/content_1423.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2011-12/06/content_1411.htm"
+      ]
+    },
+    "2012": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2011-12/06/content_1411.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2012-12/10/content_1353.htm"
+      ]
+    },
+    "2013": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2012-12/10/content_1353.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2014-01/02/content_1194.htm"
+      ]
+    },
+    "2014": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2014-01/02/content_1194.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2014-12/16/content_9302.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2015-05/13/content_9742.htm"
+      ]
+    },
+    "2015": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2014-12/16/content_9302.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2015-05/13/content_9742.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2015-12/10/content_10394.htm"
+      ]
+    },
+    "2016": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2015-12/10/content_10394.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2016-12/01/content_5141603.htm"
+      ]
+    },
+    "2017": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2016-12/01/content_5141603.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2017-11/30/content_5243579.htm"
+      ]
+    },
+    "2018": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2017-11/30/content_5243579.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2018-12/06/content_5346276.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2019-03/22/content_5375877.htm"
+      ]
+    },
+    "2019": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2018-12/06/content_5346276.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2019-03/22/content_5375877.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2019-11/21/content_5454164.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2020-01/27/content_5472352.htm"
+      ]
+    },
+    "2020": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2019-11/21/content_5454164.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2020-01/27/content_5472352.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2020-11/25/content_5564127.htm"
+      ]
+    },
+    "2021": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2020-11/25/content_5564127.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2021-10/25/content_5644835.htm"
+      ]
+    },
+    "2022": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2021-10/25/content_5644835.htm",
+        "http://www.gov.cn/zhengce/zhengceku/2022-12/08/content_5730844.htm"
+      ]
+    },
+    "2023": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "http://www.gov.cn/zhengce/zhengceku/2022-12/08/content_5730844.htm",
+        "https://www.gov.cn/zhengce/zhengceku/202310/content_6911528.htm"
+      ]
+    },
+    "2024": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "https://www.gov.cn/zhengce/zhengceku/202310/content_6911528.htm",
+        "https://www.gov.cn/zhengce/zhengceku/202411/content_6986383.htm"
+      ]
+    },
+    "2025": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "https://www.gov.cn/zhengce/zhengceku/202411/content_6986383.htm",
+        "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm"
+      ]
+    },
+    "2026": {
+      "confidence": "GOV_NOTICE",
+      "papers": [
+        "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm"
+      ]
+    }
+  }
+}

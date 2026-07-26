@@ -11,8 +11,9 @@ import java.time.LocalDate;
 /**
  * cn-holiday-kit 的统一 Java 入口。
  *
- * <p>业务项目只需依赖 {@code com.github.gmkits:cn-holiday-kit}。原有
- * {@code core/spec/lunar} 包名继续保留，避免已有调用方迁移。</p>
+ * <p>业务项目只需依赖 {@code com.github.gmkits:cn-holiday-kit}。
+ * {@code core/spec/lunar} 子包属于同一物理 JAR，用于承载高级类型，
+ * 并不是需要分别发布的产品模块。</p>
  *
  * <p>发布物是面向 Java 8 编译的单一 JAR。JDK 9 及以上运行时可通过稳定自动模块名
  * {@code com.github.gmkits.holiday} 放入 module path；JDK 8 会忽略模块清单项。</p>

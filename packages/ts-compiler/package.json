@@ -1,6 +1,7 @@
 {
   "name": "@holiday/compiler",
   "version": "1.0.0",
+  "private": true,
   "description": "Holiday Data Platform — compiler pipeline (import, validate, materialize, compile)",
   "license": "Apache-2.0",
   "type": "module",
@@ -21,7 +22,7 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
-    "test": "node --test __tests__/*.test.mjs",
+    "test": "node ../../scripts/build-cn-holiday-canonical.mjs && node --test __tests__/*.test.mjs",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

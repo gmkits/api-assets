@@ -26,6 +26,7 @@ public final class DayInfo {
     private final boolean adjustedWorkday;
     private final Map<String, List<String>> holidayNames;
     private final List<String> labels;
+    private final List<FestivalInfo> festivals;
     private final String sourceVersion;
     private final Map<String, Object> extensions;
 
@@ -41,6 +42,8 @@ public final class DayInfo {
         this.holidayNames = freezeNames(b.holidayNames);
         this.labels = b.labels == null ? Collections.<String>emptyList()
                 : Collections.unmodifiableList(new ArrayList<>(b.labels));
+        this.festivals = b.festivals == null ? Collections.<FestivalInfo>emptyList()
+                : Collections.unmodifiableList(new ArrayList<>(b.festivals));
         this.sourceVersion = b.sourceVersion;
         this.extensions = b.extensions == null ? Collections.<String, Object>emptyMap()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(b.extensions));
@@ -79,11 +82,24 @@ public final class DayInfo {
     public CalendarSystem getCalendarSystem() { return calendarSystem; }
 
     /**
-     * 判断当天是否属于放假安排。
+     * 判断当天是否为休息日。
      *
-     * @return 当天属于放假安排时返回 {@code true}
+     * <p>自然周末和官方放假安排均返回 {@code true}；调休补班日返回
+     * {@code false}。如需判断是否属于官方安排，请使用
+     * {@link #isOfficialHoliday()}。</p>
+     *
+     * @return 当天无需工作时返回 {@code true}
      */
     public boolean isHoliday() { return holiday; }
+
+    /**
+     * 判断当天是否属于官方公布的放假安排。
+     *
+     * @return 当天是带有官方节假日名称的休息日时返回 {@code true}
+     */
+    public boolean isOfficialHoliday() {
+        return holiday && !holidayNames.isEmpty();
+    }
 
     /**
      * 判断当天是否需要工作。
@@ -128,6 +144,15 @@ public final class DayInfo {
     public List<String> getLabels() { return labels; }
 
     /**
+     * 返回当天命中的传统节日、公共节日和纪念日。
+     *
+     * <p>此列表不代表当天一定放假，工作状态以 {@link #isWorkday()} 为准。</p>
+     *
+     * @return 不可变节日列表
+     */
+    public List<FestivalInfo> getFestivals() { return festivals; }
+
+    /**
      * 返回生成当前记录的上游数据版本。
      *
      * @return 生成当前记录的上游数据版本
@@ -170,6 +195,7 @@ public final class DayInfo {
         private boolean adjustedWorkday;
         private Map<String, List<String>> holidayNames;
         private List<String> labels;
+        private List<FestivalInfo> festivals;
         private String sourceVersion;
         private Map<String, Object> extensions;
 
@@ -258,6 +284,17 @@ public final class DayInfo {
          * @return 当前构建器
          */
         public Builder labels(List<String> labels) { this.labels = labels; return this; }
+
+        /**
+         * 设置当天命中的节日列表。
+         *
+         * @param festivals 节日列表；构建时执行防御性复制
+         * @return 当前构建器
+         */
+        public Builder festivals(List<FestivalInfo> festivals) {
+            this.festivals = festivals;
+            return this;
+        }
 
         /**
          * 设置上游数据版本。

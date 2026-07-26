@@ -1,6 +1,7 @@
 {
   "name": "@holiday/lunar",
   "version": "1.0.0",
+  "private": true,
   "description": "中国农历转换模块 —— 覆盖 1900-2100，位压缩存储，~800B 数据",
   "license": "Apache-2.0",
   "type": "module",

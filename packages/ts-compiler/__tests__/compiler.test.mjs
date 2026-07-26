@@ -18,7 +18,10 @@ import {
 } from '../dist/esm/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const CANON_2025 = resolve(__dirname, '../../../data/canonical/CN/2025.canon.json');
+const CANON_2025 = resolve(
+  __dirname,
+  '../../../target/generated-data/canonical/CN/2025.canon.json',
+);
 
 async function loadCanon(path) {
   try {

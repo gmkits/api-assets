@@ -8,9 +8,14 @@ cd "$ROOT"
 pnpm --filter @holiday/spec build
 pnpm --filter @holiday/compiler build
 
-for canonical in "$ROOT"/data/canonical/CN/*.canon.json; do
+node "$ROOT/scripts/build-cn-holiday-canonical.mjs"
+
+GENERATED="$ROOT/target/generated-data"
+mkdir -p "$GENERATED/materialized/CN"
+
+for canonical in "$GENERATED"/canonical/CN/*.canon.json; do
   year="$(basename "$canonical" .canon.json)"
-  materialized="$ROOT/data/materialized/CN/$year.year.json"
+  materialized="$GENERATED/materialized/CN/$year.year.json"
   bundle="$ROOT/data/bundles/CN/$year.hday"
 
   node "$CLI" validate --input "$canonical"
@@ -23,9 +28,11 @@ node "$CLI" build-manifest \
   --output "$ROOT/data/manifest.json"
 
 mkdir -p "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN"
-cp "$ROOT"/data/bundles/CN/*.hday "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN/"
+cp "$ROOT"/data/bundles/CN/2000.hday "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN/"
+cp "$ROOT"/data/bundles/CN/2025.hday "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN/"
+cp "$ROOT"/data/bundles/CN/2026.hday "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN/"
 node "$ROOT/scripts/build-date-assets.mjs"
 
-node "$ROOT/scripts/verify-holiday-sources.mjs"
+node "$ROOT/scripts/verify-cn-holiday-data.mjs"
 bash "$ROOT/scripts/verify-bundles.sh"
 echo "✓ Bundles, manifest, and unified offline date assets are synchronized"

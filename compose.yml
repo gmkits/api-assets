@@ -2,15 +2,11 @@ services:
   holiday-api:
     build:
       context: .
-      dockerfile: java/holiday-api-j25/Dockerfile
+      dockerfile: java/holiday-api-j8/Dockerfile
     ports:
-      - "18080:18080"
+      - "18080:8080"
     environment:
       HOLIDAY_ASSET_PATH: /assets
-      HOLIDAY_MANIFEST_LOCATION: file:/assets/holidays/manifest.json
-      HOLIDAY_GLOBAL_QPS: 5000
-      HOLIDAY_PER_IP_QPS: 500
-      HOLIDAY_AUDIT_ENABLED: "false"
       JAVA_OPTS: -Xms256m -Xmx1g -XX:+UseG1GC
     volumes:
       - ./data/date-assets:/assets:ro

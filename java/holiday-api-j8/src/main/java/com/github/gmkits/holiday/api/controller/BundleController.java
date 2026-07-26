@@ -19,16 +19,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * 提供离线 manifest 与单年 bundle 下载。
+ */
 @RestController
 @RequestMapping("/api/v1")
 public class BundleController {
 
     private final HolidayProperties properties;
 
+    /**
+     * 创建 bundle 控制器。
+     *
+     * @param properties 资产路径配置
+     */
     public BundleController(HolidayProperties properties) {
         this.properties = properties;
     }
 
+    /**
+     * 返回当前离线 bundle manifest。
+     *
+     * @return manifest JSON；不存在时返回 404
+     * @throws IOException 读取外部或 classpath 资源失败时抛出
+     */
     @GetMapping(value = "/manifest", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getManifest() throws IOException {
         Path external = externalManifest();
@@ -49,6 +63,14 @@ public class BundleController {
         }
     }
 
+    /**
+     * 下载指定区域与年份的二进制 bundle。
+     *
+     * @param region 区域代码
+     * @param year 公历年份
+     * @return bundle 字节；不存在时返回 404
+     * @throws IOException 读取资源失败时抛出
+     */
     @GetMapping("/bundle/{region}/{year}")
     public ResponseEntity<byte[]> getBundle(
             @PathVariable String region,

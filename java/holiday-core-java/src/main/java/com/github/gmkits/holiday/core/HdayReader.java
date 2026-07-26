@@ -49,6 +49,7 @@ public final class HdayReader {
     private static final int SECTION_DAY_TABLE        = 0x0001;
     private static final int SECTION_STRING_TABLE      = 0x0002;
     private static final int SECTION_NAME_LIST_TABLE   = 0x0003;
+    private static final int SECTION_EXT_JSON          = 0x0004;
 
     private HdayReader() { }
 
@@ -136,6 +137,7 @@ public final class HdayReader {
         int dayTableOff = -1, dayTableLen = 0;
         int strTableOff = -1, strTableLen = 0;
         int nameListOff = -1, nameListLen = 0;
+        int extJsonOff = -1;
         for (int i = 0; i < sectionCount; i++) {
             switch (secTypes[i]) {
                 case SECTION_DAY_TABLE:
@@ -144,6 +146,8 @@ public final class HdayReader {
                     strTableOff = secOffsets[i]; strTableLen = secLengths[i]; break;
                 case SECTION_NAME_LIST_TABLE:
                     nameListOff = secOffsets[i]; nameListLen = secLengths[i]; break;
+                case SECTION_EXT_JSON:
+                    extJsonOff = secOffsets[i]; break;
                 default:
                     // 忽略未知分段类型。
                     break;
@@ -193,8 +197,29 @@ public final class HdayReader {
             }
         }
 
+        String sourceVersion = "";
+        if (extJsonOff >= 0) {
+            buf.position(extJsonOff);
+            int jsonLength = buf.getInt();
+            byte[] jsonBytes = new byte[jsonLength];
+            buf.get(jsonBytes);
+            sourceVersion = jsonStringField(
+                    new String(jsonBytes, StandardCharsets.UTF_8), "sourceVersion");
+        }
+
         return new HdayBundle(year, regionCode, calendarSystem, dayCount,
-                majorVersion, minorVersion, days, strings, nameLists);
+                majorVersion, minorVersion, days, strings, nameLists, sourceVersion);
+    }
+
+    private static String jsonStringField(String json, String field) {
+        String marker = "\"" + field + "\":\"";
+        int start = json.indexOf(marker);
+        if (start < 0) {
+            return "";
+        }
+        start += marker.length();
+        int end = json.indexOf('"', start);
+        return end < 0 ? "" : json.substring(start, end);
     }
 
     private static byte[] readAllBytes(InputStream in) throws IOException {

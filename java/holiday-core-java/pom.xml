@@ -14,6 +14,10 @@
     <name>holiday-core-java</name>
     <description>节假日数据平台 —— 核心查询引擎（.hday 解析 + HolidayService）</description>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.github.gmkits</groupId>

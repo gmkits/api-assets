@@ -34,6 +34,7 @@ import type {
   NameListEntry,
 } from './hday-parser.js';
 import { lookupSolarTerm } from './solar-terms.js';
+import { resolveFestivals } from './festivals.js';
 
 /** 平年 dayIndex -> [month, day] 预计算表。 */
 const NON_LEAP_MONTH_DAY_TABLE = buildMonthDayTable(false);
@@ -53,6 +54,8 @@ const [LUNAR_MAX_SOLAR_YEAR, LUNAR_MAX_SOLAR_MONTH, LUNAR_MAX_SOLAR_DAY] =
 
 interface BundleQueryView {
   dayInfos: DayInfo[];
+  workdayPrefix: Uint16Array;
+  nextStatutoryIndex: Int16Array;
 }
 
 const bundleViewCache = new WeakMap<HdayBundle, Map<string, BundleQueryView>>();
@@ -100,7 +103,16 @@ export function parseDate(dateStr: string): [number, number, number] {
   if (!match) {
     throw new Error(`日期格式错误: "${dateStr}"，应为 YYYY-MM-DD`);
   }
-  return [Number(match[1]), Number(match[2]), Number(match[3])];
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const monthLengths = isLeapYear(year)
+    ? [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    : [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (month < 1 || month > 12 || day < 1 || day > monthLengths[month - 1]) {
+    throw new RangeError(`日期不存在: "${dateStr}"`);
+  }
+  return [year, month, day];
 }
 
 /**
@@ -277,6 +289,7 @@ export function dayEntryToDayInfo(
   strings: string[],
   nameLists: NameListEntry[],
   extensions: DayInfo['extensions'] = EMPTY_EXTENSIONS,
+  sourceVersion = '',
 ): DayInfo {
   const nameList =
     entry.nameListIndex !== NO_INDEX
@@ -287,19 +300,24 @@ export function dayEntryToDayInfo(
     entry.labelListIndex !== NO_INDEX
       ? nameLists[entry.labelListIndex]
       : undefined;
+  const holidayNames = resolveNames(nameList, strings);
 
   return {
     date: dateStr,
     regionCode,
     calendarSystem: resolveCalendarSystem(calSystem),
     isHoliday: (entry.flags & DAY_FLAGS.IS_HOLIDAY) !== 0,
+    isOfficialHoliday:
+      (entry.flags & DAY_FLAGS.IS_HOLIDAY) !== 0
+      && Object.keys(holidayNames).length > 0,
     isWorkday: (entry.flags & DAY_FLAGS.IS_WORKDAY) !== 0,
     isWeekend: (entry.flags & DAY_FLAGS.IS_WEEKEND) !== 0,
     isStatutoryHoliday: (entry.flags & DAY_FLAGS.IS_STATUTORY_HOLIDAY) !== 0,
     isAdjustedWorkday: (entry.flags & DAY_FLAGS.IS_ADJUSTED_WORKDAY) !== 0,
-    holidayNames: resolveNames(nameList, strings),
+    holidayNames,
     labels: resolveLabels(labelList, strings),
-    sourceVersion: '',
+    festivals: resolveFestivals(dateStr, extensions),
+    sourceVersion,
     extensions,
   };
 }
@@ -308,6 +326,8 @@ function buildBundleQueryView(bundle: HdayBundle, locale: ChineseLocale): Bundle
   const { year, regionCode, calendarSystem } = bundle.header;
   const monthDayTable = getMonthDayTable(year);
   const dayInfos = new Array<DayInfo>(bundle.days.length);
+  const workdayPrefix = new Uint16Array(bundle.days.length + 1);
+  const nextStatutoryIndex = new Int16Array(bundle.days.length);
 
   for (let index = 0; index < bundle.days.length; index++) {
     const [month, day] = monthDayTable[index];
@@ -319,10 +339,19 @@ function buildBundleQueryView(bundle: HdayBundle, locale: ChineseLocale): Bundle
       bundle.strings,
       bundle.nameLists,
       buildDayExtensions(year, month, day, index, locale),
+      bundle.metadata?.sourceVersion ?? '',
     );
+    workdayPrefix[index + 1] =
+      workdayPrefix[index] + (dayInfos[index].isWorkday ? 1 : 0);
   }
 
-  return { dayInfos };
+  let next = -1;
+  for (let index = dayInfos.length - 1; index >= 0; index--) {
+    if (dayInfos[index].isStatutoryHoliday) next = index;
+    nextStatutoryIndex[index] = next;
+  }
+
+  return { dayInfos, workdayPrefix, nextStatutoryIndex };
 }
 
 function getBundleQueryView(bundle: HdayBundle, locale: ChineseLocale = 'zh-CN'): BundleQueryView {
@@ -370,4 +399,35 @@ export function queryRange(
   const end = Math.min(bundle.days.length - 1, endDayIndex);
   if (start > end) return [];
   return getBundleQueryView(bundle, locale).dayInfos.slice(start, end + 1);
+}
+
+/**
+ * 统计同一年闭区间内的工作日数量，使用前缀和避免逐日扫描。
+ */
+export function countBundleWorkdays(
+  bundle: HdayBundle,
+  startDayIndex = 0,
+  endDayIndex = bundle.days.length - 1,
+  locale?: ChineseLocale,
+): number {
+  const start = Math.max(0, startDayIndex);
+  const end = Math.min(bundle.days.length - 1, endDayIndex);
+  if (start > end) return 0;
+  const prefix = getBundleQueryView(bundle, locale).workdayPrefix;
+  return prefix[end + 1] - prefix[start];
+}
+
+/**
+ * 从年内索引开始 O(1) 查询下一个法定节假日。
+ */
+export function findBundleStatutoryHoliday(
+  bundle: HdayBundle,
+  startDayIndex = 0,
+  locale?: ChineseLocale,
+): DayInfo | null {
+  const start = Math.max(0, startDayIndex);
+  if (start >= bundle.days.length) return null;
+  const view = getBundleQueryView(bundle, locale);
+  const index = view.nextStatutoryIndex[start];
+  return index < 0 ? null : view.dayInfos[index];
 }

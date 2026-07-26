@@ -14,6 +14,10 @@
     <name>holiday-spring-starter</name>
     <description>节假日数据平台 —— Spring Boot 自动配置 Starter</description>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.github.gmkits</groupId>

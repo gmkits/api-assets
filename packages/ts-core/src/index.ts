@@ -30,8 +30,10 @@ export type {
 // Query engine（查询引擎）
 export {
   dayEntryToDayInfo,
+  countBundleWorkdays,
   dayOfYear,
   formatDate,
+  findBundleStatutoryHoliday,
   isLeapYear,
   monthDayFromIndex,
   parseDate,
@@ -44,3 +46,6 @@ export {
 
 // LRU cache
 export { LRUCache } from './lru-cache.js';
+
+// 公历、农历与节气统一节日解析
+export { resolveFestivals } from './festivals.js';

@@ -59,6 +59,32 @@ class DayControllerTest {
     }
 
     @Test
+    void getDay_midAutumn2025_combinesAllDateLayers() throws Exception {
+        mockMvc.perform(get("/api/v1/day")
+                        .param("date", "2025-10-06")
+                        .param("regionCode", "CN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.holiday").value(true))
+                .andExpect(jsonPath("$.officialHoliday").value(true))
+                .andExpect(jsonPath("$.statutoryHoliday").value(true))
+                .andExpect(jsonPath("$.sourceVersion").value("2025.GOV_NOTICE"))
+                .andExpect(jsonPath("$.extensions.lunar.month").value(8))
+                .andExpect(jsonPath("$.extensions.lunar.day").value(15))
+                .andExpect(jsonPath("$.festivals[0].code").value("MID_AUTUMN"));
+    }
+
+    @Test
+    void getDay_normalWeekend_isNotOfficialHoliday() throws Exception {
+        mockMvc.perform(get("/api/v1/day")
+                        .param("date", "2025-01-04")
+                        .param("regionCode", "CN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.holiday").value(true))
+                .andExpect(jsonPath("$.weekend").value(true))
+                .andExpect(jsonPath("$.officialHoliday").value(false));
+    }
+
+    @Test
     void getDay_liChun2025_hasSolarTerm() throws Exception {
         mockMvc.perform(get("/api/v1/day")
                         .param("date", "2025-02-03")

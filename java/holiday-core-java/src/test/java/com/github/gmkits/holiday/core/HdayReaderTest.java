@@ -150,7 +150,8 @@ class HdayReaderTest {
                                 HdayBundle.NO_INDEX),
                 },
                 new String[0],
-                new int[0][][]);
+                new int[0][][],
+                "test");
 
         DayInfo info = bundle.getDayInfo(LocalDate.of(1900, 1, 1));
         assertNotNull(info);

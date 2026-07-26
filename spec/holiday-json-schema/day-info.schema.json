@@ -4,12 +4,13 @@
   "title": "DayInfoDTO",
   "description": "Holiday day information transfer object — unified ABI for all platforms",
   "type": "object",
-  "required": ["date", "regionCode", "calendarSystem", "isHoliday", "isWorkday", "isWeekend", "isStatutoryHoliday", "isAdjustedWorkday", "holidayNames", "labels", "sourceVersion", "extensions"],
+  "required": ["date", "regionCode", "calendarSystem", "isHoliday", "isOfficialHoliday", "isWorkday", "isWeekend", "isStatutoryHoliday", "isAdjustedWorkday", "holidayNames", "labels", "festivals", "sourceVersion", "extensions"],
   "properties": {
     "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date in YYYY-MM-DD format" },
     "regionCode": { "type": "string", "minLength": 2, "description": "Region code (e.g. CN, CN-SH)" },
     "calendarSystem": { "type": "string", "enum": ["GREGORIAN", "CHINESE_LUNAR"], "description": "Calendar system" },
     "isHoliday": { "type": "boolean", "description": "Whether this day is a holiday (day off)" },
+    "isOfficialHoliday": { "type": "boolean", "description": "Whether this day belongs to an officially announced holiday period" },
     "isWorkday": { "type": "boolean", "description": "Whether this day is a working day" },
     "isWeekend": { "type": "boolean", "description": "Whether this day falls on a default weekend" },
     "isStatutoryHoliday": { "type": "boolean", "description": "Whether this day is a statutory holiday proper" },
@@ -26,6 +27,22 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Label tags for this day"
+    },
+    "festivals": {
+      "type": "array",
+      "description": "Traditional festivals and observances independent of day-off status",
+      "items": {
+        "type": "object",
+        "required": ["code", "names"],
+        "properties": {
+          "code": { "type": "string" },
+          "names": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "sourceVersion": { "type": "string", "description": "Data source version" },
     "extensions": { "type": "object", "description": "Extension data", "default": {} }

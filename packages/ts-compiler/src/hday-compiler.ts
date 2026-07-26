@@ -188,7 +188,7 @@ export function compile(data: MaterializedYearData): Buffer {
   const { meta, days } = data;
   const year = meta.year;
   const totalDays = getDaysInYear(year);
-  const numSections = 3;
+  const numSections = 4;
 
   const strTable = new StringTableBuilder();
   const nameListTable = new NameListTableBuilder();
@@ -249,6 +249,14 @@ export function compile(data: MaterializedYearData): Buffer {
 
   const strTableBuf = strTable.serialize();
   const nameListTableBuf = nameListTable.serialize();
+  const extJson = Buffer.from(JSON.stringify({
+    specVersion: meta.specVersion,
+    sourceVersion: meta.sourceVersion,
+    generatedAt: meta.generatedAt,
+  }), 'utf8');
+  const extJsonBuf = Buffer.alloc(4 + extJson.length);
+  extJsonBuf.writeUInt32LE(extJson.length, 0);
+  extJson.copy(extJsonBuf, 4);
 
   // Calculate offsets
   const sectionTableOffset = HDAY_HEADER_SIZE;
@@ -258,7 +266,8 @@ export function compile(data: MaterializedYearData): Buffer {
   const dayTableOffset = dataStart;
   const strTableOffset = dayTableOffset + dayTableBuf.length;
   const nameListTableOffset = strTableOffset + strTableBuf.length;
-  const crcOffset = nameListTableOffset + nameListTableBuf.length;
+  const extJsonOffset = nameListTableOffset + nameListTableBuf.length;
+  const crcOffset = extJsonOffset + extJsonBuf.length;
   const totalSize = crcOffset + 4; // +4 for CRC32
 
   // Build the complete buffer
@@ -303,10 +312,16 @@ export function compile(data: MaterializedYearData): Buffer {
   buf.writeUInt32LE(nameListTableOffset, sectionTableOffset + 18);
   buf.writeUInt16LE(nameListTableBuf.length, sectionTableOffset + 22);
 
+  // Entry 3: EXT_JSON（仅存放重建与审计需要的最小元数据）
+  buf.writeUInt16LE(SECTION_TYPES.EXT_JSON, sectionTableOffset + 24);
+  buf.writeUInt32LE(extJsonOffset, sectionTableOffset + 26);
+  buf.writeUInt16LE(extJsonBuf.length, sectionTableOffset + 30);
+
   // --- Data sections ---
   dayTableBuf.copy(buf, dayTableOffset);
   strTableBuf.copy(buf, strTableOffset);
   nameListTableBuf.copy(buf, nameListTableOffset);
+  extJsonBuf.copy(buf, extJsonOffset);
 
   // --- CRC32 over everything before the CRC field ---
   const checksum = crc32(buf.subarray(0, crcOffset));
