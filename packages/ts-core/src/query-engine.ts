@@ -9,6 +9,7 @@ import type {
   CalendarSystem,
   ChineseLocale,
   DayInfo,
+  GanZhiInfo,
   LunarDateInfo,
   MultiLangNames,
 } from '@holiday/spec';
@@ -18,6 +19,10 @@ import {
   lunarToSolar,
   monthDays,
   solarToLunar,
+  getDiZhi,
+  getGanZhi,
+  getShengXiao,
+  getTianGan,
 } from '@holiday/lunar';
 import {
   CALENDAR_SYSTEM_CODES,
@@ -42,8 +47,6 @@ const NON_LEAP_MONTH_DAY_TABLE = buildMonthDayTable(false);
 const LEAP_MONTH_DAY_TABLE = buildMonthDayTable(true);
 /** `YYYY-MM-DD` 日期格式校验。 */
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-/** 空扩展对象可安全复用。 */
-const EMPTY_EXTENSIONS: Record<string, never> = {};
 /** 农历支持的最早公历日期。 */
 const LUNAR_MIN_SOLAR_MONTH = 1;
 /** 农历支持的最早公历日期。 */
@@ -171,7 +174,7 @@ function isSolarDateWithinLunarRange(
   return true;
 }
 
-function buildLunarExtension(
+function buildLunarInfo(
   year: number,
   month: number,
   day: number,
@@ -186,32 +189,44 @@ function buildLunarExtension(
     month: lunar.month,
     day: lunar.day,
     isLeapMonth: lunar.isLeapMonth,
-    ganZhiYear: lunar.ganZhiYear,
-    shengXiao: lunar.shengXiao,
     monthName: lunar.monthName,
     dayName: lunar.dayName,
   };
 }
 
-function buildDayExtensions(
+function buildGanZhiInfo(
+  lunar: LunarDateInfo | null,
+  locale: ChineseLocale,
+): GanZhiInfo | null {
+  if (!lunar) return null;
+  return {
+    yearName: getGanZhi(lunar.year),
+    heavenlyStem: getTianGan(lunar.year),
+    earthlyBranch: getDiZhi(lunar.year),
+    zodiac: getShengXiao(lunar.year, locale),
+  };
+}
+
+interface ChineseCalendarFields {
+  lunar: LunarDateInfo | null;
+  solarTerm: DayInfo['solarTerm'];
+  ganZhi: GanZhiInfo | null;
+}
+
+function buildChineseCalendarFields(
   year: number,
   month: number,
   day: number,
   dayIndex: number,
   locale: ChineseLocale = 'zh-CN',
-): DayInfo['extensions'] {
-  const lunar = buildLunarExtension(year, month, day, locale);
+): ChineseCalendarFields {
+  const lunar = buildLunarInfo(year, month, day, locale);
   const solarTerm = lookupSolarTerm(year, dayIndex, locale);
-  if (!lunar && !solarTerm) {
-    return EMPTY_EXTENSIONS;
-  }
-  if (!lunar) {
-    return { solarTerm };
-  }
-  if (!solarTerm) {
-    return { lunar };
-  }
-  return { lunar, solarTerm };
+  return {
+    lunar,
+    solarTerm: solarTerm ?? null,
+    ganZhi: buildGanZhiInfo(lunar, locale),
+  };
 }
 
 /**
@@ -288,7 +303,11 @@ export function dayEntryToDayInfo(
   calSystem: number,
   strings: string[],
   nameLists: NameListEntry[],
-  extensions: DayInfo['extensions'] = EMPTY_EXTENSIONS,
+  calendarFields: ChineseCalendarFields = {
+    lunar: null,
+    solarTerm: null,
+    ganZhi: null,
+  },
   sourceVersion = '',
 ): DayInfo {
   const nameList =
@@ -316,9 +335,15 @@ export function dayEntryToDayInfo(
     isAdjustedWorkday: (entry.flags & DAY_FLAGS.IS_ADJUSTED_WORKDAY) !== 0,
     holidayNames,
     labels: resolveLabels(labelList, strings),
-    festivals: resolveFestivals(dateStr, extensions),
+    lunar: calendarFields.lunar,
+    solarTerm: calendarFields.solarTerm,
+    ganZhi: calendarFields.ganZhi,
+    festivals: resolveFestivals(
+      dateStr,
+      calendarFields.lunar,
+      calendarFields.solarTerm,
+    ),
     sourceVersion,
-    extensions,
   };
 }
 
@@ -338,7 +363,7 @@ function buildBundleQueryView(bundle: HdayBundle, locale: ChineseLocale): Bundle
       calendarSystem,
       bundle.strings,
       bundle.nameLists,
-      buildDayExtensions(year, month, day, index, locale),
+      buildChineseCalendarFields(year, month, day, index, locale),
       bundle.metadata?.sourceVersion ?? '',
     );
     workdayPrefix[index + 1] =

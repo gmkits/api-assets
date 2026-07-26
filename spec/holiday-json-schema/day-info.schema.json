@@ -4,7 +4,7 @@
   "title": "DayInfoDTO",
   "description": "Holiday day information transfer object — unified ABI for all platforms",
   "type": "object",
-  "required": ["date", "regionCode", "calendarSystem", "isHoliday", "isOfficialHoliday", "isWorkday", "isWeekend", "isStatutoryHoliday", "isAdjustedWorkday", "holidayNames", "labels", "festivals", "sourceVersion", "extensions"],
+  "required": ["date", "regionCode", "calendarSystem", "isHoliday", "isOfficialHoliday", "isWorkday", "isWeekend", "isStatutoryHoliday", "isAdjustedWorkday", "holidayNames", "labels", "lunar", "solarTerm", "ganZhi", "festivals", "sourceVersion"],
   "properties": {
     "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date in YYYY-MM-DD format" },
     "regionCode": { "type": "string", "minLength": 2, "description": "Region code (e.g. CN, CN-SH)" },
@@ -28,6 +28,57 @@
       "items": { "type": "string" },
       "description": "Label tags for this day"
     },
+    "lunar": {
+      "description": "Chinese lunar date, or null outside the supported asset range",
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["year", "month", "day", "isLeapMonth", "monthName", "dayName"],
+          "properties": {
+            "year": { "type": "integer" },
+            "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+            "day": { "type": "integer", "minimum": 1, "maximum": 30 },
+            "isLeapMonth": { "type": "boolean" },
+            "monthName": { "type": "string" },
+            "dayName": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "solarTerm": {
+      "description": "Solar term on this date, or null on an ordinary date",
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["index", "name"],
+          "properties": {
+            "index": { "type": "integer", "minimum": 0, "maximum": 23 },
+            "name": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ganZhi": {
+      "description": "Lunar-year heavenly stem, earthly branch, cycle name and zodiac",
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["yearName", "heavenlyStem", "earthlyBranch", "zodiac"],
+          "properties": {
+            "yearName": { "type": "string" },
+            "heavenlyStem": { "type": "string" },
+            "earthlyBranch": { "type": "string" },
+            "zodiac": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "festivals": {
       "type": "array",
       "description": "Traditional festivals and observances independent of day-off status",
@@ -44,8 +95,7 @@
         "additionalProperties": false
       }
     },
-    "sourceVersion": { "type": "string", "description": "Data source version" },
-    "extensions": { "type": "object", "description": "Extension data", "default": {} }
+    "sourceVersion": { "type": "string", "description": "Data source version" }
   },
   "additionalProperties": false
 }

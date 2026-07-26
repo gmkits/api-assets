@@ -178,12 +178,16 @@ export interface DayInfo {
   holidayNames: MultiLangNames;
   /** 标签列表。 */
   labels: string[];
+  /** 对应农历日期；超出离线农历资产范围时为 null。 */
+  lunar: LunarDateInfo | null;
+  /** 当天命中的二十四节气；非节气日为 null。 */
+  solarTerm: SolarTermInfo | null;
+  /** 农历年的天干、地支、干支纪年与生肖。 */
+  ganZhi: GanZhiInfo | null;
   /** 当天命中的传统节日、公共节日和纪念日；不代表一定放假。 */
   festivals: FestivalInfo[];
   /** 数据版本。 */
   sourceVersion: string;
-  /** 扩展数据。 */
-  extensions: Record<string, unknown>;
 }
 
 /** 与工作日状态相互独立的节日或纪念日。 */
@@ -310,13 +314,13 @@ export interface Manifest {
   bundles: Record<string, Record<string, BundleEntry>>;
 }
 
-// --- 农历扩展类型 ---
+// --- 中国历法类型 ---
 
 /**
  * 农历日期信息。
  *
- * <p>用于 DayInfo.extensions 中的 "lunar" 字段，
- * 提供公历日期对应的农历信息。</p>
+ * <p>由 DayInfo.lunar 直接提供，仅描述农历日期；干支和生肖
+ * 由 DayInfo.ganZhi 独立提供。</p>
  */
 export interface LunarDateInfo {
   /** 农历年。 */
@@ -327,10 +331,6 @@ export interface LunarDateInfo {
   day: number;
   /** 是否闰月。 */
   isLeapMonth: boolean;
-  /** 干支年名（如"乙巳年"）。 */
-  ganZhiYear: string;
-  /** 生肖。 */
-  shengXiao: string;
   /** 月份中文名（如"正月"）。 */
   monthName: string;
   /** 日期中文名（如"初一"）。 */
@@ -340,14 +340,30 @@ export interface LunarDateInfo {
 /**
  * 节气信息。
  *
- * <p>用于 DayInfo.extensions 中的 "solarTerm" 字段，
- * 提供命中日期对应的稳定索引和中文名。</p>
+ * <p>由 DayInfo.solarTerm 直接提供，非节气日为 null。</p>
  */
 export interface SolarTermInfo {
   /** 稳定节气索引（0-23）。 */
   index: number;
   /** 节气中文名。 */
   name: string;
+}
+
+/**
+ * 中国农历年的干支与生肖属性。
+ *
+ * <p>采用农历年边界；春节当天进入新的干支年。本库不返回存在
+ * 流派与换日边界差异的干支月、干支日。</p>
+ */
+export interface GanZhiInfo {
+  /** 不带“年”后缀的干支纪年，如“乙巳”。 */
+  yearName: string;
+  /** 年干，如“乙”。 */
+  heavenlyStem: string;
+  /** 年支，如“巳”。 */
+  earthlyBranch: string;
+  /** 生肖，如“蛇”。 */
+  zodiac: string;
 }
 
 // --- 公历日期工具 ---

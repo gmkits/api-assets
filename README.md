@@ -49,8 +49,10 @@ DayInfo day = service.getDayInfo(LocalDate.of(2025, 10, 6));
 day.isHoliday();          // true，当天休息
 day.isOfficialHoliday();  // true，属于官方放假安排
 day.isStatutoryHoliday(); // true，中秋法定日
+day.getLunar();           // 农历八月十五
+day.getSolarTerm();       // 非节气日为 null
+day.getGanZhi();          // 乙、巳、乙巳、蛇
 day.getFestivals();       // MID_AUTUMN / 中秋节
-day.getExtensions();      // lunar 和可选 solarTerm
 ```
 
 高频接口包括：
@@ -111,7 +113,7 @@ curl http://localhost:8080/api/v1/year/2026
 ```
 
 建议其他语言直接读取 CSV/`.hday`，或调用这套 REST API；仓库不再为每种语言维护一套
-手写 SDK。现有 TypeScript 和 .NET 代码用于格式实现与交叉测试，可按需复制到业务侧。
+手写 SDK。现有 TypeScript 代码用于格式实现和 Web 适配，可按需复制到业务侧。
 
 ## 数据准确性
 
@@ -157,8 +159,6 @@ pnpm -r run test
 
 mvn -f java/pom.xml clean verify
 mvn -f java/pom.xml clean verify         # 在 8/17/21/25 上运行同一命令
-
-dotnet test dotnet/CnHolidayKit.sln
 
 bash scripts/verify-bundles.sh
 node scripts/verify-cn-holiday-data.mjs

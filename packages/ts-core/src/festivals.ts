@@ -1,4 +1,4 @@
-import type { DayInfo, FestivalInfo, LunarDateInfo, SolarTermInfo } from '@holiday/spec';
+import type { FestivalInfo, LunarDateInfo, SolarTermInfo } from '@holiday/spec';
 import { solarToLunar } from '@holiday/lunar';
 
 const DEFINITIONS: Record<string, FestivalInfo> = {};
@@ -34,17 +34,16 @@ add('NATIONAL_MEMORIAL_DAY', '南京大屠杀死难者国家公祭日', 'Nationa
  */
 export function resolveFestivals(
   date: string,
-  extensions: DayInfo['extensions'],
+  lunar: LunarDateInfo | null,
+  solarTerm: SolarTermInfo | null,
 ): FestivalInfo[] {
   const [year, month, day] = date.split('-').map(Number);
   const result: FestivalInfo[] = [];
   const fixed = fixedFestival(month * 100 + day);
   if (fixed) result.push(DEFINITIONS[fixed]);
 
-  const solarTerm = extensions.solarTerm as SolarTermInfo | undefined;
   if (solarTerm?.name === '清明') result.push(DEFINITIONS.TOMB_SWEEPING);
 
-  const lunar = extensions.lunar as LunarDateInfo | undefined;
   if (lunar && !lunar.isLeapMonth) {
     const lunarCode = lunarFestival(lunar.month * 100 + lunar.day);
     if (lunarCode) result.push(DEFINITIONS[lunarCode]);

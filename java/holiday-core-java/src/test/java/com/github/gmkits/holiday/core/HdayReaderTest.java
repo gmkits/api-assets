@@ -14,6 +14,7 @@ import com.github.gmkits.holiday.spec.SolarTermInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -107,7 +108,7 @@ class HdayReaderTest {
     }
 
     @Test
-    void readBundle_dayInfo_includesSolarTermExtension() throws IOException {
+    void readBundle_dayInfo_includesDirectSolarTerm() throws IOException {
         HdayBundle bundle;
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("bundles/CN/2025.hday")) {
             bundle = HdayReader.read(is);
@@ -115,12 +116,12 @@ class HdayReaderTest {
 
         DayInfo info = bundle.getDayInfo(LocalDate.of(2025, 4, 4));
         assertNotNull(info);
-        Object solarTerm = info.getExtensions().get("solarTerm");
-        assertTrue(solarTerm instanceof SolarTermInfo, "Qingming should expose solarTerm extension");
-
-        SolarTermInfo solarTermInfo = (SolarTermInfo) solarTerm;
+        SolarTermInfo solarTermInfo = info.getSolarTerm();
+        assertNotNull(solarTermInfo, "Qingming should expose solarTerm");
         assertEquals(6, solarTermInfo.getIndex());
         assertEquals("清明", solarTermInfo.getName());
+        assertTrue(info.getFestivals().stream()
+                .anyMatch(festival -> "TOMB_SWEEPING".equals(festival.getCode())));
     }
 
     @Test
@@ -156,6 +157,7 @@ class HdayReaderTest {
         DayInfo info = bundle.getDayInfo(LocalDate.of(1900, 1, 1));
         assertNotNull(info);
         assertTrue(info.isWorkday());
-        assertTrue(info.getExtensions().isEmpty(), "Out-of-range lunar dates should omit lunar extension");
+        assertNull(info.getLunar(), "Out-of-range dates should have no lunar date");
+        assertNull(info.getGanZhi(), "Out-of-range dates should have no gan-zhi attributes");
     }
 }

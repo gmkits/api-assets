@@ -29,17 +29,32 @@ GET /api/v1/day?date=2025-10-06&regionCode=CN
   "date": "2025-10-06",
   "regionCode": "CN",
   "calendarSystem": "GREGORIAN",
-  "holiday": true,
-  "officialHoliday": true,
-  "workday": false,
-  "weekend": false,
-  "statutoryHoliday": true,
-  "adjustedWorkday": false,
+  "isHoliday": true,
+  "isOfficialHoliday": true,
+  "isWorkday": false,
+  "isWeekend": false,
+  "isStatutoryHoliday": true,
+  "isAdjustedWorkday": false,
   "holidayNames": {
     "zh-CN": ["中秋节"],
     "en-US": ["Mid-Autumn Festival"]
   },
   "labels": ["MID_AUTUMN"],
+  "lunar": {
+    "year": 2025,
+    "month": 8,
+    "day": 15,
+    "leapMonth": false,
+    "monthName": "八月",
+    "dayName": "十五"
+  },
+  "solarTerm": null,
+  "ganZhi": {
+    "yearName": "乙巳",
+    "heavenlyStem": "乙",
+    "earthlyBranch": "巳",
+    "zodiac": "蛇"
+  },
   "festivals": [
     {
       "code": "MID_AUTUMN",
@@ -49,25 +64,13 @@ GET /api/v1/day?date=2025-10-06&regionCode=CN
       }
     }
   ],
-  "sourceVersion": "2025.GOV_NOTICE",
-  "extensions": {
-    "lunar": {
-      "year": 2025,
-      "month": 8,
-      "day": 15,
-      "leapMonth": false,
-      "ganZhiYear": "乙巳年",
-      "shengXiao": "蛇",
-      "monthName": "八月",
-      "dayName": "十五"
-    }
-  }
+  "sourceVersion": "2025.GOV_NOTICE"
 }
 ```
 
-Java Bean 序列化字段使用 `holiday/officialHoliday/workday/...`；通用 JSON Schema
-使用 `isHoliday/isOfficialHoliday/isWorkday/...`。TypeScript Web 适配器负责把前者
-归一化为后者。
+Java、HTTP、TypeScript 与通用 JSON Schema 统一使用
+`isHoliday/isOfficialHoliday/isWorkday/...`。农历、节气、干支和节日均是
+`DayInfo` 一级字段，不需要读取弱类型扩展映射。
 
 错误响应：
 

@@ -70,17 +70,6 @@ jobs:
         working-directory: java
         run: mvn -B clean verify
 
-  # ── 通用 .hday 的第二语言实现回归 ──
-  dotnet-build:
-    name: .NET 格式实现与农历交叉测试
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-      - run: dotnet test dotnet/CnHolidayKit.sln --nologo --configuration Release
-
   # ── Bundle 完整性校验（魔数 + SHA256）──
   bundle-verify:
     name: Bundle 完整性校验

@@ -6,7 +6,7 @@
 `spec`、`lunar`、`core` 包以保持依赖方向清晰，但不要求调用方分别安装或发版。
 
 其他语言使用通用 CSV、`.hday` 或唯一 HTTP API。TypeScript 编译器、Web 组件、
-.NET 实现、Spring 服务和 JMH 都属于仓库内部实现或示例。
+Spring 服务和 JMH 都属于仓库内部实现或示例。
 
 ## 2. 数据链
 
@@ -15,7 +15,7 @@ holidays.csv + sources.json
         ↓ 离线生成
 target/canonical → target/materialized
         ↓ 编译
-.hday → Java / TypeScript / .NET / HTTP
+.hday → Java / TypeScript / HTTP
 ```
 
 `data/source/CN/holidays.csv` 是节假日的唯一审阅源。Canonical 和 Materialized
@@ -37,21 +37,23 @@ target/canonical → target/materialized
 | `isAdjustedWorkday` | 周末调休补班 |
 | `holidayNames` | 官方安排的多语言名称 |
 | `labels` | 官方安排的稳定代码 |
+| `lunar` | 农历日期；超出支持范围时为 `null` |
+| `solarTerm` | 当天命中的节气；非节气日为 `null` |
+| `ganZhi` | 农历年对应的天干、地支、干支纪年和生肖 |
 | `festivals` | 公历、农历或节气命中的节日/纪念日 |
 | `sourceVersion` | 生成该 bundle 的数据版本 |
-| `extensions.lunar` | 农历信息 |
-| `extensions.solarTerm` | 当天命中的节气；非节气日省略 |
 
 约束：
 
 1. `isHoliday` 与 `isWorkday` 互斥且必有其一。
-2. 普通周末：holiday=true、weekend=true、officialHoliday=false。
-3. 调休补班：holiday=false、workday=true、weekend=true、adjustedWorkday=true。
-4. statutoryHoliday=true 必须同时 holiday=true 和 officialHoliday=true。
+2. 普通周末：`isHoliday=true`、`isWeekend=true`、`isOfficialHoliday=false`。
+3. 调休补班：`isHoliday=false`、`isWorkday=true`、`isWeekend=true`、`isAdjustedWorkday=true`。
+4. `isStatutoryHoliday=true` 必须同时满足 `isHoliday=true` 和 `isOfficialHoliday=true`。
 5. `festivals` 不改变工作状态，例如元宵节通常仍是工作日。
+6. 干支采用农历年边界；不输出存在流派和换日边界差异的干支月、干支日。
 
-Java Bean JSON 使用 `holiday/officialHoliday/...`；TypeScript 与 JSON Schema 使用
-`isHoliday/isOfficialHoliday/...`，含义必须一致。
+Java、HTTP、TypeScript 与 JSON Schema 统一使用
+`isHoliday/isOfficialHoliday/...` 字段名和语义。
 
 ## 4. 数据范围与准确度
 

@@ -26,7 +26,7 @@ function createBinaryResponse(bytes) {
 }
 
 describe('HolidayApiClient', () => {
-  it('应使用 regionCode 参数并归一化 DayInfo / lunar 字段', async () => {
+  it('应使用 regionCode 参数并归一化统一中国历法字段', async () => {
     const urls = [];
     const client = new HolidayApiClient({
       baseUrl: 'https://api.example.com/',
@@ -36,31 +36,38 @@ describe('HolidayApiClient', () => {
           date: '2025-01-01',
           regionCode: 'CN',
           calendarSystem: 'GREGORIAN',
-          holiday: true,
-          workday: false,
-          weekend: false,
-          statutoryHoliday: true,
-          adjustedWorkday: false,
+          isHoliday: true,
+          isOfficialHoliday: true,
+          isWorkday: false,
+          isWeekend: false,
+          isStatutoryHoliday: true,
+          isAdjustedWorkday: false,
           holidayNames: {
             'zh-CN': ['元旦'],
           },
           labels: ['NEW_YEAR', 'STATUTORY'],
+          festivals: [{
+            code: 'NEW_YEAR',
+            names: { 'zh-CN': '元旦', 'en-US': "New Year's Day" },
+          }],
           sourceVersion: '2025.01.01',
-          extensions: {
-            lunar: {
-              year: 2024,
-              month: 12,
-              day: 2,
-              leapMonth: false,
-              ganZhiYear: '甲辰年',
-              shengXiao: '龙',
-              monthName: '腊月',
-              dayName: '初二',
-            },
-            solarTerm: {
-              index: 0,
-              name: '小寒',
-            },
+          lunar: {
+            year: 2024,
+            month: 12,
+            day: 2,
+            isLeapMonth: false,
+            monthName: '腊月',
+            dayName: '初二',
+          },
+          solarTerm: {
+            index: 0,
+            name: '小寒',
+          },
+          ganZhi: {
+            yearName: '甲辰',
+            heavenlyStem: '甲',
+            earthlyBranch: '辰',
+            zodiac: '龙',
           },
         });
       },
@@ -75,19 +82,23 @@ describe('HolidayApiClient', () => {
     assert.equal(info.isHoliday, true);
     assert.equal(info.isWorkday, false);
     assert.equal(info.isStatutoryHoliday, true);
-    assert.deepEqual(info.extensions.lunar, {
+    assert.deepEqual(info.lunar, {
       year: 2024,
       month: 12,
       day: 2,
       isLeapMonth: false,
-      ganZhiYear: '甲辰年',
-      shengXiao: '龙',
       monthName: '腊月',
       dayName: '初二',
     });
-    assert.deepEqual(info.extensions.solarTerm, {
+    assert.deepEqual(info.solarTerm, {
       index: 0,
       name: '小寒',
+    });
+    assert.deepEqual(info.ganZhi, {
+      yearName: '甲辰',
+      heavenlyStem: '甲',
+      earthlyBranch: '辰',
+      zodiac: '龙',
     });
   });
 
@@ -98,15 +109,19 @@ describe('HolidayApiClient', () => {
         date: '2025-01-02',
         regionCode: 'CN',
         calendarSystem: 'GREGORIAN',
-        holiday: false,
-        workday: true,
-        weekend: false,
-        statutoryHoliday: false,
-        adjustedWorkday: false,
+        isHoliday: false,
+        isOfficialHoliday: false,
+        isWorkday: true,
+        isWeekend: false,
+        isStatutoryHoliday: false,
+        isAdjustedWorkday: false,
         holidayNames: {},
         labels: [],
+        festivals: [],
         sourceVersion: '2025.01.01',
-        extensions: {},
+        lunar: null,
+        solarTerm: null,
+        ganZhi: null,
       },
     ];
     const client = new HolidayApiClient({

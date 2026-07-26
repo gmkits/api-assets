@@ -105,5 +105,6 @@
 
 | 键名 | 结构 | 说明 |
 | --- | --- | --- |
-| `extensions.lunar` | `LunarDateInfo` | 农历日期、干支年、生肖、月名、日名 |
-| `extensions.solarTerm` | `SolarTermInfo` | 节气索引与中文名 |
+| `lunar` | `LunarDateInfo \| null` | 农历日期、月名和日名 |
+| `solarTerm` | `SolarTermInfo \| null` | 节气索引与中文名 |
+| `ganZhi` | `GanZhiInfo \| null` | 天干、地支、干支纪年和生肖 |

@@ -1,6 +1,7 @@
 package com.github.gmkits.holiday.core;
 
 import com.github.gmkits.holiday.spec.DayInfo;
+import com.github.gmkits.holiday.spec.GanZhiInfo;
 import com.github.gmkits.holiday.spec.LunarDateInfo;
 import com.github.gmkits.holiday.spec.SolarTermInfo;
 import org.junit.jupiter.api.BeforeAll;
@@ -58,39 +59,40 @@ class HolidayServiceTest {
     }
 
     @Test
-    void newYearsDay_hasLunarExtension() {
+    void newYearsDay_combinesLunarAndGanZhiFields() {
         DayInfo info = service.getDayInfo(LocalDate.of(2025, 1, 1));
         assertNotNull(info);
-        Object lunar = info.getExtensions().get("lunar");
-        assertTrue(lunar instanceof LunarDateInfo, "Jan 1 should expose lunar extension");
-
-        LunarDateInfo lunarInfo = (LunarDateInfo) lunar;
+        LunarDateInfo lunarInfo = info.getLunar();
+        assertNotNull(lunarInfo, "Jan 1 should expose lunar date");
         assertEquals(2024, lunarInfo.getYear());
         assertEquals(12, lunarInfo.getMonth());
         assertEquals(2, lunarInfo.getDay());
-        assertEquals("甲辰年", lunarInfo.getGanZhiYear());
-        assertEquals("龙", lunarInfo.getShengXiao());
         assertEquals("腊月", lunarInfo.getMonthName());
         assertEquals("初二", lunarInfo.getDayName());
+
+        GanZhiInfo ganZhi = info.getGanZhi();
+        assertNotNull(ganZhi);
+        assertEquals("甲辰", ganZhi.getYearName());
+        assertEquals("甲", ganZhi.getHeavenlyStem());
+        assertEquals("辰", ganZhi.getEarthlyBranch());
+        assertEquals("龙", ganZhi.getZodiac());
     }
 
     @Test
-    void liChun_hasSolarTermExtension() {
+    void liChun_hasDirectSolarTermField() {
         DayInfo info = service.getDayInfo(LocalDate.of(2025, 2, 3));
         assertNotNull(info);
-        Object solarTerm = info.getExtensions().get("solarTerm");
-        assertTrue(solarTerm instanceof SolarTermInfo, "Feb 3 should expose solarTerm extension");
-
-        SolarTermInfo solarTermInfo = (SolarTermInfo) solarTerm;
+        SolarTermInfo solarTermInfo = info.getSolarTerm();
+        assertNotNull(solarTermInfo, "Feb 3 should expose solarTerm");
         assertEquals(2, solarTermInfo.getIndex());
         assertEquals("立春", solarTermInfo.getName());
     }
 
     @Test
-    void nonSolarTermDay_omitsSolarTermExtension() {
+    void nonSolarTermDay_hasNullSolarTerm() {
         DayInfo info = service.getDayInfo(LocalDate.of(2025, 2, 4));
         assertNotNull(info);
-        assertFalse(info.getExtensions().containsKey("solarTerm"));
+        org.junit.jupiter.api.Assertions.assertNull(info.getSolarTerm());
     }
 
     @Test
@@ -122,7 +124,8 @@ class HolidayServiceTest {
         assertTrue(info.getFestivals().stream()
                 .anyMatch(festival -> "MID_AUTUMN".equals(festival.getCode())));
         assertFalse(info.getSourceVersion().isEmpty());
-        assertTrue(info.getExtensions().containsKey("lunar"));
+        assertNotNull(info.getLunar());
+        assertNotNull(info.getGanZhi());
     }
 
     @Test

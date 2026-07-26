@@ -168,4 +168,4 @@ Header 之后紧跟 `sectionCount` 个 8 字节 section 表项：
 1. 农历：基于 1900-2100 压缩算法表实时计算
 2. 节气：基于 HKO 基线离线生成的年度 dayIndex 查表
 
-因此，`DayInfo.extensions.lunar` 与 `DayInfo.extensions.solarTerm` 属于**查询层扩展**，不是 `.hday` 日条目直接序列化字段。
+因此，`DayInfo.lunar`、`DayInfo.solarTerm` 与 `DayInfo.ganZhi` 属于**查询层组合字段**，不是 `.hday` 日条目直接序列化字段。

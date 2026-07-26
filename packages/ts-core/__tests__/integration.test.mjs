@@ -74,19 +74,23 @@ describe('queryDay — CN 2025 holidays', () => {
     assert.equal(info.isWorkday, false);
   });
 
-  it('should expose lunar extension fields', () => {
+  it('should expose unified lunar and gan-zhi fields', () => {
     assert.ok(bundle2025);
     const info = queryDay(bundle2025, '2025-01-01');
     assert.ok(info);
-    assert.deepEqual(info.extensions.lunar, {
+    assert.deepEqual(info.lunar, {
       year: 2024,
       month: 12,
       day: 2,
       isLeapMonth: false,
-      ganZhiYear: '甲辰年',
-      shengXiao: '龙',
       monthName: '腊月',
       dayName: '初二',
+    });
+    assert.deepEqual(info.ganZhi, {
+      yearName: '甲辰',
+      heavenlyStem: '甲',
+      earthlyBranch: '辰',
+      zodiac: '龙',
     });
   });
 
@@ -115,7 +119,8 @@ describe('queryDay — CN 2025 holidays', () => {
     assert.ok(info);
     assert.equal(info.isOfficialHoliday, true);
     assert.ok(info.festivals.some((festival) => festival.code === 'MID_AUTUMN'));
-    assert.ok(info.extensions.lunar);
+    assert.ok(info.lunar);
+    assert.ok(info.ganZhi);
     assert.ok(info.sourceVersion.length > 0);
   });
 
@@ -197,11 +202,11 @@ describe('queryYear — CN 2025', () => {
     assert.deepEqual(a[0], b[0]);
   });
 
-  it('should keep lunar extension on year view entries', () => {
+  it('should keep lunar fields on year view entries', () => {
     assert.ok(bundle2025);
     const days = queryYear(bundle2025);
-    assert.equal(days[0].extensions.lunar.monthName, '腊月');
-    assert.equal(days[0].extensions.lunar.dayName, '初二');
+    assert.equal(days[0].lunar.monthName, '腊月');
+    assert.equal(days[0].lunar.dayName, '初二');
   });
 });
 

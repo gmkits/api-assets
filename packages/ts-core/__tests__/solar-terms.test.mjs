@@ -77,7 +77,7 @@ before(async () => {
   solarTermRows = parseSolarTermCsv(await readFile(SOLAR_TERMS_CSV, 'utf-8'));
 });
 
-describe('solar term extensions', () => {
+describe('solar term fields', () => {
   it('should expose known solar terms from bundle queries', () => {
     assert.ok(bundle2025);
 
@@ -86,21 +86,24 @@ describe('solar term extensions', () => {
 
     assert.ok(liChun);
     assert.ok(qingMing);
-    assert.deepEqual(liChun.extensions.solarTerm, {
+    assert.deepEqual(liChun.solarTerm, {
       index: 2,
       name: '立春',
     });
-    assert.deepEqual(qingMing.extensions.solarTerm, {
+    assert.deepEqual(qingMing.solarTerm, {
       index: 6,
       name: '清明',
     });
+    assert.ok(
+      qingMing.festivals.some((festival) => festival.code === 'TOMB_SWEEPING'),
+    );
   });
 
-  it('should omit solarTerm on non-solar-term dates', () => {
+  it('should return null on non-solar-term dates', () => {
     assert.ok(bundle2025);
     const info = queryDay(bundle2025, '2025-02-04');
     assert.ok(info);
-    assert.equal('solarTerm' in info.extensions, false);
+    assert.equal(info.solarTerm, null);
   });
 
   it('should match the full solar-term CSV with synthetic bundles', () => {
@@ -117,7 +120,7 @@ describe('solar term extensions', () => {
       const info = queryDay(bundle, row.solarDate);
       assert.ok(info, row.solarDate);
       assert.deepEqual(
-        info.extensions.solarTerm,
+        info.solarTerm,
         {
           index: row.solarTermIndex,
           name: toSimp(row.solarTermName),

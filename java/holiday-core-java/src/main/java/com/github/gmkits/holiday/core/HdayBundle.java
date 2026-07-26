@@ -4,6 +4,7 @@ import com.github.gmkits.holiday.lunar.LunarCalendar;
 import com.github.gmkits.holiday.lunar.LunarInfo;
 import com.github.gmkits.holiday.spec.CalendarSystem;
 import com.github.gmkits.holiday.spec.DayInfo;
+import com.github.gmkits.holiday.spec.GanZhiInfo;
 import com.github.gmkits.holiday.spec.LunarDateInfo;
 import com.github.gmkits.holiday.spec.SolarTermInfo;
 
@@ -206,9 +207,10 @@ public final class HdayBundle {
         LocalDate cursor = LocalDate.of(year, 1, 1);
         for (int i = 0; i < dayCount; i++) {
             DayEntry entry = days[i];
-            Map<String, Object> extensions = resolveExtensions(cursor, i);
-            LunarDateInfo lunar = (LunarDateInfo) extensions.get("lunar");
-            SolarTermInfo solarTerm = (SolarTermInfo) extensions.get("solarTerm");
+            LunarInfo rawLunar = resolveLunarInfo(cursor);
+            LunarDateInfo lunar = toLunarDateInfo(rawLunar);
+            GanZhiInfo ganZhi = toGanZhiInfo(rawLunar);
+            SolarTermInfo solarTerm = SolarTermTable.lookup(cursor.getYear(), i);
             result[i] = new DayInfo.Builder()
                     .date(cursor)
                     .regionCode(regionCode)
@@ -220,9 +222,11 @@ public final class HdayBundle {
                     .adjustedWorkday(entry.isAdjustedWorkday())
                     .holidayNames(resolveNames(entry.nameListIndex))
                     .labels(resolveLabels(entry.labelListIndex))
+                    .lunar(lunar)
+                    .solarTerm(solarTerm)
+                    .ganZhi(ganZhi)
                     .festivals(FestivalResolver.resolve(cursor, lunar, solarTerm))
                     .sourceVersion(sourceVersion)
-                    .extensions(extensions)
                     .build();
             cursor = cursor.plusDays(1);
         }
@@ -249,37 +253,40 @@ public final class HdayBundle {
         return indexes;
     }
 
-    private Map<String, Object> resolveExtensions(LocalDate date, int dayIndex) {
-        LunarDateInfo lunarInfo = resolveLunarDateInfo(date);
-        SolarTermInfo solarTermInfo = SolarTermTable.lookup(date.getYear(), dayIndex);
-        if (lunarInfo == null && solarTermInfo == null) {
-            return Collections.emptyMap();
-        }
-        Map<String, Object> result = new LinkedHashMap<>();
-        if (lunarInfo != null) {
-            result.put("lunar", lunarInfo);
-        }
-        if (solarTermInfo != null) {
-            result.put("solarTerm", solarTermInfo);
-        }
-        return result;
-    }
-
-    private LunarDateInfo resolveLunarDateInfo(LocalDate date) {
+    private LunarInfo resolveLunarInfo(LocalDate date) {
         try {
-            LunarInfo lunar = LunarCalendar.solarToLunar(date);
-            return new LunarDateInfo(
-                    lunar.getDate().getYear(),
-                    lunar.getDate().getMonth(),
-                    lunar.getDate().getDay(),
-                    lunar.getDate().isLeapMonth(),
-                    lunar.getGanZhiYear(),
-                    lunar.getShengXiao(),
-                    lunar.getMonthName(),
-                    lunar.getDayName());
+            return LunarCalendar.solarToLunar(date);
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private LunarDateInfo toLunarDateInfo(LunarInfo lunar) {
+        if (lunar == null) {
+            return null;
+        }
+        return new LunarDateInfo(
+                lunar.getDate().getYear(),
+                lunar.getDate().getMonth(),
+                lunar.getDate().getDay(),
+                lunar.getDate().isLeapMonth(),
+                lunar.getMonthName(),
+                lunar.getDayName());
+    }
+
+    private GanZhiInfo toGanZhiInfo(LunarInfo lunar) {
+        if (lunar == null) {
+            return null;
+        }
+        String yearName = lunar.getGanZhiYear();
+        if (yearName.endsWith("年")) {
+            yearName = yearName.substring(0, yearName.length() - 1);
+        }
+        return new GanZhiInfo(
+                yearName,
+                lunar.getTianGan(),
+                lunar.getDiZhi(),
+                lunar.getShengXiao());
     }
 
     private Map<String, List<String>> resolveNames(int listIndex) {

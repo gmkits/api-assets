@@ -314,12 +314,10 @@ function num(rec: Rec, f: string): number {
   return v;
 }
 
-function bool(rec: Rec, cur: string, legacy: string): boolean {
-  const v = rec[cur];
-  if (typeof v === 'boolean') return v;
-  const lv = rec[legacy];
-  if (typeof lv === 'boolean') return lv;
-  throw fieldErr(`${cur}/${legacy}`);
+function bool(rec: Rec, field: string): boolean {
+  const value = rec[field];
+  if (typeof value !== 'boolean') throw fieldErr(field);
+  return value;
 }
 
 function arr<T>(val: unknown, name: string, guard: (v: unknown) => v is T): T[] {
@@ -344,27 +342,24 @@ function normalizeDayInfoArray(value: unknown): DayInfo[] {
 function normalizeDayInfo(value: unknown): DayInfo {
   const r = rec(value, 'DayInfo');
   const holidayNames = readNames(r);
-  const isHoliday = bool(r, 'isHoliday', 'holiday');
+  const isHoliday = bool(r, 'isHoliday');
   return {
     date: str(r, 'date'),
     regionCode: str(r, 'regionCode'),
     calendarSystem: readCalSys(r),
     isHoliday,
-    isOfficialHoliday:
-      typeof r.isOfficialHoliday === 'boolean'
-        ? r.isOfficialHoliday
-        : isHoliday && Object.keys(holidayNames).length > 0,
-    isWorkday: bool(r, 'isWorkday', 'workday'),
-    isWeekend: bool(r, 'isWeekend', 'weekend'),
-    isStatutoryHoliday: bool(r, 'isStatutoryHoliday', 'statutoryHoliday'),
-    isAdjustedWorkday: bool(r, 'isAdjustedWorkday', 'adjustedWorkday'),
+    isOfficialHoliday: bool(r, 'isOfficialHoliday'),
+    isWorkday: bool(r, 'isWorkday'),
+    isWeekend: bool(r, 'isWeekend'),
+    isStatutoryHoliday: bool(r, 'isStatutoryHoliday'),
+    isAdjustedWorkday: bool(r, 'isAdjustedWorkday'),
     holidayNames,
     labels: arr(r.labels, 'labels', (v): v is string => typeof v === 'string'),
-    festivals: Array.isArray(r.festivals)
-      ? r.festivals as DayInfo['festivals']
-      : [],
+    lunar: normalizeLunar(r.lunar),
+    solarTerm: normalizeSolarTerm(r.solarTerm),
+    ganZhi: normalizeGanZhi(r.ganZhi),
+    festivals: normalizeFestivals(r.festivals),
     sourceVersion: str(r, 'sourceVersion'),
-    extensions: normalizeExt(r.extensions),
   };
 }
 
@@ -383,18 +378,54 @@ function readNames(r: Rec): DayInfo['holidayNames'] {
   return out;
 }
 
-function normalizeExt(value: unknown): Rec {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  const r = value as Rec;
-  const out: Rec = { ...r };
-  if (r.lunar !== undefined) {
-    const l = rec(r.lunar, 'extensions.lunar');
-    out.lunar = {
-      year: num(l, 'year'), month: num(l, 'month'), day: num(l, 'day'),
-      isLeapMonth: bool(l, 'isLeapMonth', 'leapMonth'),
-      ganZhiYear: str(l, 'ganZhiYear'), shengXiao: str(l, 'shengXiao'),
-      monthName: str(l, 'monthName'), dayName: str(l, 'dayName'),
+function normalizeLunar(value: unknown): DayInfo['lunar'] {
+  if (value == null) return null;
+  const lunar = rec(value, 'lunar');
+  return {
+    year: num(lunar, 'year'),
+    month: num(lunar, 'month'),
+    day: num(lunar, 'day'),
+    isLeapMonth: bool(lunar, 'isLeapMonth'),
+    monthName: str(lunar, 'monthName'),
+    dayName: str(lunar, 'dayName'),
+  };
+}
+
+function normalizeSolarTerm(value: unknown): DayInfo['solarTerm'] {
+  if (value == null) return null;
+  const solarTerm = rec(value, 'solarTerm');
+  return {
+    index: num(solarTerm, 'index'),
+    name: str(solarTerm, 'name'),
+  };
+}
+
+function normalizeGanZhi(value: unknown): DayInfo['ganZhi'] {
+  if (value == null) return null;
+  const ganZhi = rec(value, 'ganZhi');
+  return {
+    yearName: str(ganZhi, 'yearName'),
+    heavenlyStem: str(ganZhi, 'heavenlyStem'),
+    earthlyBranch: str(ganZhi, 'earthlyBranch'),
+    zodiac: str(ganZhi, 'zodiac'),
+  };
+}
+
+function normalizeFestivals(value: unknown): DayInfo['festivals'] {
+  if (!Array.isArray(value)) throw fieldErr('festivals');
+  return value.map((item, index) => {
+    const festival = rec(item, `festivals[${index}]`);
+    const rawNames = rec(festival.names, `festivals[${index}].names`);
+    const names: Record<string, string> = {};
+    for (const [locale, name] of Object.entries(rawNames)) {
+      if (typeof name !== 'string') {
+        throw fieldErr(`festivals[${index}].names.${locale}`);
+      }
+      names[locale] = name;
+    }
+    return {
+      code: str(festival, 'code'),
+      names,
     };
-  }
-  return out;
+  });
 }

@@ -28,21 +28,25 @@ class DayControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.date").value("2025-01-01"))
                 .andExpect(jsonPath("$.regionCode").value("CN"))
-                .andExpect(jsonPath("$.holiday").value(true))
-                .andExpect(jsonPath("$.workday").value(false))
-                .andExpect(jsonPath("$.weekend").value(false))
-                .andExpect(jsonPath("$.statutoryHoliday").value(true))
-                .andExpect(jsonPath("$.adjustedWorkday").value(false))
+                .andExpect(jsonPath("$.isHoliday").value(true))
+                .andExpect(jsonPath("$.isWorkday").value(false))
+                .andExpect(jsonPath("$.isWeekend").value(false))
+                .andExpect(jsonPath("$.isStatutoryHoliday").value(true))
+                .andExpect(jsonPath("$.isAdjustedWorkday").value(false))
+                .andExpect(jsonPath("$.holiday").doesNotExist())
+                .andExpect(jsonPath("$.extensions").doesNotExist())
                 .andExpect(jsonPath("$.holidayNames").isMap())
                 .andExpect(jsonPath("$.labels").isArray())
-                .andExpect(jsonPath("$.extensions").isMap())
-                .andExpect(jsonPath("$.extensions.lunar.year").value(2024))
-                .andExpect(jsonPath("$.extensions.lunar.month").value(12))
-                .andExpect(jsonPath("$.extensions.lunar.day").value(2))
-                .andExpect(jsonPath("$.extensions.lunar.ganZhiYear").value("甲辰年"))
-                .andExpect(jsonPath("$.extensions.lunar.shengXiao").value("龙"))
-                .andExpect(jsonPath("$.extensions.lunar.monthName").value("腊月"))
-                .andExpect(jsonPath("$.extensions.lunar.dayName").value("初二"));
+                .andExpect(jsonPath("$.lunar.year").value(2024))
+                .andExpect(jsonPath("$.lunar.month").value(12))
+                .andExpect(jsonPath("$.lunar.day").value(2))
+                .andExpect(jsonPath("$.lunar.isLeapMonth").value(false))
+                .andExpect(jsonPath("$.lunar.monthName").value("腊月"))
+                .andExpect(jsonPath("$.lunar.dayName").value("初二"))
+                .andExpect(jsonPath("$.ganZhi.yearName").value("甲辰"))
+                .andExpect(jsonPath("$.ganZhi.heavenlyStem").value("甲"))
+                .andExpect(jsonPath("$.ganZhi.earthlyBranch").value("辰"))
+                .andExpect(jsonPath("$.ganZhi.zodiac").value("龙"));
     }
 
     @Test
@@ -54,8 +58,8 @@ class DayControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.date").value("2025-10-01"))
                 .andExpect(jsonPath("$.regionCode").value("CN"))
-                .andExpect(jsonPath("$.holiday").value(true))
-                .andExpect(jsonPath("$.statutoryHoliday").value(true));
+                .andExpect(jsonPath("$.isHoliday").value(true))
+                .andExpect(jsonPath("$.isStatutoryHoliday").value(true));
     }
 
     @Test
@@ -64,12 +68,13 @@ class DayControllerTest {
                         .param("date", "2025-10-06")
                         .param("regionCode", "CN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.holiday").value(true))
-                .andExpect(jsonPath("$.officialHoliday").value(true))
-                .andExpect(jsonPath("$.statutoryHoliday").value(true))
+                .andExpect(jsonPath("$.isHoliday").value(true))
+                .andExpect(jsonPath("$.isOfficialHoliday").value(true))
+                .andExpect(jsonPath("$.isStatutoryHoliday").value(true))
                 .andExpect(jsonPath("$.sourceVersion").value("2025.GOV_NOTICE"))
-                .andExpect(jsonPath("$.extensions.lunar.month").value(8))
-                .andExpect(jsonPath("$.extensions.lunar.day").value(15))
+                .andExpect(jsonPath("$.lunar.month").value(8))
+                .andExpect(jsonPath("$.lunar.day").value(15))
+                .andExpect(jsonPath("$.ganZhi.yearName").value("乙巳"))
                 .andExpect(jsonPath("$.festivals[0].code").value("MID_AUTUMN"));
     }
 
@@ -79,9 +84,9 @@ class DayControllerTest {
                         .param("date", "2025-01-04")
                         .param("regionCode", "CN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.holiday").value(true))
-                .andExpect(jsonPath("$.weekend").value(true))
-                .andExpect(jsonPath("$.officialHoliday").value(false));
+                .andExpect(jsonPath("$.isHoliday").value(true))
+                .andExpect(jsonPath("$.isWeekend").value(true))
+                .andExpect(jsonPath("$.isOfficialHoliday").value(false));
     }
 
     @Test
@@ -91,8 +96,18 @@ class DayControllerTest {
                         .param("regionCode", "CN"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.extensions.solarTerm.index").value(2))
-                .andExpect(jsonPath("$.extensions.solarTerm.name").value("立春"));
+                .andExpect(jsonPath("$.solarTerm.index").value(2))
+                .andExpect(jsonPath("$.solarTerm.name").value("立春"));
+    }
+
+    @Test
+    void getDay_qingMingCombinesSolarTermAndFestival() throws Exception {
+        mockMvc.perform(get("/api/v1/day")
+                        .param("date", "2025-04-04")
+                        .param("regionCode", "CN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.solarTerm.name").value("清明"))
+                .andExpect(jsonPath("$.festivals[0].code").value("TOMB_SWEEPING"));
     }
 
     @Test

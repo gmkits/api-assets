@@ -166,7 +166,7 @@ describe('resolveLabels', () => {
 });
 
 describe('queryDay', () => {
-  it('should skip lunar extension outside supported lunar range', () => {
+  it('should return null lunar fields outside supported range', () => {
     const bundle = {
       header: {
         magic: 'HDAY',
@@ -193,10 +193,11 @@ describe('queryDay', () => {
 
     const info = queryDay(bundle, '1900-01-01');
     assert.ok(info);
-    assert.deepEqual(info.extensions, {});
+    assert.equal(info.lunar, null);
+    assert.equal(info.ganZhi, null);
   });
 
-  it('should keep lunar extension on the last supported solar day', () => {
+  it('should keep lunar fields on the last supported solar day', () => {
     const bundle = {
       header: {
         magic: 'HDAY',
@@ -223,8 +224,10 @@ describe('queryDay', () => {
     const nextDay = queryDay(bundle, '2101-01-29');
 
     assert.ok(lastSupported);
-    assert.ok(lastSupported.extensions.lunar);
+    assert.ok(lastSupported.lunar);
+    assert.ok(lastSupported.ganZhi);
     assert.ok(nextDay);
-    assert.deepEqual(nextDay.extensions, {});
+    assert.equal(nextDay.lunar, null);
+    assert.equal(nextDay.ganZhi, null);
   });
 });

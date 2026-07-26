@@ -22,7 +22,6 @@ const JAVA_OUTPUT = join(
   'core',
   'SolarTermTableData.java',
 );
-const DOTNET_OUTPUT = join(ROOT_DIR, 'dotnet', 'CnHolidayKit', 'Generated', 'SolarTermData.cs');
 
 const START_YEAR = 1901;
 const END_YEAR = 2100;
@@ -173,10 +172,6 @@ function escapeJavaString(value) {
   return value.replace(/\\/g, '\\\\').replace(/\"/g, '\\\"');
 }
 
-function escapeCSharpString(value) {
-  return value.replace(/"/g, '""');
-}
-
 function buildJavaSource(solarTermNames, yearDayIndexes) {
   const simpNames = solarTermNames.map(toSimplified);
   const simpLines = simpNames.map((name) => '        \"' + escapeJavaString(name) + '\",').join('\n');
@@ -213,42 +208,6 @@ function buildJavaSource(solarTermNames, yearDayIndexes) {
   ].join('\n');
 }
 
-function buildDotNetSource(solarTermNames, yearDayIndexes) {
-  const simpNames = solarTermNames.map(toSimplified);
-  const simpLines = simpNames.map((name) => '        @"' + escapeCSharpString(name) + '",').join('\n');
-  const tradLines = solarTermNames.map((name) => '        @"' + escapeCSharpString(name) + '",').join('\n');
-  const yearLines = yearDayIndexes.map((dayIndexes) => '        new[] {' + dayIndexes.join(', ') + '},').join('\n');
-
-  return [
-    'namespace CnHolidayKit;',
-    '',
-    '/**',
-    ' * Generated from tests/solar-terms.csv by scripts/generate-solar-term-tables.mjs.',
-    ' * Do not edit manually.',
-    ' */',
-    'internal static class SolarTermData',
-    '{',
-    '    /// <summary>简体中文节气名（默认）。</summary>',
-    '    internal static readonly string[] SolarTermNames =',
-    '    {',
-    simpLines,
-    '    };',
-    '',
-    '    /// <summary>繁体中文节气名。</summary>',
-    '    internal static readonly string[] SolarTermNamesZhTw =',
-    '    {',
-    tradLines,
-    '    };',
-    '',
-    '    internal static readonly int[][] SolarTermDayIndexesByYear =',
-    '    {',
-    yearLines,
-    '    };',
-    '}',
-    '',
-  ].join('\n');
-}
-
 function writeFile(path, content) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, content, 'utf-8');
@@ -260,11 +219,9 @@ function main() {
 
   writeFile(TS_OUTPUT, buildTsSource(result.solarTermNames, result.yearDayIndexes));
   writeFile(JAVA_OUTPUT, buildJavaSource(result.solarTermNames, result.yearDayIndexes));
-  writeFile(DOTNET_OUTPUT, buildDotNetSource(result.solarTermNames, result.yearDayIndexes));
 
   process.stdout.write('Generated ' + TS_OUTPUT + '\n');
   process.stdout.write('Generated ' + JAVA_OUTPUT + '\n');
-  process.stdout.write('Generated ' + DOTNET_OUTPUT + '\n');
 }
 
 main();

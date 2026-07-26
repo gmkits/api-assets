@@ -26,9 +26,11 @@ public final class DayInfo {
     private final boolean adjustedWorkday;
     private final Map<String, List<String>> holidayNames;
     private final List<String> labels;
+    private final LunarDateInfo lunar;
+    private final SolarTermInfo solarTerm;
+    private final GanZhiInfo ganZhi;
     private final List<FestivalInfo> festivals;
     private final String sourceVersion;
-    private final Map<String, Object> extensions;
 
     private DayInfo(Builder b) {
         this.date = Objects.requireNonNull(b.date, "date");
@@ -42,11 +44,12 @@ public final class DayInfo {
         this.holidayNames = freezeNames(b.holidayNames);
         this.labels = b.labels == null ? Collections.<String>emptyList()
                 : Collections.unmodifiableList(new ArrayList<>(b.labels));
+        this.lunar = b.lunar;
+        this.solarTerm = b.solarTerm;
+        this.ganZhi = b.ganZhi;
         this.festivals = b.festivals == null ? Collections.<FestivalInfo>emptyList()
                 : Collections.unmodifiableList(new ArrayList<>(b.festivals));
         this.sourceVersion = b.sourceVersion;
-        this.extensions = b.extensions == null ? Collections.<String, Object>emptyMap()
-                : Collections.unmodifiableMap(new LinkedHashMap<>(b.extensions));
     }
 
     private static Map<String, List<String>> freezeNames(Map<String, List<String>> src) {
@@ -144,6 +147,27 @@ public final class DayInfo {
     public List<String> getLabels() { return labels; }
 
     /**
+     * 返回当天对应的农历日期。
+     *
+     * @return 农历日期；超出离线农历资产范围时返回 {@code null}
+     */
+    public LunarDateInfo getLunar() { return lunar; }
+
+    /**
+     * 返回当天命中的二十四节气。
+     *
+     * @return 节气信息；当天不是节气日时返回 {@code null}
+     */
+    public SolarTermInfo getSolarTerm() { return solarTerm; }
+
+    /**
+     * 返回当天农历年的天干、地支、干支纪年和生肖。
+     *
+     * @return 干支信息；超出离线农历资产范围时返回 {@code null}
+     */
+    public GanZhiInfo getGanZhi() { return ganZhi; }
+
+    /**
      * 返回当天命中的传统节日、公共节日和纪念日。
      *
      * <p>此列表不代表当天一定放假，工作状态以 {@link #isWorkday()} 为准。</p>
@@ -158,17 +182,6 @@ public final class DayInfo {
      * @return 生成当前记录的上游数据版本
      */
     public String getSourceVersion() { return sourceVersion; }
-
-    /**
-     * 返回不可变扩展字段映射。
-     *
-     * <p>当前中国日期资产可能包含键 {@code "lunar"} 和
-     * {@code "solarTerm"}，值分别为 {@link LunarDateInfo} 和
-     * {@link SolarTermInfo}。</p>
-     *
-     * @return 不可变扩展字段映射
-     */
-    public Map<String, Object> getExtensions() { return extensions; }
 
     /**
      * 返回单日信息的简要调试字符串。
@@ -195,9 +208,11 @@ public final class DayInfo {
         private boolean adjustedWorkday;
         private Map<String, List<String>> holidayNames;
         private List<String> labels;
+        private LunarDateInfo lunar;
+        private SolarTermInfo solarTerm;
+        private GanZhiInfo ganZhi;
         private List<FestivalInfo> festivals;
         private String sourceVersion;
-        private Map<String, Object> extensions;
 
         /**
          * 创建一个尚未设置字段的构建器。
@@ -286,6 +301,30 @@ public final class DayInfo {
         public Builder labels(List<String> labels) { this.labels = labels; return this; }
 
         /**
+         * 设置当天对应的农历日期。
+         *
+         * @param value 农历日期；无数据时为 {@code null}
+         * @return 当前构建器
+         */
+        public Builder lunar(LunarDateInfo value) { this.lunar = value; return this; }
+
+        /**
+         * 设置当天命中的二十四节气。
+         *
+         * @param value 节气信息；非节气日为 {@code null}
+         * @return 当前构建器
+         */
+        public Builder solarTerm(SolarTermInfo value) { this.solarTerm = value; return this; }
+
+        /**
+         * 设置当天农历年的干支信息。
+         *
+         * @param value 干支信息；无数据时为 {@code null}
+         * @return 当前构建器
+         */
+        public Builder ganZhi(GanZhiInfo value) { this.ganZhi = value; return this; }
+
+        /**
          * 设置当天命中的节日列表。
          *
          * @param festivals 节日列表；构建时执行防御性复制
@@ -303,14 +342,6 @@ public final class DayInfo {
          * @return 当前构建器
          */
         public Builder sourceVersion(String v) { this.sourceVersion = v; return this; }
-
-        /**
-         * 设置扩展字段映射。
-         *
-         * @param ext 扩展映射；构建时执行防御性复制
-         * @return 当前构建器
-         */
-        public Builder extensions(Map<String, Object> ext) { this.extensions = ext; return this; }
 
         /**
          * 构建不可变的 {@link DayInfo} 实例。

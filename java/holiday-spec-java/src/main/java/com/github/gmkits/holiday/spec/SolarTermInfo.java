@@ -3,7 +3,7 @@ package com.github.gmkits.holiday.spec;
 /**
  * 节气信息。
  *
- * <p>用于 {@link DayInfo} 扩展映射中的 {@code "solarTerm"} 字段，
+ * <p>作为 {@link DayInfo#getSolarTerm()} 的稳定值对象，
  * 提供命中日期对应的稳定索引和中文名。</p>
  */
 public final class SolarTermInfo {
