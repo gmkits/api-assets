@@ -45,7 +45,7 @@ public final class HolidayServiceBuilder {
      * 设置统一离线资产根目录。
      *
      * <p>目录结构为：
-     * {@code calendar/lunar-years.hex}、{@code calendar/solar-terms.csv} 和
+     * {@code calendar/calendar.cdat} 和
      * {@code holidays/bundles/{region}/{year}.hday}。日历资产是 JVM 级只读表，
      * 应在第一次农历或节气查询前配置。</p>
      *

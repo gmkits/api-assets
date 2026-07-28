@@ -3,10 +3,10 @@ package com.github.gmkits.holiday.core;
 import com.github.gmkits.holiday.lunar.LunarCalendar;
 import com.github.gmkits.holiday.spec.SolarTermInfo;
 
-import java.util.Arrays;
+import java.time.LocalDate;
 
 /**
- * 节气查询表：O(1) 查找，支持简繁 locale。
+ * 节气查询适配器：直接解码年度 48-bit 表，支持简繁 locale。
  */
 final class SolarTermTable {
 
@@ -27,8 +27,6 @@ final class SolarTermTable {
     };
     private static final SolarTermInfo[] INFOS = buildInfos(NAMES_ZH_CN);
     private static final SolarTermInfo[] INFOS_TW = buildInfos(NAMES_ZH_TW);
-    private static final byte[][] LOOKUP = buildLookup();
-
     private SolarTermTable() {}
 
     static SolarTermInfo lookup(int year, int dayIndex) {
@@ -37,11 +35,14 @@ final class SolarTermTable {
 
     static SolarTermInfo lookup(int year, int dayIndex, String locale) {
         if (year < START_YEAR || year > END_YEAR) return null;
-        byte[] table = LOOKUP[year - START_YEAR];
-        if (dayIndex < 0 || dayIndex >= table.length) return null;
-        int idx = table[dayIndex];
-        if (idx < 0) return null;
-        return "zh-TW".equals(locale) ? INFOS_TW[idx] : INFOS[idx];
+        int dayCount = LocalDate.of(year, 1, 1).lengthOfYear();
+        if (dayIndex < 0 || dayIndex >= dayCount) return null;
+        LocalDate date = LocalDate.ofYearDay(year, dayIndex + 1);
+        String name = LunarCalendar.getSolarTerm(date);
+        if (name == null) return null;
+        int first = (date.getMonthValue() - 1) * 2;
+        int index = NAMES_ZH_CN[first].equals(name) ? first : first + 1;
+        return "zh-TW".equals(locale) ? INFOS_TW[index] : INFOS[index];
     }
 
     private static SolarTermInfo[] buildInfos(String[] names) {
@@ -50,23 +51,4 @@ final class SolarTermTable {
         return out;
     }
 
-    private static byte[][] buildLookup() {
-        int count = END_YEAR - START_YEAR + 1;
-        byte[][] tables = new byte[count][];
-        for (int y = START_YEAR; y <= END_YEAR; y++) {
-            byte[] t = new byte[isLeapYear(y) ? 366 : 365];
-            Arrays.fill(t, (byte) -1);
-            LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(y);
-            for (int i = 0; i < terms.length; i++) {
-                int dayIndex = terms[i].getDate().getDayOfYear() - 1;
-                if (dayIndex >= 0 && dayIndex < t.length) t[dayIndex] = (byte) i;
-            }
-            tables[y - START_YEAR] = t;
-        }
-        return tables;
-    }
-
-    private static boolean isLeapYear(int y) {
-        return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
-    }
 }

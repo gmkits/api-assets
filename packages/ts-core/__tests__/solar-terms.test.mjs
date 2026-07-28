@@ -10,7 +10,7 @@ import {
   queryDay,
 } from '../dist/esm/index.js';
 
-import { DAY_FLAGS, NO_INDEX } from '../../ts-spec/dist/esm/index.js';
+import { NO_INDEX } from '../../ts-spec/dist/esm/index.js';
 
 const TRAD_TO_SIMP = { '驚蟄': '惊蛰', '穀雨': '谷雨', '小滿': '小满', '芒種': '芒种', '處暑': '处暑' };
 const toSimp = (n) => TRAD_TO_SIMP[n] || n;
@@ -18,13 +18,6 @@ const toSimp = (n) => TRAD_TO_SIMP[n] || n;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BUNDLE_2025 = resolve(__dirname, '../../../data/bundles/CN/2025.hday');
 const SOLAR_TERMS_CSV = resolve(__dirname, '../../../tests/solar-terms.csv');
-const DEFAULT_DAY_ENTRY = {
-  flags: DAY_FLAGS.IS_WORKDAY,
-  nameListIndex: NO_INDEX,
-  labelListIndex: NO_INDEX,
-  extIndex: NO_INDEX,
-};
-
 let bundle2025 = null;
 let solarTermRows = [];
 
@@ -54,10 +47,17 @@ function parseSolarTermCsv(text) {
 
 function createSyntheticBundle(year) {
   const dayCount = isLeapYear(year) ? 366 : 365;
+  const words = Math.ceil(dayCount / 32);
+  const workdayBits = new Uint32Array(words);
+  workdayBits.fill(0xffffffff);
+  const nameListIndexes = new Int16Array(dayCount);
+  const labelListIndexes = new Int16Array(dayCount);
+  nameListIndexes.fill(-1);
+  labelListIndexes.fill(-1);
   return {
     header: {
       magic: 'HDAY',
-      majorVersion: 1,
+      majorVersion: 2,
       minorVersion: 0,
       flags: 0,
       year,
@@ -66,9 +66,19 @@ function createSyntheticBundle(year) {
       dayCount,
       sectionCount: 0,
     },
-    days: Array.from({ length: dayCount }, () => DEFAULT_DAY_ENTRY),
-    strings: [],
-    nameLists: [],
+    days: {
+      length: dayCount,
+      holidayBits: new Uint32Array(words),
+      workdayBits,
+      weekendBits: new Uint32Array(words),
+      statutoryBits: new Uint32Array(words),
+      adjustedBits: new Uint32Array(words),
+      nameListIndexes,
+      labelListIndexes,
+    },
+    names: [],
+    labels: [],
+    metadata: {},
   };
 }
 

@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,12 +34,13 @@ public final class HdayBundle {
     private final int dayCount;
     private final int majorVersion;
     private final int minorVersion;
-    private final DayEntry[] days;
-    private final String[] strings;
-    private final int[][][] nameLists;
     private final String sourceVersion;
     private final DayInfo[] dayInfos;
     private final List<DayInfo> yearView;
+    private final long[] holidayBits;
+    private final long[] workdayBits;
+    private final long[] statutoryBits;
+    private final long[] adjustedBits;
     private final int[] workdayPrefix;
     private final int[] nextStatutoryIndex;
 
@@ -52,11 +54,14 @@ public final class HdayBundle {
         this.dayCount = dayCount;
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
-        this.days = days;
-        this.strings = strings;
-        this.nameLists = nameLists;
         this.sourceVersion = sourceVersion;
-        this.dayInfos = buildDayInfos();
+        int words = (dayCount + 63) >>> 6;
+        this.holidayBits = new long[words];
+        this.workdayBits = new long[words];
+        this.statutoryBits = new long[words];
+        this.adjustedBits = new long[words];
+        buildStatusBits(days);
+        this.dayInfos = buildDayInfos(days, strings, nameLists);
         this.yearView = Collections.unmodifiableList(Arrays.asList(this.dayInfos));
         this.workdayPrefix = buildWorkdayPrefix();
         this.nextStatutoryIndex = buildNextStatutoryIndex();
@@ -126,6 +131,22 @@ public final class HdayBundle {
             return null;
         }
         return dayInfos[dayIndex];
+    }
+
+    boolean isHoliday(int dayIndex) {
+        return getBit(holidayBits, dayIndex);
+    }
+
+    boolean isWorkday(int dayIndex) {
+        return getBit(workdayBits, dayIndex);
+    }
+
+    boolean isStatutoryHoliday(int dayIndex) {
+        return getBit(statutoryBits, dayIndex);
+    }
+
+    boolean isAdjustedWorkday(int dayIndex) {
+        return getBit(adjustedBits, dayIndex);
     }
 
     /**
@@ -202,14 +223,30 @@ public final class HdayBundle {
         return index < 0 ? null : dayInfos[index];
     }
 
-    private DayInfo[] buildDayInfos() {
+    @SuppressWarnings("unchecked")
+    private DayInfo[] buildDayInfos(
+            DayEntry[] days,
+            String[] strings,
+            int[][][] nameLists) {
         DayInfo[] result = new DayInfo[dayCount];
+        Map<String, List<String>>[] resolvedNames = new Map[nameLists.length];
+        List<String>[] resolvedLabels = new List[nameLists.length];
+        Map<Integer, GanZhiInfo> ganZhiByYear = new HashMap<>();
         LocalDate cursor = LocalDate.of(year, 1, 1);
+        LunarInfo[] lunarDays = resolveLunarYear();
         for (int i = 0; i < dayCount; i++) {
             DayEntry entry = days[i];
-            LunarInfo rawLunar = resolveLunarInfo(cursor);
+            LunarInfo rawLunar = lunarDays == null ? null : lunarDays[i];
             LunarDateInfo lunar = toLunarDateInfo(rawLunar);
-            GanZhiInfo ganZhi = toGanZhiInfo(rawLunar);
+            GanZhiInfo ganZhi = null;
+            if (rawLunar != null) {
+                int lunarYear = rawLunar.getDate().getYear();
+                ganZhi = ganZhiByYear.get(lunarYear);
+                if (ganZhi == null) {
+                    ganZhi = toGanZhiInfo(rawLunar);
+                    ganZhiByYear.put(lunarYear, ganZhi);
+                }
+            }
             SolarTermInfo solarTerm = SolarTermTable.lookup(cursor.getYear(), i);
             result[i] = new DayInfo.Builder()
                     .date(cursor)
@@ -220,8 +257,10 @@ public final class HdayBundle {
                     .weekend(entry.isWeekend())
                     .statutoryHoliday(entry.isStatutoryHoliday())
                     .adjustedWorkday(entry.isAdjustedWorkday())
-                    .holidayNames(resolveNames(entry.nameListIndex))
-                    .labels(resolveLabels(entry.labelListIndex))
+                    .holidayNames(resolveNames(
+                            entry.nameListIndex, strings, nameLists, resolvedNames))
+                    .labels(resolveLabels(
+                            entry.labelListIndex, strings, nameLists, resolvedLabels))
                     .lunar(lunar)
                     .solarTerm(solarTerm)
                     .ganZhi(ganZhi)
@@ -233,10 +272,20 @@ public final class HdayBundle {
         return result;
     }
 
+    private void buildStatusBits(DayEntry[] days) {
+        for (int i = 0; i < dayCount; i++) {
+            DayEntry entry = days[i];
+            if (entry.isHoliday()) setBit(holidayBits, i);
+            if (entry.isWorkday()) setBit(workdayBits, i);
+            if (entry.isStatutoryHoliday()) setBit(statutoryBits, i);
+            if (entry.isAdjustedWorkday()) setBit(adjustedBits, i);
+        }
+    }
+
     private int[] buildWorkdayPrefix() {
         int[] prefix = new int[dayCount + 1];
         for (int i = 0; i < dayCount; i++) {
-            prefix[i + 1] = prefix[i] + (dayInfos[i].isWorkday() ? 1 : 0);
+            prefix[i + 1] = prefix[i] + (getBit(workdayBits, i) ? 1 : 0);
         }
         return prefix;
     }
@@ -245,7 +294,7 @@ public final class HdayBundle {
         int[] indexes = new int[dayCount];
         int next = -1;
         for (int i = dayCount - 1; i >= 0; i--) {
-            if (dayInfos[i].isStatutoryHoliday()) {
+            if (getBit(statutoryBits, i)) {
                 next = i;
             }
             indexes[i] = next;
@@ -253,9 +302,9 @@ public final class HdayBundle {
         return indexes;
     }
 
-    private LunarInfo resolveLunarInfo(LocalDate date) {
+    private LunarInfo[] resolveLunarYear() {
         try {
-            return LunarCalendar.solarToLunar(date);
+            return LunarCalendar.solarYearToLunar(year);
         } catch (IllegalArgumentException ex) {
             return null;
         }
@@ -289,10 +338,16 @@ public final class HdayBundle {
                 lunar.getShengXiao());
     }
 
-    private Map<String, List<String>> resolveNames(int listIndex) {
-        if (listIndex == NO_INDEX || nameLists == null || listIndex >= nameLists.length) {
+    private static Map<String, List<String>> resolveNames(
+            int listIndex,
+            String[] strings,
+            int[][][] nameLists,
+            Map<String, List<String>>[] cache) {
+        if (listIndex == NO_INDEX || listIndex >= nameLists.length) {
             return Collections.emptyMap();
         }
+        Map<String, List<String>> cached = cache[listIndex];
+        if (cached != null) return cached;
         int[][] pairs = nameLists[listIndex];
         Map<String, List<String>> result = new LinkedHashMap<>();
         for (int[] pair : pairs) {
@@ -313,15 +368,23 @@ public final class HdayBundle {
             list.add(value);
         }
         if (result.isEmpty()) {
-            return Collections.emptyMap();
+            cache[listIndex] = Collections.emptyMap();
+        } else {
+            cache[listIndex] = result;
         }
-        return result;
+        return cache[listIndex];
     }
 
-    private List<String> resolveLabels(int listIndex) {
-        if (listIndex == NO_INDEX || nameLists == null || listIndex >= nameLists.length) {
+    private static List<String> resolveLabels(
+            int listIndex,
+            String[] strings,
+            int[][][] nameLists,
+            List<String>[] cache) {
+        if (listIndex == NO_INDEX || listIndex >= nameLists.length) {
             return Collections.emptyList();
         }
+        List<String> cached = cache[listIndex];
+        if (cached != null) return cached;
         int[][] pairs = nameLists[listIndex];
         List<String> result = new ArrayList<>();
         for (int[] pair : pairs) {
@@ -336,9 +399,19 @@ public final class HdayBundle {
             result.add(strings[valIdx]);
         }
         if (result.isEmpty()) {
-            return Collections.emptyList();
+            cache[listIndex] = Collections.emptyList();
+        } else {
+            cache[listIndex] = result;
         }
-        return result;
+        return cache[listIndex];
+    }
+
+    private static void setBit(long[] words, int index) {
+        words[index >>> 6] |= 1L << (index & 63);
+    }
+
+    private static boolean getBit(long[] words, int index) {
+        return (words[index >>> 6] & (1L << (index & 63))) != 0;
     }
 
     /**
@@ -356,13 +429,11 @@ public final class HdayBundle {
         final int flags;
         final int nameListIndex;
         final int labelListIndex;
-        final int extIndex;
 
-        DayEntry(int flags, int nameListIndex, int labelListIndex, int extIndex) {
+        DayEntry(int flags, int nameListIndex, int labelListIndex) {
             this.flags = flags;
             this.nameListIndex = nameListIndex;
             this.labelListIndex = labelListIndex;
-            this.extIndex = extIndex;
         }
 
         boolean isHoliday() { return (flags & FLAG_IS_HOLIDAY) != 0; }

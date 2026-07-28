@@ -4,10 +4,11 @@
  * 作为 SDK 的主入口，负责 bundle 加载、解析缓存、并发去重和查询编排。
  */
 
-import type { DayInfo } from '@holiday/spec';
+import type { DayInfo, Manifest } from '@holiday/spec';
+import { installCalendarAsset } from '@holiday/lunar';
 
 import type { HdayBundle } from './hday-parser.js';
-import { parseHdayBundle } from './hday-parser.js';
+import { HdayFormatError, parseHdayBundle } from './hday-parser.js';
 import { LRUCache } from './lru-cache.js';
 import {
   countBundleWorkdays,
@@ -34,6 +35,10 @@ export interface HolidayServiceOptions {
   dataPath?: string;
   /** 预加载 bundle，key 形如 `CN-2026`。 */
   preloadedBundles?: Map<string, ArrayBuffer>;
+  /** 可选发布 manifest；提供后只允许其中声明的 bundle，并验证 SHA-256。 */
+  manifest?: Manifest;
+  /** 可替换的通用 `calendar.cdat`；构建服务时同步校验并安装。 */
+  calendarData?: ArrayBuffer;
   /** 已解析 bundle 的 LRU 缓存上限。 */
   maxCacheSize?: number;
 }
@@ -56,6 +61,7 @@ export interface HolidayService {
 }
 
 const DEFAULT_CACHE_SIZE = 32;
+const REGION_CODE = /^[A-Z]{2}(?:-[A-Z0-9]{1,8})*$/;
 
 function cacheKey(region: string, year: number): string {
   return `${region}-${year}`;
@@ -65,13 +71,18 @@ class HolidayServiceImpl implements HolidayService {
   private readonly defaultRegion: string;
   private readonly dataPath: string | undefined;
   private readonly preloaded: Map<string, ArrayBuffer>;
+  private readonly manifest: Manifest | undefined;
   private readonly cache: LRUCache<string, HdayBundle>;
   private readonly loadingBundles: Map<string, Promise<HdayBundle>>;
 
   constructor(options: HolidayServiceOptions = {}) {
+    if (options.calendarData) {
+      installCalendarAsset(options.calendarData);
+    }
     this.defaultRegion = options.defaultRegion ?? 'CN';
     this.dataPath = options.dataPath;
     this.preloaded = options.preloadedBundles ?? new Map();
+    this.manifest = options.manifest;
     this.cache = new LRUCache<string, HdayBundle>(
       options.maxCacheSize ?? DEFAULT_CACHE_SIZE,
     );
@@ -82,6 +93,13 @@ class HolidayServiceImpl implements HolidayService {
    * 读取并解析指定地区/年份的 bundle。
    */
   private async getBundle(region: string, year: number): Promise<HdayBundle> {
+    if (!REGION_CODE.test(region) || !Number.isInteger(year)
+        || year < 1 || year > 9999) {
+      throw new RangeError(`不支持的地区或年份: ${region}/${year}`);
+    }
+    if (this.manifest && !this.manifest.bundles[region]?.[String(year)]) {
+      throw new RangeError(`manifest 未声明数据包: ${region}/${year}`);
+    }
     const key = cacheKey(region, year);
     const cached = this.cache.get(key);
     if (cached) {
@@ -111,6 +129,7 @@ class HolidayServiceImpl implements HolidayService {
 
     const preloaded = this.preloaded.get(key);
     if (preloaded) {
+      await this.verifyManifestHash(region, year, preloaded);
       return parseHdayBundle(preloaded);
     }
 
@@ -120,7 +139,24 @@ class HolidayServiceImpl implements HolidayService {
       );
     }
 
-    return parseHdayBundle(await this.loadFromDataPath(region, year));
+    const data = await this.loadFromDataPath(region, year);
+    await this.verifyManifestHash(region, year, data);
+    return parseHdayBundle(data);
+  }
+
+  private async verifyManifestHash(
+    region: string,
+    year: number,
+    data: ArrayBuffer,
+  ): Promise<void> {
+    const expected = this.manifest?.bundles[region]?.[String(year)]?.sha256;
+    if (!expected) return;
+    const actual = await sha256Hex(data);
+    if (actual !== expected.toLowerCase()) {
+      throw new Error(
+        `SHA-256 校验失败 ${region}/${year}: expected=${expected}, actual=${actual}`,
+      );
+    }
   }
 
   /**
@@ -175,13 +211,17 @@ class HolidayServiceImpl implements HolidayService {
   }
 
   async isHoliday(date: string, regionCode?: string): Promise<boolean> {
-    const info = await this.getDayInfo(date, regionCode);
-    return info?.isHoliday ?? false;
+    const region = regionCode ?? this.defaultRegion;
+    const [year, month, day] = parseDate(date);
+    const bundle = await this.getBundle(region, year);
+    return hasBit(bundle.days.holidayBits, dayOfYear(year, month, day));
   }
 
   async isWorkday(date: string, regionCode?: string): Promise<boolean> {
-    const info = await this.getDayInfo(date, regionCode);
-    return info?.isWorkday ?? false;
+    const region = regionCode ?? this.defaultRegion;
+    const [year, month, day] = parseDate(date);
+    const bundle = await this.getBundle(region, year);
+    return hasBit(bundle.days.workdayBits, dayOfYear(year, month, day));
   }
 
   async getRange(
@@ -272,12 +312,43 @@ class HolidayServiceImpl implements HolidayService {
     try {
       const nextBundle = await this.getBundle(region, year + 1);
       return findBundleStatutoryHoliday(nextBundle, 0);
-    } catch {
+    } catch (error) {
+      if (error instanceof HdayFormatError) throw error;
       // 下一年没有数据
     }
 
     return null;
   }
+}
+
+function hasBit(words: Uint32Array, index: number): boolean {
+  return (words[index >>> 5] & (1 << (index & 31))) !== 0;
+}
+
+async function sha256Hex(data: ArrayBuffer): Promise<string> {
+  const browserCrypto = (
+    globalThis as unknown as {
+      crypto?: { subtle?: { digest(
+        algorithm: string,
+        input: ArrayBuffer,
+      ): Promise<ArrayBuffer> } };
+    }
+  ).crypto;
+  if (browserCrypto?.subtle) {
+    const digest = await browserCrypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(digest)]
+      .map((value) => value.toString(16).padStart(2, '0'))
+      .join('');
+  }
+  const cryptoModule = 'node:crypto';
+  const crypto = await import(/* webpackIgnore: true */ cryptoModule) as {
+    createHash(name: string): {
+      update(value: Uint8Array): { digest(encoding: 'hex'): string };
+    };
+  };
+  return crypto.createHash('sha256')
+    .update(new Uint8Array(data))
+    .digest('hex');
 }
 
 /**

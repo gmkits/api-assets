@@ -4,42 +4,23 @@
 
 import type { MaterializedYearData, MultiLangNames } from '@holiday/spec';
 import {
-  DAY_FLAGS,
+  DAY_OVERRIDE_STATES,
+  HDAY_DAY_OVERRIDE_SIZE,
+  HDAY_VERSION_MAJOR,
+  HDAY_VERSION_MINOR,
+  META_KEYS,
+  SECTION_FLAGS,
   SECTION_TYPES,
   CALENDAR_SYSTEM_CODES,
   HDAY_MAGIC,
   HDAY_HEADER_SIZE,
   HDAY_SECTION_ENTRY_SIZE,
-  HDAY_DAY_ENTRY_SIZE,
   NO_INDEX,
+  crc32,
 } from '@holiday/spec';
 import { getDaysInYear, indexToDate } from './materializer.js';
 
-// --- CRC32 ---
-
-/** Standard CRC32 lookup table (polynomial 0xEDB88320). */
-const CRC32_TABLE = new Uint32Array(256);
-for (let i = 0; i < 256; i++) {
-  let c = i;
-  for (let j = 0; j < 8; j++) {
-    c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
-  }
-  CRC32_TABLE[i] = c;
-}
-
-/**
- * Compute CRC32 checksum for a buffer.
- *
- * @param buf - The data to checksum
- * @returns The CRC32 value as an unsigned 32-bit integer
- */
-export function crc32(buf: Buffer): number {
-  let crc = 0xFFFFFFFF;
-  for (let i = 0; i < buf.length; i++) {
-    crc = CRC32_TABLE[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
-  }
-  return (crc ^ 0xFFFFFFFF) >>> 0;
-}
+export { crc32 };
 
 // --- String Table Builder ---
 
@@ -167,13 +148,9 @@ function buildLabelPairs(
 /**
  * Compile MaterializedYearData into an .hday binary buffer.
  *
- * Binary layout:
- * 1. Header (32 bytes)
- * 2. Section table (3 entries × 8 bytes = 24 bytes)
- * 3. DAY_TABLE section
- * 4. STRING_TABLE section
- * 5. NAME_LIST_TABLE section
- * 6. CRC32 checksum (4 bytes)
+ * The v2 format stores only dates that differ from the normal weekday/weekend
+ * calendar or carry annotations. This keeps each year independently
+ * replaceable without paying eight bytes for every ordinary date.
  *
  * @param data - The materialized year data to compile
  * @returns A Buffer containing the .hday binary
@@ -189,141 +166,168 @@ export function compile(data: MaterializedYearData): Buffer {
   const year = meta.year;
   const totalDays = getDaysInYear(year);
   const numSections = 4;
+  const regionBuf = Buffer.from(meta.regionCode, 'utf8');
+  if (regionBuf.length === 0 || regionBuf.length > 16) {
+    throw new RangeError(
+      `regionCode 的 UTF-8 长度必须为 1-16 字节，实际 ${regionBuf.length}`,
+    );
+  }
 
   const strTable = new StringTableBuilder();
   const nameListTable = new NameListTableBuilder();
 
-  // Pre-process all days to build string table and name list table
-  interface DayEntry {
-    flags: number;
+  interface DayOverride {
+    dayIndex: number;
+    state: number;
     nameListIdx: number;
     labelListIdx: number;
   }
-  const dayEntries: DayEntry[] = [];
+  const overrides: DayOverride[] = [];
 
   for (let i = 0; i < totalDays; i++) {
     const dateStr = indexToDate(year, i);
     const day = days[dateStr];
 
     if (!day) {
-      dayEntries.push({ flags: DAY_FLAGS.IS_WORKDAY, nameListIdx: NO_INDEX, labelListIdx: NO_INDEX });
       continue;
     }
 
-    let flags = 0;
-    if (day.isHoliday) flags |= DAY_FLAGS.IS_HOLIDAY;
-    if (day.isWorkday) flags |= DAY_FLAGS.IS_WORKDAY;
-    if (day.isWeekend) flags |= DAY_FLAGS.IS_WEEKEND;
-    if (day.isStatutoryHoliday) flags |= DAY_FLAGS.IS_STATUTORY_HOLIDAY;
-    if (day.isAdjustedWorkday) flags |= DAY_FLAGS.IS_ADJUSTED_WORKDAY;
-
-    // Build name list
     let nameListIdx = NO_INDEX;
     const namePairs = buildNamePairs(day.holidayNames, strTable);
     if (namePairs.length > 0) {
-      flags |= DAY_FLAGS.HAS_NAME;
       nameListIdx = nameListTable.add(namePairs);
     }
 
-    // Build label list
     let labelListIdx = NO_INDEX;
     if (day.labels.length > 0) {
-      flags |= DAY_FLAGS.HAS_LABEL;
       const labelPairs = buildLabelPairs(day.labels, strTable);
       labelListIdx = nameListTable.add(labelPairs);
     }
 
-    dayEntries.push({ flags, nameListIdx, labelListIdx });
+    const dayOfWeek = new Date(`${dateStr}T00:00:00Z`).getUTCDay();
+    const defaultWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const differsFromDefault =
+      day.isHoliday !== defaultWeekend
+      || day.isWorkday === defaultWeekend
+      || day.isStatutoryHoliday
+      || day.isAdjustedWorkday
+      || nameListIdx !== NO_INDEX
+      || labelListIdx !== NO_INDEX;
+    if (!differsFromDefault) continue;
+
+    if (day.isHoliday === day.isWorkday) {
+      throw new Error(`${dateStr} 的 isHoliday/isWorkday 必须互斥且恰有一个为 true`);
+    }
+    if (day.isStatutoryHoliday && !day.isHoliday) {
+      throw new Error(`${dateStr} 的法定节假日必须同时是休息日`);
+    }
+    if (day.isAdjustedWorkday && !day.isWorkday) {
+      throw new Error(`${dateStr} 的调休补班必须同时是工作日`);
+    }
+
+    let state = day.isHoliday
+      ? DAY_OVERRIDE_STATES.FORCE_HOLIDAY
+      : DAY_OVERRIDE_STATES.FORCE_WORKDAY;
+    if (day.isStatutoryHoliday) {
+      state |= DAY_OVERRIDE_STATES.STATUTORY_HOLIDAY;
+    }
+    if (day.isAdjustedWorkday) {
+      state |= DAY_OVERRIDE_STATES.ADJUSTED_WORKDAY;
+    }
+    overrides.push({ dayIndex: i, state, nameListIdx, labelListIdx });
   }
 
-  // Serialize sections
-  const dayTableBuf = Buffer.alloc(totalDays * HDAY_DAY_ENTRY_SIZE);
-  for (let i = 0; i < totalDays; i++) {
-    const entry = dayEntries[i];
-    const offset = i * HDAY_DAY_ENTRY_SIZE;
-    dayTableBuf.writeUInt16LE(entry.flags, offset);        // bytes 0-1: flags
-    dayTableBuf.writeUInt16LE(entry.nameListIdx, offset + 2); // bytes 2-3: name list index
-    dayTableBuf.writeUInt16LE(entry.labelListIdx, offset + 4); // bytes 4-5: label list index
-    dayTableBuf.writeUInt16LE(0, offset + 6);                  // bytes 6-7: reserved
+  if (overrides.length > NO_INDEX) {
+    throw new RangeError(`单年 override 数量超过 u16：${overrides.length}`);
+  }
+  const dayOverridesBuf = Buffer.alloc(2 + overrides.length * HDAY_DAY_OVERRIDE_SIZE);
+  dayOverridesBuf.writeUInt16LE(overrides.length, 0);
+  for (let i = 0; i < overrides.length; i++) {
+    const entry = overrides[i];
+    const offset = 2 + i * HDAY_DAY_OVERRIDE_SIZE;
+    dayOverridesBuf.writeUInt16LE(entry.dayIndex, offset);
+    dayOverridesBuf.writeUInt8(entry.state, offset + 2);
+    dayOverridesBuf.writeUInt8(0, offset + 3);
+    dayOverridesBuf.writeUInt16LE(entry.nameListIdx, offset + 4);
+    dayOverridesBuf.writeUInt16LE(entry.labelListIdx, offset + 6);
   }
 
+  const metaPairs = [
+    [META_KEYS.SPEC_VERSION, strTable.add(meta.specVersion)],
+    [META_KEYS.SOURCE_VERSION, strTable.add(meta.sourceVersion)],
+    [META_KEYS.GENERATED_AT, strTable.add(meta.generatedAt)],
+  ] as const;
   const strTableBuf = strTable.serialize();
   const nameListTableBuf = nameListTable.serialize();
-  const extJson = Buffer.from(JSON.stringify({
-    specVersion: meta.specVersion,
-    sourceVersion: meta.sourceVersion,
-    generatedAt: meta.generatedAt,
-  }), 'utf8');
-  const extJsonBuf = Buffer.alloc(4 + extJson.length);
-  extJsonBuf.writeUInt32LE(extJson.length, 0);
-  extJson.copy(extJsonBuf, 4);
+  const metaTableBuf = Buffer.alloc(2 + metaPairs.length * 4);
+  metaTableBuf.writeUInt16LE(metaPairs.length, 0);
+  for (let i = 0; i < metaPairs.length; i++) {
+    metaTableBuf.writeUInt16LE(metaPairs[i][0], 2 + i * 4);
+    metaTableBuf.writeUInt16LE(metaPairs[i][1], 4 + i * 4);
+  }
 
-  // Calculate offsets
   const sectionTableOffset = HDAY_HEADER_SIZE;
   const sectionTableSize = numSections * HDAY_SECTION_ENTRY_SIZE;
   const dataStart = sectionTableOffset + sectionTableSize;
-
-  const dayTableOffset = dataStart;
-  const strTableOffset = dayTableOffset + dayTableBuf.length;
+  const dayOverridesOffset = dataStart;
+  const strTableOffset = dayOverridesOffset + dayOverridesBuf.length;
   const nameListTableOffset = strTableOffset + strTableBuf.length;
-  const extJsonOffset = nameListTableOffset + nameListTableBuf.length;
-  const crcOffset = extJsonOffset + extJsonBuf.length;
-  const totalSize = crcOffset + 4; // +4 for CRC32
+  const metaTableOffset = nameListTableOffset + nameListTableBuf.length;
+  const crcOffset = metaTableOffset + metaTableBuf.length;
+  const totalSize = crcOffset + 4;
 
-  // Build the complete buffer
   const buf = Buffer.alloc(totalSize);
-
-  // --- Header (32 bytes) ---
-  // Bytes 0-3: Magic "HDAY"
   buf.write(HDAY_MAGIC, 0, 4, 'ascii');
-  // Byte 4: Major version
-  buf.writeUInt8(1, 4);
-  // Byte 5: Minor version
-  buf.writeUInt8(0, 5);
-  // Bytes 6-7: Flags (reserved)
+  buf.writeUInt8(HDAY_VERSION_MAJOR, 4);
+  buf.writeUInt8(HDAY_VERSION_MINOR, 5);
   buf.writeUInt16LE(0, 6);
-  // Bytes 8-9: Year
   buf.writeUInt16LE(year, 8);
-  // Byte 10: Region code length
-  const regionBuf = Buffer.from(meta.regionCode, 'utf-8');
   buf.writeUInt8(regionBuf.length, 10);
-  // Bytes 11-26: Region code (16 bytes, zero-padded)
-  regionBuf.copy(buf, 11, 0, Math.min(regionBuf.length, 16));
-  // Byte 27: Calendar system
+  regionBuf.copy(buf, 11);
   buf.writeUInt8(CALENDAR_SYSTEM_CODES[meta.calendarSystem] ?? 0, 27);
-  // Bytes 28-29: Day count
   buf.writeUInt16LE(totalDays, 28);
-  // Bytes 30-31: Section count
   buf.writeUInt16LE(numSections, 30);
 
-  // --- Section Table (type:u16 + offset:u32 + length:u16 = 8B per entry) ---
-  // Entry 0: DAY_TABLE
-  buf.writeUInt16LE(SECTION_TYPES.DAY_TABLE, sectionTableOffset);
-  buf.writeUInt32LE(dayTableOffset, sectionTableOffset + 2);
-  buf.writeUInt16LE(dayTableBuf.length, sectionTableOffset + 6);
+  const sections = [
+    {
+      type: SECTION_TYPES.DAY_OVERRIDES,
+      flags: SECTION_FLAGS.CRITICAL,
+      offset: dayOverridesOffset,
+      length: dayOverridesBuf.length,
+    },
+    {
+      type: SECTION_TYPES.STRING_TABLE,
+      flags: SECTION_FLAGS.CRITICAL,
+      offset: strTableOffset,
+      length: strTableBuf.length,
+    },
+    {
+      type: SECTION_TYPES.NAME_LIST_TABLE,
+      flags: SECTION_FLAGS.CRITICAL,
+      offset: nameListTableOffset,
+      length: nameListTableBuf.length,
+    },
+    {
+      type: SECTION_TYPES.META_TABLE,
+      flags: 0,
+      offset: metaTableOffset,
+      length: metaTableBuf.length,
+    },
+  ];
+  for (let i = 0; i < sections.length; i++) {
+    const entryOffset = sectionTableOffset + i * HDAY_SECTION_ENTRY_SIZE;
+    const section = sections[i];
+    buf.writeUInt16LE(section.type, entryOffset);
+    buf.writeUInt16LE(section.flags, entryOffset + 2);
+    buf.writeUInt32LE(section.offset, entryOffset + 4);
+    buf.writeUInt32LE(section.length, entryOffset + 8);
+  }
 
-  // Entry 1: STRING_TABLE
-  buf.writeUInt16LE(SECTION_TYPES.STRING_TABLE, sectionTableOffset + 8);
-  buf.writeUInt32LE(strTableOffset, sectionTableOffset + 10);
-  buf.writeUInt16LE(strTableBuf.length, sectionTableOffset + 14);
-
-  // Entry 2: NAME_LIST_TABLE
-  buf.writeUInt16LE(SECTION_TYPES.NAME_LIST_TABLE, sectionTableOffset + 16);
-  buf.writeUInt32LE(nameListTableOffset, sectionTableOffset + 18);
-  buf.writeUInt16LE(nameListTableBuf.length, sectionTableOffset + 22);
-
-  // Entry 3: EXT_JSON（仅存放重建与审计需要的最小元数据）
-  buf.writeUInt16LE(SECTION_TYPES.EXT_JSON, sectionTableOffset + 24);
-  buf.writeUInt32LE(extJsonOffset, sectionTableOffset + 26);
-  buf.writeUInt16LE(extJsonBuf.length, sectionTableOffset + 30);
-
-  // --- Data sections ---
-  dayTableBuf.copy(buf, dayTableOffset);
+  dayOverridesBuf.copy(buf, dayOverridesOffset);
   strTableBuf.copy(buf, strTableOffset);
   nameListTableBuf.copy(buf, nameListTableOffset);
-  extJsonBuf.copy(buf, extJsonOffset);
+  metaTableBuf.copy(buf, metaTableOffset);
 
-  // --- CRC32 over everything before the CRC field ---
   const checksum = crc32(buf.subarray(0, crcOffset));
   buf.writeUInt32LE(checksum, crcOffset);
 

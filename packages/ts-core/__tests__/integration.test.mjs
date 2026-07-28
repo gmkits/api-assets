@@ -4,7 +4,15 @@ import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseHdayBundle, queryDay, queryYear, queryRange, dayOfYear } from '../dist/esm/index.js';
+import {
+  HdayFormatError,
+  parseHdayBundle,
+  queryDay,
+  queryYear,
+  queryRange,
+  dayOfYear,
+} from '../dist/esm/index.js';
+import { crc32 } from '../../ts-spec/dist/esm/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BUNDLE_2025 = resolve(__dirname, '../../../data/bundles/CN/2025.hday');
@@ -17,6 +25,18 @@ let bundle2026 = null;
 /** Convert a Node.js Buffer to an ArrayBuffer suitable for parseHdayBundle. */
 function toArrayBuffer(buf) {
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+}
+
+function refreshCrc(buf) {
+  buf.writeUInt32LE(crc32(buf.subarray(0, -4)), buf.length - 4);
+  return buf;
+}
+
+function assertFormatCode(buf, code) {
+  assert.throws(
+    () => parseHdayBundle(toArrayBuffer(buf)),
+    (error) => error instanceof HdayFormatError && error.code === code,
+  );
 }
 
 async function loadBundle(path) {
@@ -36,7 +56,7 @@ describe('parseHdayBundle — CN 2025', () => {
   it('should parse header correctly', () => {
     assert.ok(bundle2025, 'Bundle 2025 must be available');
     assert.equal(bundle2025.header.magic, 'HDAY');
-    assert.equal(bundle2025.header.majorVersion, 1);
+    assert.equal(bundle2025.header.majorVersion, 2);
     assert.equal(bundle2025.header.year, 2025);
     assert.equal(bundle2025.header.regionCode, 'CN');
     assert.equal(bundle2025.header.dayCount, 365);
@@ -47,14 +67,17 @@ describe('parseHdayBundle — CN 2025', () => {
     assert.equal(bundle2025.days.length, 365);
   });
 
-  it('should have non-empty string table', () => {
+  it('should retain resolved names instead of the raw string table', () => {
     assert.ok(bundle2025);
-    assert.ok(bundle2025.strings.length > 0);
+    assert.ok(bundle2025.names.length > 0);
+    assert.equal('strings' in bundle2025, false);
   });
 
-  it('should have non-empty name lists', () => {
+  it('should use typed status and annotation arrays', () => {
     assert.ok(bundle2025);
-    assert.ok(bundle2025.nameLists.length > 0);
+    assert.ok(bundle2025.days.holidayBits instanceof Uint32Array);
+    assert.ok(bundle2025.days.nameListIndexes instanceof Int16Array);
+    assert.equal('nameLists' in bundle2025, false);
   });
 });
 
@@ -277,12 +300,82 @@ describe('parseHdayBundle — error cases', () => {
   });
 
   it('should throw on wrong magic', () => {
-    const buf = new ArrayBuffer(32);
+    const buf = new ArrayBuffer(36);
     const view = new DataView(buf);
     view.setUint8(0, 0x42); // 'B'
     view.setUint8(1, 0x41); // 'A'
     view.setUint8(2, 0x44); // 'D'
     view.setUint8(3, 0x21); // '!'
-      assert.throws(() => parseHdayBundle(buf), /魔数/i);
+    assert.throws(() => parseHdayBundle(buf), /魔数/i);
+  });
+
+  it('should reject CRC corruption', async () => {
+    const buf = await readFile(BUNDLE_2025);
+    buf[buf.length - 5] ^= 0x01;
+    assertFormatCode(buf, 'BAD_CRC');
+  });
+
+  it('should reject unsupported major versions before CRC validation', async () => {
+    const buf = await readFile(BUNDLE_2025);
+    buf[4] = 3;
+    assertFormatCode(buf, 'UNSUPPORTED_VERSION');
+  });
+
+  it('should reject malformed UTF-8 and non-zero region padding', async () => {
+    const malformed = await readFile(BUNDLE_2025);
+    malformed[11] = 0xc3;
+    malformed[12] = 0x28;
+    assertFormatCode(refreshCrc(malformed), 'BAD_UTF8');
+
+    const padding = await readFile(BUNDLE_2025);
+    padding[13] = 1;
+    assertFormatCode(refreshCrc(padding), 'BAD_HEADER');
+  });
+
+  it('should reject a wrong leap-year day count', async () => {
+    const buf = await readFile(BUNDLE_2025);
+    buf.writeUInt16LE(366, 28);
+    assertFormatCode(refreshCrc(buf), 'BAD_HEADER');
+  });
+
+  it('should reject duplicate and overlapping sections', async () => {
+    const duplicate = await readFile(BUNDLE_2025);
+    duplicate.writeUInt16LE(1, 68);
+    assertFormatCode(refreshCrc(duplicate), 'BAD_SECTION_TABLE');
+
+    const overlapping = await readFile(BUNDLE_2025);
+    overlapping.writeUInt32LE(overlapping.readUInt32LE(36), 72);
+    assertFormatCode(refreshCrc(overlapping), 'BAD_SECTION_TABLE');
+  });
+
+  it('should reject unknown critical sections and skip unknown optional ones', async () => {
+    const critical = await readFile(BUNDLE_2025);
+    critical.writeUInt16LE(0x7ffe, 68);
+    critical.writeUInt16LE(1, 70);
+    assertFormatCode(refreshCrc(critical), 'UNKNOWN_CRITICAL_SECTION');
+
+    const optional = await readFile(BUNDLE_2025);
+    optional.writeUInt16LE(0x7ffe, 68);
+    optional.writeUInt16LE(0, 70);
+    const bundle = parseHdayBundle(toArrayBuffer(refreshCrc(optional)));
+    assert.equal(bundle.header.year, 2025);
+    assert.deepEqual(bundle.metadata, {});
+  });
+
+  it('should reject illegal override indexes and state combinations', async () => {
+    const badDay = await readFile(BUNDLE_2025);
+    const daySectionOffset = badDay.readUInt32LE(36);
+    badDay.writeUInt16LE(365, daySectionOffset + 2);
+    assertFormatCode(refreshCrc(badDay), 'BAD_DAY_OVERRIDE');
+
+    const badState = await readFile(BUNDLE_2025);
+    const overrideOffset = badState.readUInt32LE(36);
+    badState[overrideOffset + 4] = 0x03;
+    assertFormatCode(refreshCrc(badState), 'BAD_DAY_OVERRIDE');
+
+    const badIndex = await readFile(BUNDLE_2025);
+    const firstOverride = badIndex.readUInt32LE(36);
+    badIndex.writeUInt16LE(0xfffe, firstOverride + 6);
+    assertFormatCode(refreshCrc(badIndex), 'BAD_INDEX');
   });
 });

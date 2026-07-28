@@ -1,65 +1,49 @@
 import type { SolarTermInfo } from '@holiday/spec';
-import { isLeapYear } from '@holiday/spec';
-
-import {
-  SOLAR_TERM_DAY_INDEXES_BY_YEAR,
-  SOLAR_TERM_END_YEAR,
-  SOLAR_TERM_NAMES,
-  SOLAR_TERM_NAMES_ZH_TW,
-  SOLAR_TERM_START_YEAR,
-} from './generated/solar-term-data.js';
+import { getSolarTerm } from '@holiday/lunar';
 
 type ChineseLocale = 'zh-CN' | 'zh-TW';
 
-const YEAR_COUNT = SOLAR_TERM_END_YEAR - SOLAR_TERM_START_YEAR + 1;
-const INFOS_BY_LOCALE = new Map<string, ReadonlyArray<SolarTermInfo>>();
+const SOLAR_TERM_NAMES_ZH_TW: readonly string[] = [
+  '小寒', '大寒', '立春', '雨水', '驚蟄', '春分',
+  '清明', '穀雨', '立夏', '小滿', '芒種', '夏至',
+  '小暑', '大暑', '立秋', '處暑', '白露', '秋分',
+  '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
+];
+const SOLAR_TERM_NAMES_ZH_CN: readonly string[] = [
+  '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
+  '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
+  '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
+  '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
+];
 
-function getInfos(locale: ChineseLocale): ReadonlyArray<SolarTermInfo> {
-  let infos = INFOS_BY_LOCALE.get(locale);
-  if (!infos) {
-    const names = locale === 'zh-TW' ? SOLAR_TERM_NAMES_ZH_TW : SOLAR_TERM_NAMES;
-    infos = names.map((name, index) => ({ index, name }));
-    INFOS_BY_LOCALE.set(locale, infos);
+const INFOS = new Map<ChineseLocale, ReadonlyArray<SolarTermInfo>>();
+
+function infos(locale: ChineseLocale): ReadonlyArray<SolarTermInfo> {
+  let values = INFOS.get(locale);
+  if (!values) {
+    const names = locale === 'zh-TW'
+      ? SOLAR_TERM_NAMES_ZH_TW
+      : SOLAR_TERM_NAMES_ZH_CN;
+    values = names.map((name, index) => Object.freeze({ index, name }));
+    INFOS.set(locale, values);
   }
-  return infos;
+  return values;
 }
 
-// Flat buffer: 366 bytes per year × 200 years = 73,200 bytes single allocation.
-// Year offsets stored separately for O(1) lookup without cumulative sum.
-const YEAR_OFFSETS = new Uint32Array(YEAR_COUNT);
-const FLAT_LOOKUP = buildFlatLookup();
-
-function buildFlatLookup(): Uint8Array {
-  // Pre-calculate total size & year offsets
-  let total = 0;
-  for (let i = 0; i < YEAR_COUNT; i++) {
-    YEAR_OFFSETS[i] = total;
-    total += isLeapYear(SOLAR_TERM_START_YEAR + i) ? 366 : 365;
-  }
-
-  // 0xFF = no solar term (sentinel)
-  const buf = new Uint8Array(total);
-  buf.fill(0xFF);
-
-  for (let i = 0; i < YEAR_COUNT; i++) {
-    const off = YEAR_OFFSETS[i];
-    const dayIndexes = SOLAR_TERM_DAY_INDEXES_BY_YEAR[i];
-    for (let j = 0; j < dayIndexes.length; j++) {
-      buf[off + dayIndexes[j]] = j;
-    }
-  }
-  return buf;
-}
-
+/** Decode only the two possible terms in the requested month. */
 export function lookupSolarTerm(
   year: number,
   dayIndex: number,
   locale: ChineseLocale = 'zh-CN',
 ): SolarTermInfo | null {
-  const yi = year - SOLAR_TERM_START_YEAR;
-  if (yi < 0 || yi >= YEAR_COUNT) return null;
-  const dayCount = isLeapYear(year) ? 366 : 365;
-  if (dayIndex < 0 || dayIndex >= dayCount) return null;
-  const idx = FLAT_LOOKUP[YEAR_OFFSETS[yi] + dayIndex];
-  return idx === 0xFF ? null : getInfos(locale)[idx];
+  if (year < 1901 || year > 2100) return null;
+  const date = new Date(Date.UTC(year, 0, dayIndex + 1));
+  if (date.getUTCFullYear() !== year) return null;
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const name = getSolarTerm(year, month, day);
+  if (!name) return null;
+  const first = (month - 1) * 2;
+  const index = SOLAR_TERM_NAMES_ZH_CN[first] === name ? first : first + 1;
+  return infos(locale)[index];
 }

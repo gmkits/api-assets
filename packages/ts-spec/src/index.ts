@@ -65,34 +65,13 @@ export const DAY_FLAGS = {
   HAS_LABEL: 1 << 6,
 } as const;
 
-/** `.hday` 二进制格式中的 section 类型编码。 */
-export const SECTION_TYPES = {
-  DAY_TABLE: 0x0001,
-  STRING_TABLE: 0x0002,
-  NAME_LIST_TABLE: 0x0003,
-  EXT_JSON: 0x0004,
-} as const;
-
 /** `.hday` 二进制格式中的历法数值编码。 */
 export const CALENDAR_SYSTEM_CODES: Record<CalendarSystem, number> = {
   GREGORIAN: 0x00,
   CHINESE_LUNAR: 0x01,
 };
 
-/** `.hday` 文件魔数。 */
-export const HDAY_MAGIC = 'HDAY';
-
-/** `.hday` 头部字节长度。 */
-export const HDAY_HEADER_SIZE = 32;
-
-/** `.hday` section 表项字节长度。 */
-export const HDAY_SECTION_ENTRY_SIZE = 8;
-
-/** `.hday` day table 表项字节长度。 */
-export const HDAY_DAY_ENTRY_SIZE = 8;
-
-/** `.hday` 名称/标签/扩展索引中的空值哨兵。 */
-export const NO_INDEX = 0xFFFF;
+export * from './hday-format.js';
 
 // --- DTO ---
 

@@ -4,10 +4,14 @@ import com.github.gmkits.holiday.spec.CalendarSystem;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.zip.CRC32;
 
 import com.github.gmkits.holiday.spec.DayInfo;
 import com.github.gmkits.holiday.spec.SolarTermInfo;
@@ -33,7 +37,7 @@ class HdayReaderTest {
         assertEquals(2025, bundle.getYear());
         assertEquals("CN", bundle.getRegionCode());
         assertEquals(365, bundle.getDayCount());
-        assertEquals(1, bundle.getMajorVersion());
+        assertEquals(2, bundle.getMajorVersion());
     }
 
     @Test
@@ -62,6 +66,84 @@ class HdayReaderTest {
         data[2] = 'D';
         data[3] = '!';
         assertThrows(Exception.class, () -> HdayReader.read(new ByteArrayInputStream(data)));
+    }
+
+    @Test
+    void readBundle_corruption_shouldReturnStableCodes() throws IOException {
+        byte[] crc = bundleBytes();
+        crc[crc.length - 5] ^= 1;
+        assertFormatCode(crc, HdayFormatException.Code.BAD_CRC);
+
+        byte[] version = bundleBytes();
+        version[4] = 3;
+        assertFormatCode(version, HdayFormatException.Code.UNSUPPORTED_VERSION);
+
+        byte[] utf8 = bundleBytes();
+        utf8[11] = (byte) 0xc3;
+        utf8[12] = 0x28;
+        refreshCrc(utf8);
+        assertFormatCode(utf8, HdayFormatException.Code.BAD_UTF8);
+
+        byte[] padding = bundleBytes();
+        padding[13] = 1;
+        refreshCrc(padding);
+        assertFormatCode(padding, HdayFormatException.Code.BAD_HEADER);
+
+        byte[] dayCount = bundleBytes();
+        putShort(dayCount, 28, 366);
+        refreshCrc(dayCount);
+        assertFormatCode(dayCount, HdayFormatException.Code.BAD_HEADER);
+    }
+
+    @Test
+    void readBundle_sectionCorruption_shouldBeRejected() throws IOException {
+        byte[] duplicate = bundleBytes();
+        putShort(duplicate, 68, 1);
+        refreshCrc(duplicate);
+        assertFormatCode(duplicate, HdayFormatException.Code.BAD_SECTION_TABLE);
+
+        byte[] overlap = bundleBytes();
+        putInt(overlap, 72, getInt(overlap, 36));
+        refreshCrc(overlap);
+        assertFormatCode(overlap, HdayFormatException.Code.BAD_SECTION_TABLE);
+
+        byte[] critical = bundleBytes();
+        putShort(critical, 68, 0x7ffe);
+        putShort(critical, 70, 1);
+        refreshCrc(critical);
+        assertFormatCode(
+                critical, HdayFormatException.Code.UNKNOWN_CRITICAL_SECTION);
+    }
+
+    @Test
+    void readBundle_unknownOptionalSection_shouldBeSkipped() throws IOException {
+        byte[] optional = bundleBytes();
+        putShort(optional, 68, 0x7ffe);
+        putShort(optional, 70, 0);
+        refreshCrc(optional);
+        HdayBundle bundle = HdayReader.read(new ByteArrayInputStream(optional));
+        assertEquals(2025, bundle.getYear());
+    }
+
+    @Test
+    void readBundle_invalidOverride_shouldBeRejected() throws IOException {
+        byte[] badDay = bundleBytes();
+        int daySection = getInt(badDay, 36);
+        putShort(badDay, daySection + 2, 365);
+        refreshCrc(badDay);
+        assertFormatCode(badDay, HdayFormatException.Code.BAD_DAY_OVERRIDE);
+
+        byte[] badState = bundleBytes();
+        int stateSection = getInt(badState, 36);
+        badState[stateSection + 4] = 3;
+        refreshCrc(badState);
+        assertFormatCode(badState, HdayFormatException.Code.BAD_DAY_OVERRIDE);
+
+        byte[] badIndex = bundleBytes();
+        int indexSection = getInt(badIndex, 36);
+        putShort(badIndex, indexSection + 6, 0xfffe);
+        refreshCrc(badIndex);
+        assertFormatCode(badIndex, HdayFormatException.Code.BAD_INDEX);
     }
 
     @Test
@@ -147,7 +229,6 @@ class HdayReaderTest {
                         new HdayBundle.DayEntry(
                                 HdayBundle.DayEntry.FLAG_IS_WORKDAY,
                                 HdayBundle.NO_INDEX,
-                                HdayBundle.NO_INDEX,
                                 HdayBundle.NO_INDEX),
                 },
                 new String[0],
@@ -159,5 +240,52 @@ class HdayReaderTest {
         assertTrue(info.isWorkday());
         assertNull(info.getLunar(), "Out-of-range dates should have no lunar date");
         assertNull(info.getGanZhi(), "Out-of-range dates should have no gan-zhi attributes");
+    }
+
+    private byte[] bundleBytes() throws IOException {
+        try (InputStream input = getClass().getClassLoader()
+                .getResourceAsStream("bundles/CN/2025.hday")) {
+            assertNotNull(input);
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] chunk = new byte[1024];
+            int count;
+            while ((count = input.read(chunk)) >= 0) {
+                output.write(chunk, 0, count);
+            }
+            return output.toByteArray();
+        }
+    }
+
+    private static void assertFormatCode(
+            byte[] data,
+            HdayFormatException.Code code) {
+        HdayFormatException error = assertThrows(
+                HdayFormatException.class,
+                () -> HdayReader.read(new ByteArrayInputStream(data)));
+        assertEquals(code, error.getCode());
+    }
+
+    private static void refreshCrc(byte[] data) {
+        CRC32 crc = new CRC32();
+        crc.update(data, 0, data.length - 4);
+        putInt(data, data.length - 4, (int) crc.getValue());
+    }
+
+    private static int getInt(byte[] data, int offset) {
+        return ByteBuffer.wrap(data, offset, 4)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .getInt();
+    }
+
+    private static void putInt(byte[] data, int offset, int value) {
+        ByteBuffer.wrap(data, offset, 4)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(value);
+    }
+
+    private static void putShort(byte[] data, int offset, int value) {
+        ByteBuffer.wrap(data, offset, 2)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putShort((short) value);
     }
 }

@@ -51,7 +51,7 @@ const archivedPapers = {
 };
 
 const solarTerms = new Map(
-  readFileSync(join(root, 'data/date-assets/calendar/solar-terms.csv'), 'utf8')
+  readFileSync(join(root, 'tests/solar-terms.csv'), 'utf8')
     .trim()
     .split(/\r?\n/)
     .slice(1)

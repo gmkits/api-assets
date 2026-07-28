@@ -1,20 +1,13 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "generatedAt": "2026-07-26T15:48:02.846Z",
   "calendar": {
-    "lunarYears": {
-      "path": "calendar/lunar-years.hex",
+    "data": {
+      "path": "calendar/calendar.cdat",
       "startYear": 1900,
       "endYear": 2100,
-      "bytes": 2002,
-      "sha256": "b8888297a21d8f8571ffdb09bde77dfb717418534fc6a97532acf72fe3f6303a"
-    },
-    "solarTerms": {
-      "path": "calendar/solar-terms.csv",
-      "startYear": 1900,
-      "endYear": 2100,
-      "bytes": 99333,
-      "sha256": "7d90e7cf8ddb87d2ab406a293d3b8f574238b724745c5a547155d43667a4ad34"
+      "bytes": 2088,
+      "sha256": "f545188dc5eb39a9160d06806a92f1be9ffa841d6e51fef56f6860b6fc984f5f"
     }
   },
   "holidays": {
@@ -23,8 +16,8 @@
       "path": "holidays/manifest.json",
       "startYear": 2000,
       "endYear": 2026,
-      "bytes": 6597,
-      "sha256": "d98d39f19a903d429e5c226a2e2d51f5de3ae640d8678e432132969b685b8bad"
+      "bytes": 6576,
+      "sha256": "96bc7308d84a13b8c1442aeb5955fea836cf161d3cdfa79ddb87486c339721e0"
     },
     "bundleRoot": "holidays/bundles"
   }

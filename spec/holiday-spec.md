@@ -59,7 +59,7 @@ Java、HTTP、TypeScript 与 JSON Schema 统一使用
 
 - 节假日与调休：2000–2026。
 - 农历转换：1900–2100。
-- 二十四节气：1900–2100。
+- 二十四节气：1901–2100。
 - 2007–2026 为国务院通知逐日交叉核验。
 - 2001–2006 为存档通知级。
 - 2000 为法规和历史日历重建级。
@@ -81,6 +81,6 @@ TypeScript 建立等价的 `Uint16Array` 前缀和和 `Int16Array` 下一法定�
 - Java 编译目标：`--release 8`。
 - JDK 8：classpath。
 - JDK 9+：同一 JAR 可作为自动模块 `com.github.gmkits.holiday`。
-- `.hday`：v1，允许增加未知读取器可跳过的可选 section。
+- `.hday`：只读取 v2；未知可选 section 可跳过，未知关键 section 明确拒绝。
 
 本项目当前处于整合阶段，不承诺兼容已经删除的多套 API 或手写 SDK。

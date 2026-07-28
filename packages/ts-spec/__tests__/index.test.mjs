@@ -8,7 +8,8 @@ import {
   HDAY_MAGIC,
   HDAY_HEADER_SIZE,
   HDAY_SECTION_ENTRY_SIZE,
-  HDAY_DAY_ENTRY_SIZE,
+  HDAY_DAY_OVERRIDE_SIZE,
+  HDAY_VERSION_MAJOR,
   NO_INDEX,
 } from '../dist/esm/index.js';
 
@@ -48,10 +49,10 @@ describe('SECTION_TYPES', () => {
   });
 
   it('should have expected section types', () => {
-    assert.equal(SECTION_TYPES.DAY_TABLE, 0x0001);
+    assert.equal(SECTION_TYPES.DAY_OVERRIDES, 0x0001);
     assert.equal(SECTION_TYPES.STRING_TABLE, 0x0002);
     assert.equal(SECTION_TYPES.NAME_LIST_TABLE, 0x0003);
-    assert.equal(SECTION_TYPES.EXT_JSON, 0x0004);
+    assert.equal(SECTION_TYPES.META_TABLE, 0x0004);
   });
 });
 
@@ -76,11 +77,12 @@ describe('Binary format constants', () => {
   });
 
   it('should have correct section entry size', () => {
-    assert.equal(HDAY_SECTION_ENTRY_SIZE, 8);
+    assert.equal(HDAY_SECTION_ENTRY_SIZE, 12);
   });
 
   it('should have correct day entry size', () => {
-    assert.equal(HDAY_DAY_ENTRY_SIZE, 8);
+    assert.equal(HDAY_DAY_OVERRIDE_SIZE, 8);
+    assert.equal(HDAY_VERSION_MAJOR, 2);
   });
 
   it('should have correct NO_INDEX sentinel', () => {

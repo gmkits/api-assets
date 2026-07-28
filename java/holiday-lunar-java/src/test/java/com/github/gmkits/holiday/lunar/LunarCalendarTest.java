@@ -1,12 +1,12 @@
 package com.github.gmkits.holiday.lunar;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - 闰月互转 / 无效闰月报错 / 小月溢出
  * - 天干地支 / 生肖
  * - 边界与异常
- * - 朔日天文估算
+ * - 权威节气范围与越界行为
  */
 class LunarCalendarTest {
 
@@ -237,41 +237,6 @@ class LunarCalendarTest {
         assertEquals("三十", LunarCalendar.getDayName(30));
     }
 
-    // ─── 朔日估算 ───
-
-    @Test
-    void newMoonJDE() {
-        double jde = LunarCalendar.estimateNewMoonJDE(0);
-        assertTrue(jde > 2451549 && jde < 2451552);
-    }
-
-    @Test
-    void jdeToGregorianKnown() {
-        assertEquals(LocalDate.of(2000, 1, 1), LunarCalendar.jdeToGregorian(2451545.0));
-    }
-
-    @Test
-    void springFestivalEstimate() {
-        int[][] known = {
-            {2020, 1, 25}, {2021, 2, 12}, {2022, 2, 1}, {2023, 1, 22},
-            {2024, 2, 10}, {2025, 1, 29}, {2026, 2, 17}, {2027, 2, 6},
-            {2028, 1, 26}, {2029, 2, 13}, {2030, 2, 3},
-        };
-        for (int[] row : known) {
-            LocalDate est = LunarCalendar.estimateLunarNewYear(row[0]);
-            long diff = Math.abs(ChronoUnit.DAYS.between(est, LocalDate.of(row[0], row[1], row[2])));
-            assertTrue(diff <= 2, row[0] + "年偏差" + diff + "天");
-        }
-    }
-
-    @Test
-    void adjacentNewMoonInterval() {
-        for (int k = -100; k < 100; k++) {
-            double interval = LunarCalendar.estimateNewMoonJDE(k + 1) - LunarCalendar.estimateNewMoonJDE(k);
-            assertTrue(interval >= 29.2 && interval <= 29.9, "k=" + k + " 间隔" + interval);
-        }
-    }
-
     // ─── 二十四节气 ───
 
     @Test
@@ -331,6 +296,16 @@ class LunarCalendarTest {
     }
 
     @Test
+    void solarTermsRejectEstimatedYears() {
+        assertThrows(IllegalArgumentException.class,
+                () -> LunarCalendar.getSolarTerms(1900));
+        assertThrows(IllegalArgumentException.class,
+                () -> LunarCalendar.getSolarTerms(2101));
+        assertThrows(IllegalArgumentException.class,
+                () -> LunarCalendar.getSolarTerm(LocalDate.of(1900, 1, 6)));
+    }
+
+    @Test
     void solarTermsChronologicalOrder() {
         LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(2025);
         for (int i = 1; i < terms.length; i++) {
@@ -342,6 +317,7 @@ class LunarCalendarTest {
     @ParameterizedTest
     @CsvFileSource(resources = "/solar-terms-golden.csv", numLinesToSkip = 1)
     void solarTermsGoldenCsv(int year, int termIndex, String termName, int month, int day) {
+        Assumptions.assumeTrue(year >= 1901, "1900 is an estimate, not authoritative data");
         LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(year);
         LunarCalendar.SolarTermInfo term = terms[termIndex];
         assertEquals(termName, term.getName(), year + " term " + termIndex + " 名称不匹配");

@@ -21,8 +21,7 @@ import java.util.Arrays;
  * <p>24 个节气 × 2 bit = 48 bit，低位在前。
  * bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）。
  * 实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset。
- * 数据来源：香港天文台 / 紫金山天文台，覆盖 1900-2100（201 年 ~1.2KB）。
- * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。</p>
+ * 数据来源：香港天文台 / 紫金山天文台，覆盖 1901-2100（200 年约 1.2KB）。</p>
  *
  * <h2>信息论最优性分析</h2>
  * <p>农历每年最少需编码：12 个月大小（12 bit）+ 闰月位置（4 bit）+ 闰月大小（1 bit）= 17 bit。
@@ -33,9 +32,9 @@ import java.util.Arrays;
  * <ol>
  *   <li>年天数缓存（YEAR_DAYS_CACHE）：yearDays() O(1) 查表</li>
  *   <li>年前缀和数组（CUMULATIVE_DAYS）：solarToLunar 年份定位 O(log n) 二分查找</li>
- *   <li>日序号/月键直达表：双向转换的月份定位均为 O(1)，消除最多 13 次扫描</li>
- *   <li>朔日天文估算（estimateNewMoonJDE）：Jean Meeus 算法，可验证数据表正确性</li>
- *   <li>节气 O(1) 位运算解码：HKO 权威数据 + 2-bit 偏移压缩，1900-2100 准确日期</li>
+ *   <li>扁平月份偏移表：公历转农历最多逆向扫描 13 项，避免逐日查找表的常驻内存</li>
+ *   <li>月份键直达表：农历转公历 O(1) 定位月份槽</li>
+ *   <li>节气 O(1) 位运算解码：权威数据 + 2-bit 偏移压缩，1901-2100 准确日期</li>
  * </ol>
  *
  * <p>线程安全：所有方法均为无状态纯函数，可安全并发调用。</p>
@@ -128,26 +127,27 @@ public final class LunarCalendar {
      */
     private static final long[] CUMULATIVE_DAYS = new long[YEAR_COUNT + 1];
 
-    /**
-     * 每年月份累计天数表（二维数组）。
-     * MONTH_OFFSETS[yearIdx][slot] = 该年第 slot 个月槽（含闰月）开始时的年内累计天数。
-     * 数组最后一个元素为年总天数（哨兵值）。
-     * 用途：月份定位从 O(13) 逐月循环 + 位运算 → O(1) 直接索引。
-     */
-    private static final int[][] MONTH_OFFSETS = new int[YEAR_COUNT][];
+    /** 每年最多 13 个农历月槽，再加一个年总天数哨兵。 */
+    private static final int MONTH_STRIDE = 14;
 
     /**
-     * 每年月份元信息表（与 MONTH_OFFSETS 对应）。
-     * MONTH_META[yearIdx][slot] 的低 4 位为月份号（1-12），bit 4 为闰月标志。
-     * 编码：(month & 0xF) | (isLeap ? 0x10 : 0)
+     * 扁平月份累计天数表。
+     *
+     * <p>{@code MONTH_OFFSETS[yearIndex * 14 + slot]} 是对应月份槽的年内起始偏移；
+     * 最后一个有效元素是年总天数哨兵。使用单个 primitive 数组可避免 201 个子数组对象。</p>
      */
-    private static final int[][] MONTH_META = new int[YEAR_COUNT][];
+    private static final short[] MONTH_OFFSETS = new short[YEAR_COUNT * MONTH_STRIDE];
 
-    /** 年内日序号直接映射到月份槽，公历转农历无需扫描。 */
-    private static final byte[][] DAY_SLOT_LOOKUP = new byte[YEAR_COUNT][];
+    /**
+     * 扁平月份元信息表。低 4 位为月份号，bit 4 表示闰月。
+     */
+    private static final byte[] MONTH_META = new byte[YEAR_COUNT * MONTH_STRIDE];
+
+    /** 每年实际月份槽数量，不包括年总天数哨兵。 */
+    private static final byte[] MONTH_SLOT_COUNTS = new byte[YEAR_COUNT];
 
     /** 普通月/闰月编码直接映射到月份槽，农历转公历无需扫描。 */
-    private static final byte[][] MONTH_SLOT_LOOKUP = new byte[YEAR_COUNT][32];
+    private static final byte[] MONTH_SLOT_LOOKUP = new byte[YEAR_COUNT * 32];
 
     static {
         // 一次性预计算所有年份天数、前缀和和月份偏移表
@@ -158,44 +158,32 @@ public final class LunarCalendar {
             CUMULATIVE_DAYS[yi + 1] = CUMULATIVE_DAYS[yi] + YEAR_DAYS_CACHE[yi];
 
             int leapM = info & 0xf;
-            // 最多 13 个月槽 + 1 个哨兵
-            int[] offsets = new int[14];
-            int[] meta = new int[14];
             int slotCount = 0;
             int cum = 0;
+            int base = yi * MONTH_STRIDE;
 
             for (int m = 1; m <= 12; m++) {
-                offsets[slotCount] = cum;
-                meta[slotCount] = m; // 非闰月：低 4 位 = m，bit 4 = 0
+                MONTH_OFFSETS[base + slotCount] = (short) cum;
+                MONTH_META[base + slotCount] = (byte) m;
                 slotCount++;
                 cum += (info & (LEAP_MONTH_BIG_MASK >> m)) != 0 ? 30 : 29;
 
                 if (m == leapM) {
-                    offsets[slotCount] = cum;
-                    meta[slotCount] = m | 0x10; // 闰月：低 4 位 = m，bit 4 = 1
+                    MONTH_OFFSETS[base + slotCount] = (short) cum;
+                    MONTH_META[base + slotCount] = (byte) (m | 0x10);
                     slotCount++;
                     cum += (info & LEAP_MONTH_BIG_MASK) != 0 ? 30 : 29;
                 }
             }
-            // 哨兵值：年总天数
-            offsets[slotCount] = cum;
-            meta[slotCount] = 0;
-            slotCount++;
+            MONTH_OFFSETS[base + slotCount] = (short) cum;
+            MONTH_SLOT_COUNTS[yi] = (byte) slotCount;
 
-            // 紧凑拷贝，节省内存
-            MONTH_OFFSETS[yi] = new int[slotCount];
-            MONTH_META[yi] = new int[slotCount];
-            System.arraycopy(offsets, 0, MONTH_OFFSETS[yi], 0, slotCount);
-            System.arraycopy(meta, 0, MONTH_META[yi], 0, slotCount);
-
-            byte[] monthSlots = MONTH_SLOT_LOOKUP[yi];
-            Arrays.fill(monthSlots, (byte) -1);
-            byte[] daySlots = new byte[cum];
-            for (int slot = 0; slot < slotCount - 1; slot++) {
-                monthSlots[meta[slot]] = (byte) slot;
-                Arrays.fill(daySlots, offsets[slot], offsets[slot + 1], (byte) slot);
+            int lookupBase = yi * 32;
+            Arrays.fill(MONTH_SLOT_LOOKUP, lookupBase, lookupBase + 32, (byte) -1);
+            for (int slot = 0; slot < slotCount; slot++) {
+                MONTH_SLOT_LOOKUP[lookupBase + (MONTH_META[base + slot] & 0xff)] =
+                        (byte) slot;
             }
-            DAY_SLOT_LOOKUP[yi] = daySlots;
         }
     }
 
@@ -276,7 +264,7 @@ public final class LunarCalendar {
      * <ol>
      *   <li>计算公历日期与基准日的天数偏移 offset</li>
      *   <li>二分查找 CUMULATIVE_DAYS → O(log 201) ≈ 8 次比较定位农历年</li>
-     *   <li>查预计算 DAY_SLOT_LOOKUP 表 → O(1) 定位月槽（无需扫描或位运算）</li>
+     *   <li>在扁平月份偏移表中逆向扫描最多 13 项定位月槽</li>
      *   <li>组装结果</li>
      * </ol>
      * <p>总时间 &lt; 1μs（二分最多 8 步 + O(1) 月份定位，全部为数组索引操作）。</p>
@@ -304,17 +292,47 @@ public final class LunarCalendar {
             "日期超出农历转换范围（%s-%s）", START_YEAR, END_YEAR);
         offset -= CUMULATIVE_DAYS[lo];
 
-        // 年内日序号直接定位月份槽
-        int[] offsets = MONTH_OFFSETS[lo];
-        int[] meta = MONTH_META[lo];
-        int slot = Byte.toUnsignedInt(DAY_SLOT_LOOKUP[lo][(int) offset]);
+        // 一年最多 13 个月槽；逆序扫描比保留约 73 KB 的逐日映射更紧凑。
+        int base = lo * MONTH_STRIDE;
+        int slot = (MONTH_SLOT_COUNTS[lo] & 0xff) - 1;
+        while (slot > 0 && (MONTH_OFFSETS[base + slot] & 0xffff) > offset) {
+            slot--;
+        }
 
-        int m = meta[slot];
+        int m = MONTH_META[base + slot] & 0xff;
         int lunarMonth = m & 0xF;
         boolean isLeapMonth = (m & 0x10) != 0;
-        int lunarDay = (int) (offset - offsets[slot]) + 1;
+        int lunarDay = (int) (offset - (MONTH_OFFSETS[base + slot] & 0xffff)) + 1;
 
         return buildLunarInfo(lunarYear, lunarMonth, lunarDay, isLeapMonth);
+    }
+
+    /**
+     * 顺序转换一个完整公历年。
+     *
+     * <p>方法仅对 1 月 1 日执行一次年份二分和日期差计算，之后按农历月游标逐日推进。
+     * 适合年度 bundle 预构建，避免对 365/366 个连续日期重复定位农历年。</p>
+     *
+     * @param solarYear 待转换的完整公历年
+     * @return 与该公历年逐日对应的农历信息
+     * @throws IllegalArgumentException 年度首尾超出精确农历数据覆盖范围时抛出
+     */
+    public static LunarInfo[] solarYearToLunar(int solarYear) {
+        LocalDate first = LocalDate.of(solarYear, 1, 1);
+        int dayCount = first.lengthOfYear();
+        LocalDate last = first.plusDays(dayCount - 1L);
+        LunarInfo current = solarToLunar(first);
+        // 完整年度必须都落在数据表内，避免生成部分结果。
+        solarToLunar(last);
+
+        LunarInfo[] result = new LunarInfo[dayCount];
+        for (int index = 0; index < dayCount; index++) {
+            result[index] = current;
+            if (index + 1 < dayCount) {
+                current = nextLunarDay(current);
+            }
+        }
+        return result;
     }
 
     // ===================================================================
@@ -338,22 +356,23 @@ public final class LunarCalendar {
         checkArgument(lunarDay >= 1 && lunarDay <= 30, "农历日期超出范围: %s", lunarDay);
 
         int yi = lunarYear - START_YEAR;
-        int[] offsets = MONTH_OFFSETS[yi];
-
         int targetMeta = (lunarMonth & 0xF) | (isLeapMonth ? 0x10 : 0);
-        int slotIdx = MONTH_SLOT_LOOKUP[yi][targetMeta];
+        int slotIdx = MONTH_SLOT_LOOKUP[yi * 32 + targetMeta];
 
         checkArgument(slotIdx >= 0,
             "农历 %s 年不存在%s%s 月", lunarYear, isLeapMonth ? "闰" : "", lunarMonth);
 
         // 校验日期不超过该月实际天数
-        int slotDays = offsets[slotIdx + 1] - offsets[slotIdx];
+        int base = yi * MONTH_STRIDE;
+        int slotDays = (MONTH_OFFSETS[base + slotIdx + 1] & 0xffff)
+                - (MONTH_OFFSETS[base + slotIdx] & 0xffff);
         checkArgument(lunarDay <= slotDays,
             "农历 %s 年%s%s 月仅有 %s 天，日期 %s 超出范围",
             lunarYear, isLeapMonth ? "闰" : "", lunarMonth, slotDays, lunarDay);
 
         // 年前缀和 + 月内偏移 + 日偏移 → 总天数偏移
-        long offset = CUMULATIVE_DAYS[yi] + offsets[slotIdx] + lunarDay - 1;
+        long offset = CUMULATIVE_DAYS[yi]
+                + (MONTH_OFFSETS[base + slotIdx] & 0xffff) + lunarDay - 1;
         return BASE_DATE.plusDays(offset);
     }
 
@@ -438,111 +457,6 @@ public final class LunarCalendar {
     }
 
     // ===================================================================
-    // 朔日天文估算（Jean Meeus 算法）
-    // ===================================================================
-
-    /**
-     * 朔日估算（Jean Meeus 天文算法）。
-     *
-     * <p>基于 Meeus《Astronomical Algorithms》第 49 章，计算第 k 个朔日（新月）的儒略日数。
-     * 其中 k = 0 对应 2000 年 1 月 6 日附近的朔日。</p>
-     *
-     * <p>数学原理：平均朔望月 T_syn ≈ 29.530588861 天。
-     * 基本公式给出平均朔日时刻，再叠加太阳平近点角 M、月球平近点角 M'、
-     * 月球纬度幅角 F 的三角修正项。精度约 ±2 小时。</p>
-     *
-     * @param k 第 k 个朔日（整数），k = 0 ≈ 2000-01-06
-     * @return 朔日的儒略日数（JDE）
-     */
-    public static double estimateNewMoonJDE(int k) {
-        double T = k / 1236.85;
-        double T2 = T * T;
-        double T3 = T2 * T;
-        double T4 = T3 * T;
-
-        double JDE = 2451550.09766
-            + 29.530588861 * k
-            + 0.00015437 * T2
-            - 0.000000150 * T3
-            + 0.00000000073 * T4;
-
-        double M = Math.toRadians(2.5534 + 29.10535670 * k - 0.0000014 * T2 - 0.00000011 * T3);
-        double Mp = Math.toRadians(201.5643 + 385.81693528 * k + 0.0107582 * T2 + 0.00001238 * T3 - 0.000000058 * T4);
-        double F = Math.toRadians(160.7108 + 390.67050284 * k - 0.0016118 * T2 - 0.00000227 * T3 + 0.000000011 * T4);
-
-        JDE += -0.40720 * Math.sin(Mp)
-             + 0.17241 * Math.sin(M)
-             + 0.01608 * Math.sin(2 * Mp)
-             + 0.01039 * Math.sin(2 * F)
-             + 0.00739 * Math.sin(Mp - M);
-
-        return JDE;
-    }
-
-    /**
-     * 儒略日数转公历日期。
-     * 基于 Meeus《Astronomical Algorithms》第 7 章。
-     *
-     * @param jde 儒略历书日
-     * @return 对应公历日期
-     */
-    public static LocalDate jdeToGregorian(double jde) {
-        int Z = (int) Math.floor(jde + 0.5);
-        int A;
-        if (Z < 2299161) {
-            A = Z;
-        } else {
-            int alpha = (int) Math.floor((Z - 1867216.25) / 36524.25);
-            A = Z + 1 + alpha - alpha / 4;
-        }
-        int B = A + 1524;
-        int C = (int) Math.floor((B - 122.1) / 365.25);
-        int D = (int) Math.floor(365.25 * C);
-        int E = (int) Math.floor((B - D) / 30.6001);
-
-        int day = B - D - (int) Math.floor(30.6001 * E) + (int) Math.floor(jde + 0.5 - Z);
-        int month = E < 14 ? E - 1 : E - 13;
-        int year = month > 2 ? C - 4716 : C - 4715;
-
-        return LocalDate.of(year, month, day);
-    }
-
-    /**
-     * 估算指定公历年份农历新年（正月初一）的大约公历日期。
-     *
-     * <p>农历正月初一总是落在公历 1月21日 ~ 2月20日 之间（天文学事实）。
-     * 利用 Meeus 朔日公式搜索该区间内的朔日即为春节。精度约 ±1 天。</p>
-     *
-     * @param year 公历年份
-     * @return 估算的春节公历日期
-     */
-    public static LocalDate estimateLunarNewYear(int year) {
-        int k0 = Math.round((year - 2000) * 12.3685f);
-
-        for (int dk = -2; dk <= 2; dk++) {
-            double jde = estimateNewMoonJDE(k0 + dk);
-            LocalDate d = jdeToGregorian(jde);
-            if (d.getYear() == year &&
-                ((d.getMonthValue() == 1 && d.getDayOfMonth() >= 21) ||
-                 (d.getMonthValue() == 2 && d.getDayOfMonth() <= 20))) {
-                return d;
-            }
-        }
-
-        for (int dk = -4; dk <= 4; dk++) {
-            double jde = estimateNewMoonJDE(k0 + dk);
-            LocalDate d = jdeToGregorian(jde);
-            if (d.getYear() == year &&
-                ((d.getMonthValue() == 1 && d.getDayOfMonth() >= 20) ||
-                 (d.getMonthValue() == 2 && d.getDayOfMonth() <= 21))) {
-                return d;
-            }
-        }
-
-        return jdeToGregorian(estimateNewMoonJDE(k0));
-    }
-
-    // ===================================================================
     // 二十四节气（Solar Terms）——基于权威天文台数据的精确查表
     // ===================================================================
 
@@ -577,14 +491,13 @@ public final class LunarCalendar {
         10, 10, 11, 11, 12, 12
     };
 
-    // ─── 节气数据表（1900-2100，共 201 年，基于香港天文台 / 紫金山天文台数据）───
+    // ─── 节气数据表（1901-2100，共 200 年，基于香港天文台 / 紫金山天文台数据）───
     //
     // 使用 2-bit 偏移量压缩编码，每年仅需 48 位（1 个 long）。
     // 每个节气的 day-of-month = BASE_DAYS[i] + ((packed >> (i*2)) & 3)
     //
-    // 与 LUNAR_INFO 类似的紧凑整数设计，201 年仅 ~1.6KB（vs 原始字符串 4.8KB）。
-    // 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
-    private static final int SOLAR_TERM_DATA_START = 1900;
+    // 与 LUNAR_INFO 类似的紧凑整数设计，200 年仅约 1.2KB。
+    private static final int SOLAR_TERM_DATA_START = 1901;
     private static final int SOLAR_TERM_DATA_END = 2100;
 
     /**
@@ -597,18 +510,16 @@ public final class LunarCalendar {
     };
 
     /**
-     * 节气压缩数据（1900-2100，每年一个 48-bit long）。
+     * 节气压缩数据（1901-2100，每年一个 48-bit long）。
      *
      * <p>编码方式：24 个节气 × 2 bit = 48 bit，低位在前。
      * bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）。
      * 实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset。</p>
      *
-     * <p>与 LUNAR_INFO 相同风格的紧凑整数数组设计。
-     * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。</p>
+     * <p>与 LUNAR_INFO 相同风格的紧凑整数数组设计，只包含权威表覆盖范围。</p>
      */
     private static final long[] EMBEDDED_SOLAR_TERM_PACKED = {
-0x6aaaa6aa9a56L, // 1900 (VSOP87 估算)
-0x6aaaa6aa9a5aL, // 1901
+        0x6aaaa6aa9a5aL, // 1901
         0xaaaaaabaaa6aL, // 1902
         0xaaabbabbafaaL, // 1903
         0x5aa665a65aabL, // 1904
@@ -810,7 +721,7 @@ public final class LunarCalendar {
         0x555555555515L, // 2100
     };
 
-    /** 统一节气 CSV 优先；嵌入压缩表仅作为旧模块兼容回退。 */
+    /** 统一二进制资产优先；嵌入压缩表用于独立模块运行时的精确回退。 */
     private static final long[] SOLAR_TERM_PACKED = CalendarAssetLoader.loadSolarTerms(
             SOLAR_TERM_DATA_START, SOLAR_TERM_DATA_END,
             SOLAR_TERM_BASE_DAYS, EMBEDDED_SOLAR_TERM_PACKED);
@@ -885,29 +796,23 @@ public final class LunarCalendar {
     /**
      * 计算指定公历年的所有 24 节气日期。
      *
-     * <p>1900-2100 年使用权威天文台预计算数据（香港天文台 / 紫金山天文台），精度为准确日期。
-     * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
-     * 超出范围时回退到 VSOP87 太阳黄经公式估算（精度 ±1 天）。</p>
+     * <p>1901-2100 年使用权威天文台预计算数据。超出数据范围时明确拒绝，
+     * 不使用近似公式静默产生可能相差一天的日期。</p>
      *
      * @param year 公历年份
      * @return 24 个节气信息，按时间顺序排列（从小寒到冬至）
      */
     public static SolarTermInfo[] getSolarTerms(int year) {
-        // 数据表范围内：精确查表
-        if (year >= SOLAR_TERM_DATA_START && year <= SOLAR_TERM_DATA_END) {
-            long packed = SOLAR_TERM_PACKED[year - SOLAR_TERM_DATA_START];
-            SolarTermInfo[] results = new SolarTermInfo[24];
-            for (int i = 0; i < 24; i++) {
-                int day = decodeSolarTermDay(packed, i);
-                results[i] = new SolarTermInfo(
-                    SOLAR_TERM_NAMES[i], SOLAR_TERM_LONGITUDES[i],
-                    LocalDate.of(year, SOLAR_TERM_MONTHS[i], day));
-            }
-            return results;
+        validateSolarTermYear(year);
+        long packed = SOLAR_TERM_PACKED[year - SOLAR_TERM_DATA_START];
+        SolarTermInfo[] results = new SolarTermInfo[24];
+        for (int i = 0; i < 24; i++) {
+            int day = decodeSolarTermDay(packed, i);
+            results[i] = new SolarTermInfo(
+                SOLAR_TERM_NAMES[i], SOLAR_TERM_LONGITUDES[i],
+                LocalDate.of(year, SOLAR_TERM_MONTHS[i], day));
         }
-
-        // 回退到公式估算
-        return getSolarTermsByFormula(year);
+        return results;
     }
 
     /**
@@ -918,128 +823,19 @@ public final class LunarCalendar {
      */
     public static String getSolarTerm(LocalDate date) {
         int year = date.getYear();
-
-        // 数据表范围内：直接定位
-        if (year >= SOLAR_TERM_DATA_START && year <= SOLAR_TERM_DATA_END) {
-            long packed = SOLAR_TERM_PACKED[year - SOLAR_TERM_DATA_START];
-            int month = date.getMonthValue();
-            int dayOfMonth = date.getDayOfMonth();
-            int firstTerm = (month - 1) * 2;
-            if (decodeSolarTermDay(packed, firstTerm) == dayOfMonth) {
-                return SOLAR_TERM_NAMES[firstTerm];
-            }
-            int secondTerm = firstTerm + 1;
-            if (decodeSolarTermDay(packed, secondTerm) == dayOfMonth) {
-                return SOLAR_TERM_NAMES[secondTerm];
-            }
-            return null;
+        validateSolarTermYear(year);
+        long packed = SOLAR_TERM_PACKED[year - SOLAR_TERM_DATA_START];
+        int month = date.getMonthValue();
+        int dayOfMonth = date.getDayOfMonth();
+        int firstTerm = (month - 1) * 2;
+        if (decodeSolarTermDay(packed, firstTerm) == dayOfMonth) {
+            return SOLAR_TERM_NAMES[firstTerm];
         }
-
-        // 回退到公式估算
-        SolarTermInfo[] terms = getSolarTermsByFormula(year);
-        for (SolarTermInfo term : terms) {
-            if (term.getDate().equals(date)) {
-                return term.getName();
-            }
+        int secondTerm = firstTerm + 1;
+        if (decodeSolarTermDay(packed, secondTerm) == dayOfMonth) {
+            return SOLAR_TERM_NAMES[secondTerm];
         }
         return null;
-    }
-
-    // ===================================================================
-    // VSOP87 公式估算（作为数据表范围外的回退方案）
-    // ===================================================================
-
-    /**
-     * 计算太阳黄经（简化 VSOP87 近似，精度约 ±0.01°）。
-     *
-     * <p>基于 Jean Meeus《Astronomical Algorithms》第 25 章简化公式。</p>
-     */
-    private static double solarLongitude(double jde) {
-        double T = (jde - 2451545.0) / 36525.0;
-        double T2 = T * T;
-
-        // 太阳几何平黄经
-        double L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T2;
-
-        // 太阳平近点角
-        double M = 357.52911 + 35999.05029 * T - 0.0001537 * T2;
-        double Mrad = Math.toRadians(M);
-
-        // 太阳中心方程
-        double C = (1.914602 - 0.004817 * T - 0.000014 * T2) * Math.sin(Mrad)
-                 + (0.019993 - 0.000101 * T) * Math.sin(2 * Mrad)
-                 + 0.000289 * Math.sin(3 * Mrad);
-
-        // 太阳真黄经
-        double sunLon = L0 + C;
-
-        // 章动修正（简化）
-        double omega = 125.04 - 1934.136 * T;
-        double lon = sunLon - 0.00569 - 0.00478 * Math.sin(Math.toRadians(omega));
-
-        return ((lon % 360) + 360) % 360;
-    }
-
-    /**
-     * 公历日期转儒略日数。
-     */
-    private static double gregorianToJDE(int year, int month, int day) {
-        int y = year;
-        int m = month;
-        if (m <= 2) {
-            y -= 1;
-            m += 12;
-        }
-        int A = y / 100;
-        int B = 2 - A + A / 4;
-        return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B - 1524.5;
-    }
-
-    /** 回退方案：使用 VSOP87 公式计算节气日期（精度 ±1 天）。 */
-    private static SolarTermInfo[] getSolarTermsByFormula(int year) {
-        SolarTermInfo[] results = new SolarTermInfo[24];
-        for (int i = 0; i < 24; i++) {
-            LocalDate date = findSolarTermDate(year, SOLAR_TERM_LONGITUDES[i]);
-            results[i] = new SolarTermInfo(SOLAR_TERM_NAMES[i], SOLAR_TERM_LONGITUDES[i], date);
-        }
-        return results;
-    }
-
-    /**
-     * 查找指定年份某个节气的公历日期。
-     * 使用迭代搜索逼近太阳黄经恰好过目标度数的日期。
-     */
-    private static LocalDate findSolarTermDate(int year, int targetLon) {
-        // 估算初始 JDE
-        double monthEstimate;
-        if (targetLon >= 285) {
-            monthEstimate = 1 + (targetLon - 285) / 30.0;
-        } else {
-            monthEstimate = 3 + targetLon / 30.0;
-        }
-
-        int monthInt = Math.min(12, Math.max(1, (int) monthEstimate));
-        int dayEstimate = (int) Math.round((monthEstimate % 1) * 30);
-        int dayInt = Math.min(28, Math.max(1, dayEstimate == 0 ? 15 : dayEstimate));
-
-        double jde = gregorianToJDE(year, monthInt, dayInt);
-
-        // 迭代逼近（通常 3-5 次收敛）
-        for (int i = 0; i < 50; i++) {
-            double lon = solarLongitude(jde);
-            double diff = targetLon - lon;
-
-            // 处理 0°/360° 边界
-            if (diff > 180) diff -= 360;
-            if (diff < -180) diff += 360;
-
-            if (Math.abs(diff) < 0.0001) break;
-
-            // 太阳每天移动约 360/365.25 ≈ 0.9856°
-            jde += diff / 0.9856;
-        }
-
-        return jdeToGregorian(jde);
     }
 
     // ===================================================================
@@ -1049,6 +845,15 @@ public final class LunarCalendar {
     private static void validateYear(int year) {
         checkArgument(year >= START_YEAR && year <= END_YEAR,
             "年份 %s 超出范围，农历数据覆盖 %s-%s", year, START_YEAR, END_YEAR);
+    }
+
+    private static void validateSolarTermYear(int year) {
+        checkArgument(
+                year >= SOLAR_TERM_DATA_START && year <= SOLAR_TERM_DATA_END,
+                "年份 %s 超出节气数据范围 %s-%s",
+                year,
+                SOLAR_TERM_DATA_START,
+                SOLAR_TERM_DATA_END);
     }
 
     private static LunarInfo buildLunarInfo(int year, int month, int day, boolean isLeapMonth) {
@@ -1062,5 +867,27 @@ public final class LunarCalendar {
 
         LunarDate date = new LunarDate(year, month, day, isLeapMonth);
         return new LunarInfo(date, tianGan, diZhi, ganZhiYear, shengXiao, monthName, dayName, fullName);
+    }
+
+    private static LunarInfo nextLunarDay(LunarInfo current) {
+        LunarDate date = current.getDate();
+        int year = date.getYear();
+        int month = date.getMonth();
+        int day = date.getDay();
+        boolean leap = date.isLeapMonth();
+        int daysInMonth = leap ? leapMonthDays(year) : monthDays(year, month);
+
+        if (day < daysInMonth) {
+            return buildLunarInfo(year, month, day + 1, leap);
+        }
+        if (!leap && leapMonth(year) == month) {
+            return buildLunarInfo(year, month, 1, true);
+        }
+        if (month < 12) {
+            return buildLunarInfo(year, month + 1, 1, false);
+        }
+        checkArgument(year < END_YEAR,
+                "日期超出农历转换范围（%s-%s）", START_YEAR, END_YEAR);
+        return buildLunarInfo(year + 1, 1, 1, false);
     }
 }

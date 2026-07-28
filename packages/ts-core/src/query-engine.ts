@@ -19,11 +19,13 @@ import {
   lunarToSolar,
   monthDays,
   solarToLunar,
+  solarYearToLunar,
   getDiZhi,
   getGanZhi,
   getShengXiao,
   getTianGan,
 } from '@holiday/lunar';
+import type { LunarInfo as RawLunarInfo } from '@holiday/lunar';
 import {
   CALENDAR_SYSTEM_CODES,
   DAY_FLAGS,
@@ -219,8 +221,20 @@ function buildChineseCalendarFields(
   day: number,
   dayIndex: number,
   locale: ChineseLocale = 'zh-CN',
+  rawLunar?: RawLunarInfo | null,
 ): ChineseCalendarFields {
-  const lunar = buildLunarInfo(year, month, day, locale);
+  const lunar = rawLunar === undefined
+    ? buildLunarInfo(year, month, day, locale)
+    : rawLunar === null
+      ? null
+      : {
+          year: rawLunar.year,
+          month: rawLunar.month,
+          day: rawLunar.day,
+          isLeapMonth: rawLunar.isLeapMonth,
+          monthName: rawLunar.monthName,
+          dayName: rawLunar.dayName,
+        };
   const solarTerm = lookupSolarTerm(year, dayIndex, locale);
   return {
     lunar,
@@ -234,7 +248,7 @@ function buildChineseCalendarFields(
  */
 export function resolveNames(
   entry: NameListEntry | undefined,
-  strings: string[],
+  strings: ReadonlyArray<string>,
 ): MultiLangNames {
   if (!entry) {
     return {};
@@ -268,7 +282,7 @@ export function resolveNames(
  */
 export function resolveLabels(
   entry: NameListEntry | undefined,
-  strings: string[],
+  strings: ReadonlyArray<string>,
 ): string[] {
   if (!entry) {
     return [];
@@ -301,8 +315,8 @@ export function dayEntryToDayInfo(
   dateStr: string,
   regionCode: string,
   calSystem: number,
-  strings: string[],
-  nameLists: NameListEntry[],
+  strings: ReadonlyArray<string>,
+  nameLists: ReadonlyArray<NameListEntry>,
   calendarFields: ChineseCalendarFields = {
     lunar: null,
     solarTerm: null,
@@ -353,19 +367,56 @@ function buildBundleQueryView(bundle: HdayBundle, locale: ChineseLocale): Bundle
   const dayInfos = new Array<DayInfo>(bundle.days.length);
   const workdayPrefix = new Uint16Array(bundle.days.length + 1);
   const nextStatutoryIndex = new Int16Array(bundle.days.length);
+  let lunarYear: RawLunarInfo[] | null = null;
+  try {
+    lunarYear = solarYearToLunar(year, locale);
+  } catch {
+    // 完整年度超出精确农历范围时保持原有 null 字段语义。
+  }
 
   for (let index = 0; index < bundle.days.length; index++) {
     const [month, day] = monthDayTable[index];
-    dayInfos[index] = dayEntryToDayInfo(
-      bundle.days[index],
-      formatDate(year, month, day),
-      regionCode,
-      calendarSystem,
-      bundle.strings,
-      bundle.nameLists,
-      buildChineseCalendarFields(year, month, day, index, locale),
-      bundle.metadata?.sourceVersion ?? '',
+    const calendarFields = buildChineseCalendarFields(
+      year,
+      month,
+      day,
+      index,
+      locale,
+      lunarYear === null ? undefined : lunarYear[index],
     );
+    const nameIndex = bundle.days.nameListIndexes[index];
+    const labelIndex = bundle.days.labelListIndexes[index];
+    const holidayNames = nameIndex < 0
+      ? {}
+      : bundle.names[nameIndex] as MultiLangNames;
+    const labels = labelIndex < 0
+      ? []
+      : bundle.labels[labelIndex] as string[];
+    const isHoliday = hasBit(bundle.days.holidayBits, index);
+    const date = formatDate(year, month, day);
+    dayInfos[index] = {
+      date,
+      regionCode,
+      calendarSystem: resolveCalendarSystem(calendarSystem),
+      isHoliday,
+      isOfficialHoliday:
+        isHoliday && Object.keys(holidayNames).length > 0,
+      isWorkday: hasBit(bundle.days.workdayBits, index),
+      isWeekend: hasBit(bundle.days.weekendBits, index),
+      isStatutoryHoliday: hasBit(bundle.days.statutoryBits, index),
+      isAdjustedWorkday: hasBit(bundle.days.adjustedBits, index),
+      holidayNames,
+      labels,
+      lunar: calendarFields.lunar,
+      solarTerm: calendarFields.solarTerm,
+      ganZhi: calendarFields.ganZhi,
+      festivals: resolveFestivals(
+        date,
+        calendarFields.lunar,
+        calendarFields.solarTerm,
+      ),
+      sourceVersion: bundle.metadata?.sourceVersion ?? '',
+    };
     workdayPrefix[index + 1] =
       workdayPrefix[index] + (dayInfos[index].isWorkday ? 1 : 0);
   }
@@ -377,6 +428,10 @@ function buildBundleQueryView(bundle: HdayBundle, locale: ChineseLocale): Bundle
   }
 
   return { dayInfos, workdayPrefix, nextStatutoryIndex };
+}
+
+function hasBit(words: Uint32Array, index: number): boolean {
+  return (words[index >>> 5] & (1 << (index & 31))) !== 0;
 }
 
 function getBundleQueryView(bundle: HdayBundle, locale: ChineseLocale = 'zh-CN'): BundleQueryView {

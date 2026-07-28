@@ -17,6 +17,7 @@ export type {
 
 // Binary parser（二进制解析）
 export {
+  HdayFormatError,
   parseHdayBundle,
 } from './hday-parser.js';
 

@@ -13,8 +13,7 @@
  *   24 个节气 × 2 bit = 48 bit，低位在前
  *   bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）
  *   实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset
- *   数据来源：香港天文台 / 紫金山天文台，覆盖 1900-2100（201 年 ~1.2KB）
- *   注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）
+ *   数据来源：香港天文台 / 紫金山天文台，覆盖 1901-2100（200 年约 1.2KB）
  *
  * ─── 信息论最优性分析 ───
  * 农历每年最少需编码：12 个月大小（12 bit）+ 闰月位置（4 bit）+ 闰月大小（1 bit）= 17 bit。
@@ -24,9 +23,9 @@
  * ─── 算法优化层次 ───
  * 1. 年天数缓存（YEAR_DAYS_CACHE）：yearDays() O(1) 查表
  * 2. 年前缀和数组（CUMULATIVE_DAYS）：solarToLunar 年份定位 O(log n) 二分查找
- * 3. 每年月份偏移表（MONTH_OFFSETS）：月份定位 O(1) 直接索引，消除热路径位运算
- * 4. 朔日天文估算（estimateNewMoonJDE）：Jean Meeus 算法，可验证数据表正确性
- * 5. 节气 O(1) 位运算解码：HKO 权威数据 + 2-bit 偏移压缩，1900-2100 准确日期
+ * 3. 扁平月份偏移表：月份定位最多扫描 13 项，不保留逐日查找表
+ * 4. 月份键直达表：农历转公历 O(1) 定位月份槽
+ * 5. 节气 O(1) 位运算解码：权威数据 + 2-bit 偏移压缩，1901-2100 准确日期
  *
  * 基准日为 1900-01-31（庚子年正月初一）。
  *
@@ -141,54 +140,62 @@ const YEAR_DAYS_CACHE: number[] = new Array(YEAR_COUNT);
  */
 const CUMULATIVE_DAYS: number[] = new Array(YEAR_COUNT + 1);
 
-/**
- * 月份偏移表（每年月份槽的累计天数）。
- *
- * MONTH_OFFSETS[yearIdx] 是一个数组，每个元素为该年某个月槽（含闰月）开始时的年内累计天数。
- * 数组长度为 12（无闰月）或 13（有闰月），末尾追加年总天数作为哨兵。
- *
- * 用途：solarToLunar 月份定位从 O(13) 逐月循环 + 位运算 → O(1) 直接索引。
- */
-const MONTH_OFFSETS: number[][] = new Array(YEAR_COUNT);
+/** 每年最多 13 个月份槽，再加一个年总天数哨兵。 */
+const MONTH_STRIDE = 14;
 
-/**
- * 月份元信息表（与 MONTH_OFFSETS 对应）。
- *
- * MONTH_META[yearIdx][slot] 的低 4 位为月份号（1-12），bit 4 为闰月标志。
- * 编码：(month & 0xF) | (isLeap ? 0x10 : 0)
- */
-const MONTH_META: number[][] = new Array(YEAR_COUNT);
+/** 扁平月份累计天数表，避免为每个年份创建子数组对象。 */
+const MONTH_OFFSETS = new Uint16Array(YEAR_COUNT * MONTH_STRIDE);
 
-// 一次性预计算所有年份天数、前缀和和月份偏移表
-CUMULATIVE_DAYS[0] = 0;
-for (let yi = 0; yi < YEAR_COUNT; yi++) {
-  const info = LUNAR_INFO[yi];
-  YEAR_DAYS_CACHE[yi] = computeYearDays(info);
-  CUMULATIVE_DAYS[yi + 1] = CUMULATIVE_DAYS[yi] + YEAR_DAYS_CACHE[yi];
+/** 扁平月份元信息表：低 4 位为月份号，bit 4 表示闰月。 */
+const MONTH_META = new Uint8Array(YEAR_COUNT * MONTH_STRIDE);
 
-  const leapM = info & 0xf;
-  const offsets: number[] = [];
-  const meta: number[] = [];
-  let cum = 0;
+/** 每年实际月份槽数量，不包括年总天数哨兵。 */
+const MONTH_SLOT_COUNTS = new Uint8Array(YEAR_COUNT);
 
-  for (let m = 1; m <= 12; m++) {
-    offsets.push(cum);
-    meta.push(m); // 非闰月：低 4 位 = m，bit 4 = 0
-    cum += (info & (LEAP_MONTH_BIG_MASK >> m)) !== 0 ? 30 : 29;
+/** 月份编码到槽位的直接映射；-1 表示对应月份不存在。 */
+const MONTH_SLOT_LOOKUP = new Int8Array(YEAR_COUNT * 32);
 
-    if (m === leapM) {
-      offsets.push(cum);
-      meta.push(m | 0x10); // 闰月：低 4 位 = m，bit 4 = 1
-      cum += (info & LEAP_MONTH_BIG_MASK) !== 0 ? 30 : 29;
+function rebuildLunarTables(): void {
+  YEAR_DAYS_CACHE.fill(0);
+  CUMULATIVE_DAYS.fill(0);
+  MONTH_OFFSETS.fill(0);
+  MONTH_META.fill(0);
+  MONTH_SLOT_COUNTS.fill(0);
+  MONTH_SLOT_LOOKUP.fill(-1);
+  for (let yi = 0; yi < YEAR_COUNT; yi++) {
+    const info = LUNAR_INFO[yi];
+    YEAR_DAYS_CACHE[yi] = computeYearDays(info);
+    CUMULATIVE_DAYS[yi + 1] = CUMULATIVE_DAYS[yi] + YEAR_DAYS_CACHE[yi];
+
+    const leapM = info & 0xf;
+    const base = yi * MONTH_STRIDE;
+    let cum = 0;
+    let slot = 0;
+
+    for (let m = 1; m <= 12; m++) {
+      MONTH_OFFSETS[base + slot] = cum;
+      MONTH_META[base + slot] = m;
+      slot++;
+      cum += (info & (LEAP_MONTH_BIG_MASK >> m)) !== 0 ? 30 : 29;
+
+      if (m === leapM) {
+        MONTH_OFFSETS[base + slot] = cum;
+        MONTH_META[base + slot] = m | 0x10;
+        slot++;
+        cum += (info & LEAP_MONTH_BIG_MASK) !== 0 ? 30 : 29;
+      }
+    }
+    MONTH_OFFSETS[base + slot] = cum;
+    MONTH_SLOT_COUNTS[yi] = slot;
+
+    const lookupBase = yi * 32;
+    for (let index = 0; index < slot; index++) {
+      MONTH_SLOT_LOOKUP[lookupBase + MONTH_META[base + index]] = index;
     }
   }
-  // 哨兵值：年总天数（便于计算最后一个月的天数）
-  offsets.push(cum);
-  meta.push(0);
-
-  MONTH_OFFSETS[yi] = offsets;
-  MONTH_META[yi] = meta;
 }
+
+rebuildLunarTables();
 
 // ===================================================================
 // 农历信息查询（位运算解码）
@@ -313,27 +320,50 @@ export function solarToLunar(solarYear: number, solarMonth: number, solarDay: nu
   }
   offset -= CUMULATIVE_DAYS[lo];
 
-  // 使用预计算月份偏移表定位月份（无需位运算，纯数组索引）
-  const offsets = MONTH_OFFSETS[lo];
-  const meta = MONTH_META[lo];
-  const slotCount = offsets.length - 1; // 最后一个是哨兵
+  const base = lo * MONTH_STRIDE;
+  const slotCount = MONTH_SLOT_COUNTS[lo];
 
   // 从后往前扫描找到 offset 所在的月槽
-  // 不变式：offsets[0] = 0，因此至少会命中 slot 0
+  // 不变式：首个偏移为 0，因此至少会命中 slot 0
   let slot = 0;
   for (let s = slotCount - 1; s >= 0; s--) {
-    if (offsets[s] <= offset) {
+    if (MONTH_OFFSETS[base + s] <= offset) {
       slot = s;
       break;
     }
   }
 
-  const m = meta[slot];
+  const m = MONTH_META[base + slot];
   const lunarMonth = m & 0xF;
   const isLeapMonth = (m & 0x10) !== 0;
-  const lunarDay = offset - offsets[slot] + 1;
+  const lunarDay = offset - MONTH_OFFSETS[base + slot] + 1;
 
   return buildLunarInfo(lunarYear, lunarMonth, lunarDay, isLeapMonth, locale);
+}
+
+/**
+ * 顺序转换一个完整公历年。
+ *
+ * 仅首日执行一次年份二分与时间戳差计算，之后按农历月游标逐日推进。
+ */
+export function solarYearToLunar(
+  solarYear: number,
+  locale: 'zh-CN' | 'zh-TW' = 'zh-CN',
+): LunarInfo[] {
+  const leap =
+    solarYear % 4 === 0 && (solarYear % 100 !== 0 || solarYear % 400 === 0);
+  const dayCount = leap ? 366 : 365;
+  let current = solarToLunar(solarYear, 1, 1, locale);
+  // 完整年度必须全部落在数据表覆盖范围内。
+  solarToLunar(solarYear, 12, 31, locale);
+  const result = new Array<LunarInfo>(dayCount);
+  for (let index = 0; index < dayCount; index++) {
+    result[index] = current;
+    if (index + 1 < dayCount) {
+      current = nextLunarDay(current, locale);
+    }
+  }
+  return result;
 }
 
 /**
@@ -375,19 +405,8 @@ export function lunarToSolar(
   }
 
   const yi = lunarYear - LUNAR_START_YEAR;
-  const meta = MONTH_META[yi];
-  const offsets = MONTH_OFFSETS[yi];
-  const slotCount = offsets.length - 1;
-
-  // 查找目标月份在月槽表中的位置
   const targetMeta = (lunarMonth & 0xF) | (isLeapMonth ? 0x10 : 0);
-  let slotIdx = -1;
-  for (let s = 0; s < slotCount; s++) {
-    if (meta[s] === targetMeta) {
-      slotIdx = s;
-      break;
-    }
-  }
+  const slotIdx = MONTH_SLOT_LOOKUP[yi * 32 + targetMeta];
 
   if (slotIdx < 0) {
     throw new RangeError(
@@ -396,7 +415,9 @@ export function lunarToSolar(
   }
 
   // 校验日期不超过该月实际天数
-  const slotDays = offsets[slotIdx + 1] - offsets[slotIdx];
+  const base = yi * MONTH_STRIDE;
+  const slotDays =
+    MONTH_OFFSETS[base + slotIdx + 1] - MONTH_OFFSETS[base + slotIdx];
   if (lunarDay > slotDays) {
     throw new RangeError(
       `农历 ${lunarYear} 年${isLeapMonth ? '闰' : ''}${lunarMonth} 月仅有 ${slotDays} 天，日期 ${lunarDay} 超出范围`,
@@ -404,7 +425,8 @@ export function lunarToSolar(
   }
 
   // 年前缀和 + 月内偏移 + 日偏移 → 总天数偏移
-  const offset = CUMULATIVE_DAYS[yi] + offsets[slotIdx] + lunarDay - 1;
+  const offset =
+    CUMULATIVE_DAYS[yi] + MONTH_OFFSETS[base + slotIdx] + lunarDay - 1;
 
   const resultMs = BASE_DATE_MS + offset * MS_PER_DAY;
   const d = new Date(resultMs);
@@ -481,130 +503,6 @@ export function getDayName(day: number): string {
 }
 
 // ===================================================================
-// 朔日天文估算（Jean Meeus 算法）
-// ===================================================================
-
-/** 角度转弧度。 */
-function deg2rad(deg: number): number {
-  return deg * Math.PI / 180;
-}
-
-/**
- * 朔日估算（Jean Meeus 天文算法）。
- *
- * 基于 Meeus《Astronomical Algorithms》第 49 章，计算第 k 个朔日（新月）的儒略日数。
- * 其中 k = 0 对应 2000 年 1 月 6 日附近的朔日。
- *
- * ─── 数学原理 ───
- * 平均朔望月 T_syn ≈ 29.530588861 天（月球从一次朔到下一次朔的平均间隔）。
- * 基本公式给出平均朔日时刻，再叠加太阳平近点角 M、月球平近点角 M'、
- * 月球纬度幅角 F 的三角修正项，修正由日月轨道椭圆率和交点退行导致的偏差。
- * 精度约 ±2 小时（足够判断朔日落在公历哪一天）。
- *
- * @param k 第 k 个朔日（整数），k = 0 ≈ 2000-01-06
- *          k > 0 为之后的朔日，k < 0 为之前的朔日
- * @returns 朔日的儒略日数（JDE）
- */
-export function estimateNewMoonJDE(k: number): number {
-  const T = k / 1236.85; // 儒略世纪数（从 J2000.0 起算）
-  const T2 = T * T;
-  const T3 = T2 * T;
-  const T4 = T3 * T;
-
-  // 平均朔日时刻（Meeus 公式 49.1）
-  let JDE = 2451550.09766
-    + 29.530588861 * k
-    + 0.00015437 * T2
-    - 0.000000150 * T3
-    + 0.00000000073 * T4;
-
-  // 太阳平近点角 M（度）
-  const M = deg2rad(
-    2.5534 + 29.10535670 * k - 0.0000014 * T2 - 0.00000011 * T3,
-  );
-  // 月球平近点角 M'（度）
-  const Mp = deg2rad(
-    201.5643 + 385.81693528 * k + 0.0107582 * T2 + 0.00001238 * T3 - 0.000000058 * T4,
-  );
-  // 月球纬度幅角 F（度）
-  const F = deg2rad(
-    160.7108 + 390.67050284 * k - 0.0016118 * T2 - 0.00000227 * T3 + 0.000000011 * T4,
-  );
-
-  // 主要修正项（精度 ±2 小时）
-  JDE += -0.40720 * Math.sin(Mp)         // 月球近点角修正
-       + 0.17241 * Math.sin(M)           // 太阳近点角修正
-       + 0.01608 * Math.sin(2 * Mp)      // 月球近点角二倍频
-       + 0.01039 * Math.sin(2 * F)       // 月球纬度幅角二倍频
-       + 0.00739 * Math.sin(Mp - M);     // 日月近点角差频
-
-  return JDE;
-}
-
-/**
- * 儒略日数转公历日期 [年, 月, 日]。
- *
- * 基于 Meeus《Astronomical Algorithms》第 7 章的反向转换算法。
- */
-export function jdeToGregorian(jde: number): [number, number, number] {
-  const Z = Math.floor(jde + 0.5);
-  const Frac = jde + 0.5 - Z;
-  let A: number;
-  if (Z < 2299161) {
-    A = Z;
-  } else {
-    const alpha = Math.floor((Z - 1867216.25) / 36524.25);
-    A = Z + 1 + alpha - Math.floor(alpha / 4);
-  }
-  const B = A + 1524;
-  const C = Math.floor((B - 122.1) / 365.25);
-  const D = Math.floor(365.25 * C);
-  const E = Math.floor((B - D) / 30.6001);
-
-  const day = B - D - Math.floor(30.6001 * E) + Math.floor(Frac);
-  const month = E < 14 ? E - 1 : E - 13;
-  const year = month > 2 ? C - 4716 : C - 4715;
-
-  return [year, month, day];
-}
-
-/**
- * 估算指定公历年份农历新年（正月初一）的大约公历日期。
- *
- * ─── 数学原理 ───
- * 农历正月初一总是落在公历 1月21日 ~ 2月20日 之间（天文学事实）。
- * 利用 Meeus 朔日公式搜索该区间内的朔日即为春节。
- * 精度约 ±1 天，可用于交叉验证 LUNAR_INFO 数据表的正确性。
- *
- * @param year 公历年份
- * @returns [公历年, 公历月, 公历日]
- */
-export function estimateLunarNewYear(year: number): [number, number, number] {
-  // k=0 对应 2000-01-06 附近朔日，一年 ≈ 12.3685 个朔望月
-  const k0 = Math.round((year - 2000) * 12.3685);
-
-  // 搜索 1月21日-2月20日 之间的朔日（农历新年必然落在此区间）
-  for (let dk = -2; dk <= 2; dk++) {
-    const jde = estimateNewMoonJDE(k0 + dk);
-    const [y, m, d] = jdeToGregorian(jde);
-    if (y === year && ((m === 1 && d >= 21) || (m === 2 && d <= 20))) {
-      return [y, m, d];
-    }
-  }
-
-  // 回退：扩大搜索范围
-  for (let dk = -4; dk <= 4; dk++) {
-    const jde = estimateNewMoonJDE(k0 + dk);
-    const [y, m, d] = jdeToGregorian(jde);
-    if (y === year && ((m === 1 && d >= 20) || (m === 2 && d <= 21))) {
-      return [y, m, d];
-    }
-  }
-
-  return jdeToGregorian(estimateNewMoonJDE(k0));
-}
-
-// ===================================================================
 // 二十四节气（Solar Terms）——基于权威天文台数据的精确查表
 // ===================================================================
 
@@ -633,16 +531,15 @@ export interface SolarTermInfo {
   date: [number, number, number];
 }
 
-// ─── 节气数据表（1900-2100，共 201 年，基于香港天文台 / 紫金山天文台数据）───
+// ─── 节气数据表（1901-2100，共 200 年，基于香港天文台 / 紫金山天文台数据）───
 //
 // 使用 2-bit 偏移量压缩编码，每年仅需 48 位（1 个 BigInt/long）。
 // 每个节气的 day-of-month = BASE_DAYS[i] + ((packed >> (i*2)) & 3)
 //
-// 与 LUNAR_INFO 类似的紧凑整数设计，201 年仅 ~1.2KB（vs 原始字符串 4.8KB）。
-// 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
+// 与 LUNAR_INFO 类似的紧凑整数设计，200 年仅约 1.2KB。
 
 /** 节气数据覆盖起始年。 */
-const SOLAR_TERM_DATA_START = 1900;
+const SOLAR_TERM_DATA_START = 1901;
 
 /** 节气数据覆盖结束年。 */
 const SOLAR_TERM_DATA_END = 2100;
@@ -657,18 +554,16 @@ const SOLAR_TERM_BASE_DAYS: number[] = [
 ];
 
 /**
- * 节气压缩数据（1900-2100，每年一个 48-bit 整数）。
+ * 节气压缩数据（1901-2100，每年一个 48-bit 整数）。
  *
  * 编码方式：24 个节气 × 2 bit = 48 bit，低位在前。
  *   bit[i*2 .. i*2+1] = 节气 i 的日期偏移量（0-3）
  *   实际日期 = SOLAR_TERM_BASE_DAYS[i] + offset
  *
- * 与 LUNAR_INFO 相同风格的紧凑整数数组设计。
- * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
+ * 与 LUNAR_INFO 相同风格的紧凑整数数组设计，只包含权威表覆盖范围。
  */
 const SOLAR_TERM_PACKED: bigint[] = [
-  0x6aaaa6aa9a56n, // 1900 (VSOP87 估算)
-0x6aaaa6aa9a5an, // 1901
+  0x6aaaa6aa9a5an, // 1901
   0xaaaaaabaaa6an, // 1902
   0xaaabbabbafaan, // 1903
   0x5aa665a65aabn, // 1904
@@ -870,6 +765,150 @@ const SOLAR_TERM_PACKED: bigint[] = [
   0x555555555515n, // 2100
 ];
 
+/** Version and ranges installed from a validated `calendar.cdat` asset. */
+export interface CalendarAssetInfo {
+  majorVersion: number;
+  minorVersion: number;
+  lunarStartYear: number;
+  lunarEndYear: number;
+  solarTermStartYear: number;
+  solarTermEndYear: number;
+}
+
+/**
+ * Validate and install a language-neutral `calendar.cdat` asset.
+ *
+ * Unknown optional sections are skipped; unknown critical sections and all
+ * boundary, overlap, CRC, range, or reserved-field violations are rejected.
+ */
+export function installCalendarAsset(data: ArrayBuffer): CalendarAssetInfo {
+  const view = new DataView(data);
+  if (view.byteLength < 44) throw new RangeError('calendar.cdat 文件过小');
+  if (String.fromCharCode(
+    view.getUint8(0),
+    view.getUint8(1),
+    view.getUint8(2),
+    view.getUint8(3),
+  ) !== 'CDAT') {
+    throw new RangeError('calendar.cdat 魔数无效');
+  }
+  const majorVersion = view.getUint8(4);
+  const minorVersion = view.getUint8(5);
+  if (majorVersion !== 1) {
+    throw new RangeError(`不支持的 calendar.cdat 主版本：${majorVersion}`);
+  }
+  const crcOffset = view.byteLength - 4;
+  if (calendarCrc32(new Uint8Array(data, 0, crcOffset))
+      !== view.getUint32(crcOffset, true)) {
+    throw new RangeError('calendar.cdat CRC32 校验失败');
+  }
+  const sectionCount = view.getUint16(6, true);
+  const dataStart = 16 + sectionCount * 12;
+  if (sectionCount < 2 || dataStart > crcOffset
+      || view.getUint32(8, true) !== 0 || view.getUint32(12, true) !== 0) {
+    throw new RangeError('calendar.cdat header 无效');
+  }
+
+  const sections = new Map<number, { type: number; flags: number; offset: number; length: number }>();
+  const ordered: Array<{ type: number; flags: number; offset: number; length: number }> = [];
+  for (let index = 0; index < sectionCount; index++) {
+    const entry = 16 + index * 12;
+    const section = {
+      type: view.getUint16(entry, true),
+      flags: view.getUint16(entry + 2, true),
+      offset: view.getUint32(entry + 4, true),
+      length: view.getUint32(entry + 8, true),
+    };
+    if ((section.flags & ~1) !== 0 || sections.has(section.type)
+        || section.offset < dataStart
+        || section.offset > crcOffset - section.length) {
+      throw new RangeError(`calendar.cdat section ${section.type} 无效`);
+    }
+    const known = section.type === 1 || section.type === 2;
+    if (!known && (section.flags & 1) !== 0) {
+      throw new RangeError(`未知关键 calendar.cdat section ${section.type}`);
+    }
+    sections.set(section.type, section);
+    ordered.push(section);
+  }
+  ordered.sort((left, right) => left.offset - right.offset);
+  for (let index = 1; index < ordered.length; index++) {
+    const previous = ordered[index - 1];
+    if (previous.offset + previous.length > ordered[index].offset) {
+      throw new RangeError('calendar.cdat section 重叠');
+    }
+  }
+  const lunar = sections.get(1);
+  const solar = sections.get(2);
+  if (!lunar || !solar || (lunar.flags & 1) === 0 || (solar.flags & 1) === 0) {
+    throw new RangeError('calendar.cdat 缺少必需 section');
+  }
+
+  const lunarStart = view.getUint16(lunar.offset, true);
+  const lunarEnd = view.getUint16(lunar.offset + 2, true);
+  const lunarCount = view.getUint16(lunar.offset + 4, true);
+  if (lunar.length !== 8 + lunarCount * 4
+      || view.getUint16(lunar.offset + 6, true) !== 0
+      || lunarStart !== LUNAR_START_YEAR || lunarEnd !== LUNAR_END_YEAR
+      || lunarCount !== YEAR_COUNT) {
+    throw new RangeError('calendar.cdat 农历 section 范围无效');
+  }
+  const lunarValues = new Array<number>(lunarCount);
+  for (let index = 0; index < lunarCount; index++) {
+    lunarValues[index] = view.getUint32(lunar.offset + 8 + index * 4, true);
+  }
+
+  const solarStart = view.getUint16(solar.offset, true);
+  const solarEnd = view.getUint16(solar.offset + 2, true);
+  const solarCount = view.getUint16(solar.offset + 4, true);
+  const termCount = view.getUint8(solar.offset + 6);
+  if (solar.length !== 8 + termCount + solarCount * 6
+      || view.getUint8(solar.offset + 7) !== 0
+      || solarStart !== SOLAR_TERM_DATA_START
+      || solarEnd !== SOLAR_TERM_DATA_END
+      || solarCount !== SOLAR_TERM_PACKED.length || termCount !== 24) {
+    throw new RangeError('calendar.cdat 节气 section 范围无效');
+  }
+  for (let index = 0; index < termCount; index++) {
+    if (view.getUint8(solar.offset + 8 + index)
+        !== SOLAR_TERM_BASE_DAYS[index]) {
+      throw new RangeError(`calendar.cdat 节气基准日 ${index} 无效`);
+    }
+  }
+  const solarValues = new Array<bigint>(solarCount);
+  let solarOffset = solar.offset + 8 + termCount;
+  for (let year = 0; year < solarCount; year++) {
+    let packed = 0n;
+    for (let byte = 0; byte < 6; byte++) {
+      packed |= BigInt(view.getUint8(solarOffset++)) << BigInt(byte * 8);
+    }
+    solarValues[year] = packed;
+  }
+
+  LUNAR_INFO.splice(0, LUNAR_INFO.length, ...lunarValues);
+  SOLAR_TERM_PACKED.splice(0, SOLAR_TERM_PACKED.length, ...solarValues);
+  rebuildLunarTables();
+  return {
+    majorVersion,
+    minorVersion,
+    lunarStartYear: lunarStart,
+    lunarEndYear: lunarEnd,
+    solarTermStartYear: solarStart,
+    solarTermEndYear: solarEnd,
+  };
+}
+
+function calendarCrc32(bytes: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (const value of bytes) {
+    crc ^= value;
+    for (let bit = 0; bit < 8; bit++) {
+      crc = (crc >>> 1) ^ ((crc & 1) !== 0 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
 
 /**
  * 24 个节气按时间顺序排列的名称、黄经度数、对应月份。
@@ -918,28 +957,22 @@ function decodeSolarTermDay(packed: bigint, termIndex: number): number {
  * 计算指定公历年的所有 24 节气日期。
  *
  * ─── 数据来源 ───
- * 1900-2100 年使用权威天文台预计算数据（香港天文台 / 紫金山天文台），精度为准确日期。
- * 注：1900 年使用 VSOP87 公式估算（HKO 原始数据从 1901 年起）。
- * 超出范围时回退到 VSOP87 太阳黄经公式估算（精度 ±1 天）。
+ * 1901-2100 年使用权威天文台预计算数据。超出范围时明确拒绝，
+ * 不使用近似公式静默扩大支持范围。
  *
  * @param year 公历年份
  * @returns 24 个节气信息，按时间顺序排列
  */
 export function getSolarTerms(year: number): SolarTermInfo[] {
-  // 数据表范围内：精确查表
-  if (year >= SOLAR_TERM_DATA_START && year <= SOLAR_TERM_DATA_END) {
-    const packed = SOLAR_TERM_PACKED[year - SOLAR_TERM_DATA_START];
-    const results: SolarTermInfo[] = [];
-    for (let i = 0; i < 24; i++) {
-      const { name, longitude, month } = TERM_INFO[i];
-      const day = decodeSolarTermDay(packed, i);
-      results.push({ name, longitude, date: [year, month, day] });
-    }
-    return results;
+  validateSolarTermYear(year);
+  const packed = SOLAR_TERM_PACKED[year - SOLAR_TERM_DATA_START];
+  const results: SolarTermInfo[] = [];
+  for (let i = 0; i < 24; i++) {
+    const { name, longitude, month } = TERM_INFO[i];
+    const day = decodeSolarTermDay(packed, i);
+    results.push({ name, longitude, date: [year, month, day] });
   }
-
-  // 回退到公式估算
-  return getSolarTermsByFormula(year);
+  return results;
 }
 
 /**
@@ -951,131 +984,16 @@ export function getSolarTerms(year: number): SolarTermInfo[] {
  * @returns 节气名称，如果当天不是节气则返回 null
  */
 export function getSolarTerm(solarYear: number, solarMonth: number, solarDay: number): string | null {
-  // 数据表范围内：直接定位（无需遍历全部 24 个节气）
-  if (solarYear >= SOLAR_TERM_DATA_START && solarYear <= SOLAR_TERM_DATA_END) {
-    const packed = SOLAR_TERM_PACKED[solarYear - SOLAR_TERM_DATA_START];
-    for (let i = 0; i < 24; i++) {
-      if (TERM_INFO[i].month === solarMonth) {
-        const day = decodeSolarTermDay(packed, i);
-        if (day === solarDay) return TERM_INFO[i].name;
-      }
-    }
-    return null;
+  validateSolarTermYear(solarYear);
+  if (solarMonth < 1 || solarMonth > 12 || solarDay < 1 || solarDay > 31) {
+    throw new RangeError(`无效公历日期：${solarYear}-${solarMonth}-${solarDay}`);
   }
-
-  // 回退到公式估算
-  const terms = getSolarTermsByFormula(solarYear);
-  for (const term of terms) {
-    if (term.date[0] === solarYear && term.date[1] === solarMonth && term.date[2] === solarDay) {
-      return term.name;
-    }
-  }
+  const packed = SOLAR_TERM_PACKED[solarYear - SOLAR_TERM_DATA_START];
+  const first = (solarMonth - 1) * 2;
+  if (decodeSolarTermDay(packed, first) === solarDay) return TERM_INFO[first].name;
+  const second = first + 1;
+  if (decodeSolarTermDay(packed, second) === solarDay) return TERM_INFO[second].name;
   return null;
-}
-
-// ===================================================================
-// VSOP87 公式估算（作为数据表范围外的回退方案）
-// ===================================================================
-
-/**
- * 计算太阳黄经（简化 VSOP87 近似）。
- *
- * 基于 Jean Meeus《Astronomical Algorithms》第 25 章简化公式。
- * 精度约 ±0.01°，对于节气日期计算足够（节气间隔约 15 天，0.01° ≈ 几分钟）。
- *
- * @param jde 儒略日数
- * @returns 太阳黄经（度，0-360）
- */
-function solarLongitude(jde: number): number {
-  const T = (jde - 2451545.0) / 36525.0; // 儒略世纪数（J2000.0 起算）
-  const T2 = T * T;
-
-  // 太阳几何平黄经（度）
-  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T2;
-
-  // 太阳平近点角（度）
-  const M = 357.52911 + 35999.05029 * T - 0.0001537 * T2;
-  const Mrad = deg2rad(M);
-
-  // 太阳中心方程
-  const C = (1.914602 - 0.004817 * T - 0.000014 * T2) * Math.sin(Mrad)
-          + (0.019993 - 0.000101 * T) * Math.sin(2 * Mrad)
-          + 0.000289 * Math.sin(3 * Mrad);
-
-  // 太阳真黄经
-  const sunLon = L0 + C;
-
-  // 章动修正（简化）
-  const omega = 125.04 - 1934.136 * T;
-  const lon = sunLon - 0.00569 - 0.00478 * Math.sin(deg2rad(omega));
-
-  return ((lon % 360) + 360) % 360;
-}
-
-/**
- * 公历日期转儒略日数。
- */
-function gregorianToJDE(year: number, month: number, day: number): number {
-  let y = year;
-  let m = month;
-  if (m <= 2) {
-    y -= 1;
-    m += 12;
-  }
-  const A = Math.floor(y / 100);
-  const B = 2 - A + Math.floor(A / 4);
-  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B - 1524.5;
-}
-
-/** 回退方案：使用 VSOP87 公式计算节气日期（精度 ±1 天）。 */
-function getSolarTermsByFormula(year: number): SolarTermInfo[] {
-  const results: SolarTermInfo[] = [];
-  for (const { name, longitude } of TERM_INFO) {
-    const date = findSolarTermDate(year, longitude);
-    results.push({ name, longitude, date });
-  }
-  return results;
-}
-
-/**
- * 查找指定年份某个节气的公历日期。
- *
- * 使用迭代搜索：从估算日期开始，计算太阳黄经与目标的差，逐步逼近。
- */
-function findSolarTermDate(year: number, targetLon: number): [number, number, number] {
-  // 估算初始 JDE：节气大约均匀分布在一年中
-  // 春分约 3月20日 = 黄经 0°，每 15° ≈ 15.22 天
-  let monthEstimate: number;
-  if (targetLon >= 285) {
-    // 小寒(285)~雨水(330) → 1~2 月
-    monthEstimate = 1 + (targetLon - 285) / 30;
-  } else {
-    // 春分(0)~冬至(270) → 3~12 月
-    monthEstimate = 3 + targetLon / 30;
-  }
-
-  const dayEstimate = Math.round((monthEstimate % 1) * 30);
-  const monthInt = Math.min(12, Math.max(1, Math.floor(monthEstimate)));
-  const dayInt = Math.min(28, Math.max(1, dayEstimate || 15));
-
-  let jde = gregorianToJDE(year, monthInt, dayInt);
-
-  // 迭代逼近（通常 3-5 次收敛）
-  for (let i = 0; i < 50; i++) {
-    const lon = solarLongitude(jde);
-    let diff = targetLon - lon;
-
-    // 处理 0°/360° 边界
-    if (diff > 180) diff -= 360;
-    if (diff < -180) diff += 360;
-
-    if (Math.abs(diff) < 0.0001) break; // 精度足够
-
-    // 太阳每天移动约 360/365.25 ≈ 0.9856°
-    jde += diff / 0.9856;
-  }
-
-  return jdeToGregorian(jde);
 }
 
 // ===================================================================
@@ -1086,6 +1004,14 @@ function validateYear(year: number): void {
   if (year < LUNAR_START_YEAR || year > LUNAR_END_YEAR) {
     throw new RangeError(
       `年份 ${year} 超出范围，农历数据覆盖 ${LUNAR_START_YEAR}-${LUNAR_END_YEAR}`,
+    );
+  }
+}
+
+function validateSolarTermYear(year: number): void {
+  if (year < SOLAR_TERM_DATA_START || year > SOLAR_TERM_DATA_END) {
+    throw new RangeError(
+      `年份 ${year} 超出节气数据范围 ${SOLAR_TERM_DATA_START}-${SOLAR_TERM_DATA_END}`,
     );
   }
 }
@@ -1118,4 +1044,34 @@ function buildLunarInfo(
     dayName,
     fullName,
   };
+}
+
+function nextLunarDay(
+  current: LunarInfo,
+  locale: 'zh-CN' | 'zh-TW',
+): LunarInfo {
+  const daysInMonth = current.isLeapMonth
+    ? leapMonthDays(current.year)
+    : monthDays(current.year, current.month);
+  if (current.day < daysInMonth) {
+    return buildLunarInfo(
+      current.year,
+      current.month,
+      current.day + 1,
+      current.isLeapMonth,
+      locale,
+    );
+  }
+  if (!current.isLeapMonth && leapMonth(current.year) === current.month) {
+    return buildLunarInfo(current.year, current.month, 1, true, locale);
+  }
+  if (current.month < 12) {
+    return buildLunarInfo(current.year, current.month + 1, 1, false, locale);
+  }
+  if (current.year >= LUNAR_END_YEAR) {
+    throw new RangeError(
+      `日期超出农历转换范围（${LUNAR_START_YEAR}-${LUNAR_END_YEAR}）`,
+    );
+  }
+  return buildLunarInfo(current.year + 1, 1, 1, false, locale);
 }

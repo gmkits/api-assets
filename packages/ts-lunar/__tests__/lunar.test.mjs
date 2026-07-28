@@ -7,7 +7,7 @@
  * - 闰月互转 / 无效闰月报错 / 小月溢出
  * - 天干地支 / 生肖
  * - 边界与异常
- * - 朔日天文估算
+ * - 权威节气范围与越界行为
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -21,13 +21,16 @@ import {
     solarToLunar, solarToLunarFromStr, lunarToSolar, lunarToSolarStr,
     getTianGan, getDiZhi, getGanZhi, getShengXiao,
     getMonthName, getDayName,
-    estimateNewMoonJDE, jdeToGregorian, estimateLunarNewYear,
-    getSolarTerms, getSolarTerm, SOLAR_TERM_NAMES,
+    getSolarTerms, getSolarTerm, SOLAR_TERM_NAMES, installCalendarAsset,
 } from '../dist/esm/index.js';
 
 // ─── 加载全量参照 CSV ───
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const csvPath = resolve(__dirname, '../../../tests/lunar-golden.csv');
+const calendarAssetPath = resolve(
+    __dirname,
+    '../../../data/date-assets/calendar/calendar.cdat',
+);
 const csvRows = readFileSync(csvPath, 'utf-8')
     .split('\n')
     .slice(1)                     // 跳过表头
@@ -55,6 +58,39 @@ describe('数据表完整性', () => {
           assert.ok(md === 29 || md === 30, `${y}-${m} ${md}天`);
       }
     }
+  });
+});
+
+describe('calendar.cdat', () => {
+  it('校验并安装同一份跨语言资产', () => {
+    const bytes = readFileSync(calendarAssetPath);
+    const data = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    );
+    assert.deepEqual(installCalendarAsset(data), {
+      majorVersion: 1,
+      minorVersion: 0,
+      lunarStartYear: 1900,
+      lunarEndYear: 2100,
+      solarTermStartYear: 1901,
+      solarTermEndYear: 2100,
+    });
+    const lunar = solarToLunar(2025, 1, 29);
+    assert.deepEqual(
+      [lunar.year, lunar.month, lunar.day, lunar.isLeapMonth],
+      [2025, 1, 1, false],
+    );
+  });
+
+  it('拒绝损坏的 CRC', () => {
+    const bytes = Buffer.from(readFileSync(calendarAssetPath));
+    bytes[bytes.length - 5] ^= 1;
+    const data = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    );
+    assert.throws(() => installCalendarAsset(data), /CRC32/);
   });
 });
 
@@ -275,41 +311,6 @@ describe('名称', () => {
   });
 });
 
-// ─── 朔日天文估算 ───
-
-describe('朔日估算', () => {
-    it('k=0 JDE ≈ 2451550', () => {
-    const jde = estimateNewMoonJDE(0);
-        assert.ok(jde > 2451549 && jde < 2451552);
-  });
-
-    it('JDE→公历：2451545.0 = 2000-01-01', () => {
-    const [y, m, d] = jdeToGregorian(2451545.0);
-        assert.deepStrictEqual([y, m, d], [2000, 1, 1]);
-  });
-
-    it('春节估算精度 ≤2 天', () => {
-        const known = [
-      [2020, 1, 25], [2021, 2, 12], [2022, 2, 1], [2023, 1, 22],
-      [2024, 2, 10], [2025, 1, 29], [2026, 2, 17], [2027, 2, 6],
-      [2028, 1, 26], [2029, 2, 13], [2030, 2, 3],
-    ];
-        for (const [yr, em, ed] of known) {
-      const [ey, rm, rd] = estimateLunarNewYear(yr);
-            assert.equal(ey, yr);
-            const diff = Math.abs(Date.UTC(yr, em - 1, ed) - Date.UTC(ey, rm - 1, rd)) / 86400000;
-            assert.ok(diff <= 2, `${yr}年偏差${diff}天`);
-    }
-  });
-
-    it('相邻朔日间隔 29.2-29.9 天', () => {
-    for (let k = -100; k < 100; k++) {
-        const interval = estimateNewMoonJDE(k + 1) - estimateNewMoonJDE(k);
-        assert.ok(interval >= 29.2 && interval <= 29.9, `k=${k} 间隔${interval.toFixed(4)}`);
-    }
-  });
-});
-
 // ─── 二十四节气 ───
 
 // 加载节气全量参照 CSV
@@ -321,7 +322,8 @@ const solarTermsCsvRows = readFileSync(solarTermsCsvPath, 'utf-8')
     .map(line => {
         const [year, termIndex, termName, month, day] = line.split(',');
         return [Number(year), Number(termIndex), termName, Number(month), Number(day)];
-    });
+    })
+    .filter(([year]) => year >= 1901);
 
 describe('二十四节气', () => {
   it('SOLAR_TERM_NAMES 应有 24 个名称', () => {
@@ -389,6 +391,12 @@ describe('二十四节气', () => {
     assert.equal(result, null);
   });
 
+  it('超出权威数据范围应拒绝估算', () => {
+    assert.throws(() => getSolarTerms(1900), RangeError);
+    assert.throws(() => getSolarTerms(2101), RangeError);
+    assert.throws(() => getSolarTerm(1900, 1, 6), RangeError);
+  });
+
   it('节气按时间顺序排列', () => {
     const terms = getSolarTerms(2025);
     for (let i = 1; i < terms.length; i++) {
@@ -398,7 +406,7 @@ describe('二十四节气', () => {
     }
   });
 
-  it('CSV 全量验证（4,824 行，1900-2100 全部 24 节气）', () => {
+  it('CSV 全量验证（4,800 行，1901-2100 全部 24 节气）', () => {
     let checked = 0;
     // 按年分组验证
     let currentYear = null;
@@ -414,6 +422,6 @@ describe('二十四节气', () => {
       assert.equal(term.date[2], day, `${year} ${termName} 日期不匹配（期望 ${month}-${day}，实际 ${term.date[1]}-${term.date[2]}）`);
       checked++;
     }
-    assert.ok(checked >= 4824, `仅验证了 ${checked} 行，期望 ≥4824`);
+    assert.equal(checked, 4800, `验证了 ${checked} 行，期望 4800`);
   });
 });

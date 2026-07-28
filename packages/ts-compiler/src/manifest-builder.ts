@@ -6,12 +6,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import type { Manifest, BundleEntry } from '@holiday/spec';
-import {
-  HDAY_MAGIC,
-  HDAY_HEADER_SIZE,
-  HDAY_SECTION_ENTRY_SIZE,
-  SECTION_TYPES,
-} from '@holiday/spec';
+import { parseHdayBundle } from '@holiday/spec';
 
 /**
  * Recursively find all .hday files in a directory.
@@ -45,26 +40,17 @@ function parseHdayHeader(buf: Buffer): {
   sourceVersion: string;
   generatedAt: string;
 } {
-  const magic = buf.subarray(0, 4).toString('ascii');
-  if (magic !== HDAY_MAGIC) {
-      throw new Error('.hday 文件无效');
-  }
-  const year = buf.readUInt16LE(8);
-  const regionCodeLen = buf.readUInt8(10);
-  const regionCode = buf.subarray(11, 11 + regionCodeLen).toString('utf-8');
-  const sectionCount = buf.readUInt16LE(30);
-  let sourceVersion = '';
-  let generatedAt = '';
-  for (let index = 0; index < sectionCount; index++) {
-    const entry = HDAY_HEADER_SIZE + index * HDAY_SECTION_ENTRY_SIZE;
-    if (buf.readUInt16LE(entry) !== SECTION_TYPES.EXT_JSON) continue;
-    const offset = buf.readUInt32LE(entry + 2);
-    const length = buf.readUInt32LE(offset);
-    const json = JSON.parse(buf.subarray(offset + 4, offset + 4 + length).toString('utf8'));
-    sourceVersion = String(json.sourceVersion ?? '');
-    generatedAt = String(json.generatedAt ?? '');
-  }
-  return { regionCode, year, sourceVersion, generatedAt };
+  const data = buf.buffer.slice(
+    buf.byteOffset,
+    buf.byteOffset + buf.byteLength,
+  ) as ArrayBuffer;
+  const bundle = parseHdayBundle(data);
+  return {
+    regionCode: bundle.header.regionCode,
+    year: bundle.header.year,
+    sourceVersion: bundle.metadata.sourceVersion ?? '',
+    generatedAt: bundle.metadata.generatedAt ?? '',
+  };
 }
 
 /**
@@ -122,8 +108,8 @@ export function buildManifest(
   }
 
   return {
-    specVersion: options?.specVersion ?? '1.0.0',
-    bundleFormatVersion: options?.bundleFormatVersion ?? '1',
+    specVersion: options?.specVersion ?? '2.0.0',
+    bundleFormatVersion: options?.bundleFormatVersion ?? '2',
     defaultRegion: options?.defaultRegion ?? Object.keys(bundles)[0] ?? 'CN',
     publishedAt: options?.publishedAt ?? latestGeneratedAt,
     bundles,

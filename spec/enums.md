@@ -82,24 +82,28 @@
 
 | 编码 | 名称 | 说明 |
 | --- | --- | --- |
-| `0x0001` | `DAY_TABLE` | 每日主表 |
+| `0x0001` | `DAY_OVERRIDES` | 稀疏日期覆盖表 |
 | `0x0002` | `STRING_TABLE` | 字符串池 |
 | `0x0003` | `NAME_LIST_TABLE` | 名称/标签列表 |
-| `0x0004` | `EXT_JSON` | 年级扩展 JSON |
+| `0x0004` | `META_TABLE` | 可跳过未知键的元数据表 |
 | `0x0005` - `0xFFFF` | 预留 | 未来扩展 |
 
-### 7.3 DAY_TABLE 标志位
+### 7.3 Section flags
 
 | 位 | 掩码 | 名称 | 说明 |
 | --- | --- | --- | --- |
-| 0 | `0x0001` | `IS_HOLIDAY` | 休息日 |
-| 1 | `0x0002` | `IS_WORKDAY` | 工作日 |
-| 2 | `0x0004` | `IS_WEEKEND` | 默认周末 |
-| 3 | `0x0008` | `IS_STATUTORY_HOLIDAY` | 法定节假日 |
-| 4 | `0x0010` | `IS_ADJUSTED_WORKDAY` | 调休补班 |
-| 5 | `0x0020` | `HAS_NAME` | 存在名称列表 |
-| 6 | `0x0040` | `HAS_LABEL` | 存在标签列表 |
-| 7 - 15 | `0xFF80` | 预留 | 当前必须为 0 |
+| 0 | `0x0001` | `CRITICAL` | 未识别此 section 时必须拒绝文件 |
+| 1 - 15 | `0xFFFE` | 预留 | 当前必须为 0 |
+
+### 7.4 DAY_OVERRIDES 状态位
+
+| 位 | 掩码 | 名称 | 说明 |
+| --- | --- | --- | --- |
+| 0 | `0x01` | `FORCE_HOLIDAY` | 强制休息 |
+| 1 | `0x02` | `FORCE_WORKDAY` | 强制工作 |
+| 2 | `0x04` | `STATUTORY_HOLIDAY` | 法定节假日 |
+| 3 | `0x08` | `ADJUSTED_WORKDAY` | 调休补班 |
+| 4 - 7 | `0xF0` | 预留 | 当前必须为 0 |
 
 ## 8. 扩展字段
 

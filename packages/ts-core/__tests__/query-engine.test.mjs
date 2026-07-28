@@ -12,7 +12,27 @@ import {
   resolveLabels,
 } from '../dist/esm/index.js';
 
-import { DAY_FLAGS, NO_INDEX } from '../../ts-spec/dist/esm/index.js';
+import { NO_INDEX } from '../../ts-spec/dist/esm/index.js';
+
+function workdayTable(dayCount) {
+  const words = Math.ceil(dayCount / 32);
+  const workdayBits = new Uint32Array(words);
+  workdayBits.fill(0xffffffff);
+  const nameListIndexes = new Int16Array(dayCount);
+  const labelListIndexes = new Int16Array(dayCount);
+  nameListIndexes.fill(-1);
+  labelListIndexes.fill(-1);
+  return {
+    length: dayCount,
+    holidayBits: new Uint32Array(words),
+    workdayBits,
+    weekendBits: new Uint32Array(words),
+    statutoryBits: new Uint32Array(words),
+    adjustedBits: new Uint32Array(words),
+    nameListIndexes,
+    labelListIndexes,
+  };
+}
 
 describe('isLeapYear', () => {
   it('should identify leap years', () => {
@@ -170,7 +190,7 @@ describe('queryDay', () => {
     const bundle = {
       header: {
         magic: 'HDAY',
-        majorVersion: 1,
+        majorVersion: 2,
         minorVersion: 0,
         flags: 0,
         year: 1900,
@@ -179,16 +199,10 @@ describe('queryDay', () => {
         dayCount: 1,
         sectionCount: 0,
       },
-      days: [
-        {
-          flags: DAY_FLAGS.IS_WORKDAY,
-          nameListIndex: NO_INDEX,
-          labelListIndex: NO_INDEX,
-          extIndex: NO_INDEX,
-        },
-      ],
-      strings: [],
-      nameLists: [],
+      days: workdayTable(1),
+      names: [],
+      labels: [],
+      metadata: {},
     };
 
     const info = queryDay(bundle, '1900-01-01');
@@ -201,7 +215,7 @@ describe('queryDay', () => {
     const bundle = {
       header: {
         magic: 'HDAY',
-        majorVersion: 1,
+        majorVersion: 2,
         minorVersion: 0,
         flags: 0,
         year: 2101,
@@ -210,14 +224,10 @@ describe('queryDay', () => {
         dayCount: 29,
         sectionCount: 0,
       },
-      days: Array.from({ length: 29 }, () => ({
-        flags: DAY_FLAGS.IS_WORKDAY,
-        nameListIndex: NO_INDEX,
-        labelListIndex: NO_INDEX,
-        extIndex: NO_INDEX,
-      })),
-      strings: [],
-      nameLists: [],
+      days: workdayTable(29),
+      names: [],
+      labels: [],
+      metadata: {},
     };
 
     const lastSupported = queryDay(bundle, '2101-01-28');

@@ -2,6 +2,7 @@ package com.github.gmkits.holiday.core;
 
 import com.github.gmkits.holiday.spec.DayInfo;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -10,29 +11,54 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.regex.Pattern;
 
 /**
  * {@link HolidayService} 默认实现。
  *
  * <p>bundle 以 {@code (region, year)} 为粒度懒加载并放入无锁并发缓存；
- * 未安装的年份也会负缓存。区间和整年查询优先走 bundle 级批量路径，
+ * 不缓存缺失或非法键。区间和整年查询优先走 bundle 级批量路径，
  * 避免逐日重复查询和中间集合。</p>
  */
 final class HolidayServiceImpl implements HolidayService {
 
+    private static final Pattern REGION_CODE =
+            Pattern.compile("[A-Z]{2}(?:-[A-Z0-9]{1,8})*");
+
     private final String defaultRegion;
     private final Path dataPath;
     private final boolean classpathFallback;
-    private final ConcurrentMap<String, Optional<HdayBundle>> cache;
+    private final ConcurrentMap<String, HdayBundle> cache;
+    private final BundleManifest filesystemManifest;
+    private final BundleManifest classpathManifest;
+    private final int defaultCacheStartYear;
+    private final AtomicReferenceArray<HdayBundle> defaultYearCache;
 
     HolidayServiceImpl(String defaultRegion, Path dataPath, boolean classpathFallback) {
         this.defaultRegion = defaultRegion;
         this.dataPath = dataPath;
         this.classpathFallback = classpathFallback;
         this.cache = new ConcurrentHashMap<>();
+        try {
+            this.filesystemManifest = BundleManifest.filesystem(dataPath);
+            this.classpathManifest = classpathFallback
+                    ? BundleManifest.classpath(getClass().getClassLoader())
+                    : null;
+            int[] defaultRange = mergeRanges(
+                    filesystemManifest == null
+                            ? null : filesystemManifest.yearRange(defaultRegion),
+                    classpathManifest == null
+                            ? null : classpathManifest.yearRange(defaultRegion));
+            this.defaultCacheStartYear = defaultRange == null ? 0 : defaultRange[0];
+            this.defaultYearCache = defaultRange == null ? null
+                    : new AtomicReferenceArray<>(
+                            defaultRange[1] - defaultRange[0] + 1);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to read holiday manifest", exception);
+        }
     }
 
     @Override
@@ -51,26 +77,28 @@ final class HolidayServiceImpl implements HolidayService {
 
     @Override
     public boolean isHoliday(LocalDate date) {
-        DayInfo info = getDayInfo(date);
-        return info != null && info.isHoliday();
+        HdayBundle bundle = resolveBundle(defaultRegion, date.getYear());
+        return bundle != null && bundle.isHoliday(date.getDayOfYear() - 1);
     }
 
     @Override
     public boolean isWorkday(LocalDate date) {
-        DayInfo info = getDayInfo(date);
-        return info != null && info.isWorkday();
+        HdayBundle bundle = resolveBundle(defaultRegion, date.getYear());
+        return bundle != null && bundle.isWorkday(date.getDayOfYear() - 1);
     }
 
     @Override
     public boolean isStatutoryHoliday(LocalDate date) {
-        DayInfo info = getDayInfo(date);
-        return info != null && info.isStatutoryHoliday();
+        HdayBundle bundle = resolveBundle(defaultRegion, date.getYear());
+        return bundle != null
+                && bundle.isStatutoryHoliday(date.getDayOfYear() - 1);
     }
 
     @Override
     public boolean isAdjustedWorkday(LocalDate date) {
-        DayInfo info = getDayInfo(date);
-        return info != null && info.isAdjustedWorkday();
+        HdayBundle bundle = resolveBundle(defaultRegion, date.getYear());
+        return bundle != null
+                && bundle.isAdjustedWorkday(date.getDayOfYear() - 1);
     }
 
     @Override
@@ -178,6 +206,11 @@ final class HolidayServiceImpl implements HolidayService {
     @Override
     public void clearCache() {
         cache.clear();
+        if (defaultYearCache != null) {
+            for (int index = 0; index < defaultYearCache.length(); index++) {
+                defaultYearCache.set(index, null);
+            }
+        }
     }
 
     private static int estimateRangeCapacity(LocalDate from, LocalDate to) {
@@ -189,9 +222,51 @@ final class HolidayServiceImpl implements HolidayService {
     }
 
     private HdayBundle resolveBundle(String region, int year) {
+        if (defaultYearCache != null && defaultRegion.equals(region)) {
+            int index = year - defaultCacheStartYear;
+            if (index < 0 || index >= defaultYearCache.length()) {
+                return null;
+            }
+            HdayBundle cached = defaultYearCache.get(index);
+            if (cached != null) return cached;
+            if (!isDeclared(region, year)) return null;
+            HdayBundle loaded = loadBundle(region, year);
+            if (loaded == null) return null;
+            if (defaultYearCache.compareAndSet(index, null, loaded)) {
+                return loaded;
+            }
+            return defaultYearCache.get(index);
+        }
+
+        /*
+         * 已加载的合法键直接命中缓存。格式和 manifest 校验只属于首次加载路径；
+         * 若在每次查询时运行正则和 manifest Map 查询，会污染最常用的单日热路径。
+         * 非法键永远不会被写入 cache，因此前置读取不会绕过约束。
+         */
         String key = region + "/" + year;
-        return cache.computeIfAbsent(
-                key, ignored -> Optional.ofNullable(loadBundle(region, year))).orElse(null);
+        HdayBundle cached = cache.get(key);
+        if (cached != null) return cached;
+        if (region == null || !REGION_CODE.matcher(region).matches()
+                || year < 1 || year > 9999) {
+            return null;
+        }
+        if ((filesystemManifest != null || classpathManifest != null)
+                && !isDeclared(region, year)) {
+            return null;
+        }
+        HdayBundle loaded = loadBundle(region, year);
+        if (loaded == null) return null;
+        HdayBundle raced = cache.putIfAbsent(key, loaded);
+        return raced == null ? loaded : raced;
+    }
+
+    private static int[] mergeRanges(int[] first, int[] second) {
+        if (first == null) return second;
+        if (second == null) return first;
+        return new int[] {
+            Math.min(first[0], second[0]),
+            Math.max(first[1], second[1])
+        };
     }
 
     private HdayBundle loadBundle(String region, int year) {
@@ -206,12 +281,19 @@ final class HolidayServiceImpl implements HolidayService {
         if (dataPath == null) {
             return null;
         }
+        if (filesystemManifest != null && !filesystemManifest.contains(region, year)) {
+            return null;
+        }
         Path file = dataPath.resolve(region).resolve(year + ".hday");
         if (!Files.isRegularFile(file)) {
             return null;
         }
         try {
-            return HdayReader.read(file);
+            byte[] data = Files.readAllBytes(file);
+            if (filesystemManifest != null) {
+                filesystemManifest.verify(region, year, data);
+            }
+            return HdayReader.read(data);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read holiday bundle " + file, e);
         }
@@ -232,9 +314,33 @@ final class HolidayServiceImpl implements HolidayService {
             if (in == null) {
                 return null;
             }
-            return HdayReader.read(in);
+            byte[] data = readAllBytes(in);
+            if (classpathManifest != null) {
+                String[] parts = resource.split("/");
+                int year = Integer.parseInt(
+                        parts[parts.length - 1].replace(".hday", ""));
+                String region = parts[parts.length - 2];
+                classpathManifest.verify(region, year, data);
+            }
+            return HdayReader.read(data);
         } catch (IOException e) {
-            return null;
+            throw new IllegalStateException(
+                    "Failed to read classpath holiday bundle " + resource, e);
         }
+    }
+
+    private boolean isDeclared(String region, int year) {
+        return filesystemManifest != null && filesystemManifest.contains(region, year)
+                || classpathManifest != null && classpathManifest.contains(region, year);
+    }
+
+    private static byte[] readAllBytes(InputStream input) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream(4096);
+        byte[] buffer = new byte[4096];
+        int count;
+        while ((count = input.read(buffer)) >= 0) {
+            output.write(buffer, 0, count);
+        }
+        return output.toByteArray();
     }
 }

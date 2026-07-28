@@ -1,106 +1,82 @@
 package com.github.gmkits.holiday.lunar;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
+import java.util.Set;
+import java.util.zip.CRC32;
 
 /**
- * 可替换日历资产加载器。
+ * 可替换的紧凑日历资产加载器。
  *
- * <p>优先读取 {@code -Dcn.holiday.assets.path=/path/to/date-assets} 或
- * {@code CN_HOLIDAY_ASSETS}，找不到配置时读取随统一库发布的 classpath 资产。</p>
+ * <p>{@code calendar/calendar.cdat} 同时保存 1900–2100 农历年度描述符和
+ * 1901–2100 节气 48-bit 表，替代运行时解析约 100 KB CSV/HEX 文本。</p>
  */
 final class CalendarAssetLoader {
 
     private static final String ROOT_PROPERTY = "cn.holiday.assets.path";
     private static final String ROOT_ENV = "CN_HOLIDAY_ASSETS";
     private static final String CLASSPATH_ROOT = "cn-holiday-kit/assets/";
-    private static final Pattern HEX_VALUE = Pattern.compile("0x([0-9a-fA-F]+)");
+    private static final String ASSET_PATH = "calendar/calendar.cdat";
+    private static final int HEADER_SIZE = 16;
+    private static final int SECTION_ENTRY_SIZE = 12;
+    private static final int SECTION_CRITICAL = 1;
+    private static final int SECTION_LUNAR = 1;
+    private static final int SECTION_SOLAR = 2;
+
+    private static volatile boolean attempted;
+    private static volatile CalendarData cached;
 
     private CalendarAssetLoader() {
     }
 
     static int[] loadLunarYears(int[] fallback) {
-        try (InputStream input = open("calendar/lunar-years.hex")) {
-            if (input == null) return fallback;
-            Matcher matcher = HEX_VALUE.matcher(readUtf8(input));
-            List<Integer> values = new ArrayList<>();
-            while (matcher.find()) values.add(Integer.parseInt(matcher.group(1), 16));
-            if (values.size() != fallback.length) {
-                throw new IllegalStateException("Expected " + fallback.length
-                        + " lunar year values, got " + values.size());
-            }
-            int[] result = new int[values.size()];
-            for (int i = 0; i < result.length; i++) result[i] = values.get(i);
-            return result;
-        } catch (IOException | RuntimeException ex) {
-            throw new ExceptionInInitializerError("Failed to load lunar date asset: " + ex.getMessage());
+        CalendarData data = load();
+        if (data == null) return fallback;
+        if (data.lunarStart != 1900 || data.lunarEnd != 2100
+                || data.lunarYears.length != fallback.length) {
+            throw new ExceptionInInitializerError("calendar.cdat lunar range mismatch");
         }
+        return data.lunarYears.clone();
     }
 
-    static long[] loadSolarTerms(int startYear, int endYear, int[] baseDays, long[] fallback) {
-        try (InputStream input = open("calendar/solar-terms.csv")) {
-            int yearCount = endYear - startYear + 1;
-            if (input == null) {
-                if (fallback.length == yearCount) return fallback;
-                long[] aligned = new long[yearCount];
-                System.arraycopy(fallback, fallback.length - yearCount, aligned, 0, yearCount);
-                return aligned;
+    static long[] loadSolarTerms(
+            int startYear,
+            int endYear,
+            int[] baseDays,
+            long[] fallback) {
+        CalendarData data = load();
+        int yearCount = endYear - startYear + 1;
+        if (data == null) {
+            if (fallback.length != yearCount) {
+                throw new ExceptionInInitializerError(
+                        "Embedded solar-term range mismatch");
             }
-            long[] packed = new long[yearCount];
-            boolean[][] seen = new boolean[yearCount][24];
-
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(input, StandardCharsets.UTF_8))) {
-                String line;
-                boolean header = true;
-                while ((line = reader.readLine()) != null) {
-                    if (header) {
-                        header = false;
-                        continue;
-                    }
-                    if (line.trim().isEmpty()) continue;
-                    String[] parts = line.split(",", 3);
-                    LocalDate date = LocalDate.parse(parts[0]);
-                    int year = date.getYear();
-                    if (year < startYear || year > endYear) continue;
-                    int termIndex = Integer.parseInt(parts[1]);
-                    if (termIndex < 0 || termIndex >= 24) {
-                        throw new IllegalStateException("Invalid solar term index: " + line);
-                    }
-                    int offset = date.getDayOfMonth() - baseDays[termIndex];
-                    if (offset < 0 || offset > 3) {
-                        throw new IllegalStateException("Invalid solar term offset: " + line);
-                    }
-                    int yearIndex = year - startYear;
-                    packed[yearIndex] |= (long) offset << (termIndex * 2);
-                    seen[yearIndex][termIndex] = true;
-                }
-            }
-
-            for (int yearIndex = 0; yearIndex < yearCount; yearIndex++) {
-                for (int termIndex = 0; termIndex < 24; termIndex++) {
-                    if (!seen[yearIndex][termIndex]) {
-                        throw new IllegalStateException("Missing solar term "
-                                + (startYear + yearIndex) + "#" + termIndex);
-                    }
-                }
-            }
-            return packed;
-        } catch (IOException | RuntimeException ex) {
-            throw new ExceptionInInitializerError("Failed to load solar-term asset: " + ex.getMessage());
+            return fallback;
         }
+        if (data.solarStart != startYear || data.solarEnd != endYear
+                || data.solarTerms.length != yearCount
+                || data.solarBaseDays.length != baseDays.length) {
+            throw new ExceptionInInitializerError("calendar.cdat solar-term range mismatch");
+        }
+        for (int i = 0; i < baseDays.length; i++) {
+            if (data.solarBaseDays[i] != baseDays[i]) {
+                throw new ExceptionInInitializerError(
+                        "calendar.cdat solar-term base-day mismatch at " + i);
+            }
+        }
+        return data.solarTerms.clone();
     }
 
     static String sourceDescription() {
@@ -109,11 +85,154 @@ final class CalendarAssetLoader {
                 : root.toAbsolutePath().normalize().toString();
     }
 
+    private static CalendarData load() {
+        if (attempted) return cached;
+        synchronized (CalendarAssetLoader.class) {
+            if (attempted) return cached;
+            try (InputStream input = open(ASSET_PATH)) {
+                cached = input == null ? null : parse(readAllBytes(input));
+                attempted = true;
+                return cached;
+            } catch (IOException | RuntimeException exception) {
+                attempted = true;
+                throw new ExceptionInInitializerError(
+                        "Failed to load calendar.cdat: " + exception.getMessage());
+            }
+        }
+    }
+
+    private static CalendarData parse(byte[] data) throws IOException {
+        if (data.length < HEADER_SIZE + 2 * SECTION_ENTRY_SIZE + 4) {
+            throw new IOException("calendar.cdat is too small");
+        }
+        int crcOffset = data.length - 4;
+        CRC32 crc = new CRC32();
+        crc.update(data, 0, crcOffset);
+        long stored = Integer.toUnsignedLong(
+                ByteBuffer.wrap(data, crcOffset, 4)
+                        .order(ByteOrder.LITTLE_ENDIAN)
+                        .getInt());
+        if (crc.getValue() != stored) {
+            throw new IOException("calendar.cdat CRC32 mismatch");
+        }
+
+        ByteBuffer header = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+        if (header.get() != 'C' || header.get() != 'D'
+                || header.get() != 'A' || header.get() != 'T') {
+            throw new IOException("calendar.cdat magic mismatch");
+        }
+        int major = header.get() & 0xff;
+        header.get();
+        if (major != 1) throw new IOException("Unsupported calendar.cdat version " + major);
+        int sectionCount = header.getShort() & 0xffff;
+        if (sectionCount < 2
+                || (long) HEADER_SIZE + (long) sectionCount * SECTION_ENTRY_SIZE
+                > crcOffset) {
+            throw new IOException("Invalid calendar.cdat section count");
+        }
+        if (header.getInt() != 0 || header.getInt() != 0) {
+            throw new IOException("calendar.cdat reserved header bytes must be zero");
+        }
+
+        Map<Integer, Section> sections = new HashMap<>();
+        Set<Integer> types = new HashSet<>();
+        List<Section> allSections = new ArrayList<>();
+        for (int index = 0; index < sectionCount; index++) {
+            int type = header.getShort() & 0xffff;
+            int flags = header.getShort() & 0xffff;
+            long offset = Integer.toUnsignedLong(header.getInt());
+            long length = Integer.toUnsignedLong(header.getInt());
+            if ((flags & ~SECTION_CRITICAL) != 0
+                    || offset < HEADER_SIZE + sectionCount * SECTION_ENTRY_SIZE
+                    || length > Integer.MAX_VALUE
+                    || offset > crcOffset - length
+                    || !types.add(type)) {
+                throw new IOException("Invalid calendar.cdat section " + type);
+            }
+            boolean known = type == SECTION_LUNAR || type == SECTION_SOLAR;
+            if (!known && (flags & SECTION_CRITICAL) != 0) {
+                throw new IOException("Unknown critical calendar.cdat section " + type);
+            }
+            Section section = new Section(type, flags, (int) offset, (int) length);
+            allSections.add(section);
+            if (known) sections.put(type, section);
+        }
+        Section lunar = sections.get(SECTION_LUNAR);
+        Section solar = sections.get(SECTION_SOLAR);
+        if (lunar == null || solar == null) {
+            throw new IOException("calendar.cdat missing required section");
+        }
+        if ((lunar.flags & SECTION_CRITICAL) == 0
+                || (solar.flags & SECTION_CRITICAL) == 0) {
+            throw new IOException("Required calendar.cdat section is not critical");
+        }
+        allSections.sort(Comparator.comparingInt(section -> section.offset));
+        for (int index = 1; index < allSections.size(); index++) {
+            if (overlaps(allSections.get(index - 1), allSections.get(index))) {
+                throw new IOException("calendar.cdat sections overlap");
+            }
+        }
+        return new CalendarData(parseLunar(data, lunar), parseSolar(data, solar));
+    }
+
+    private static LunarData parseLunar(byte[] data, Section section) throws IOException {
+        ByteBuffer input = sectionBuffer(data, section);
+        if (input.remaining() < 8) throw new IOException("Invalid lunar section");
+        int start = input.getShort() & 0xffff;
+        int end = input.getShort() & 0xffff;
+        int count = input.getShort() & 0xffff;
+        int reserved = input.getShort() & 0xffff;
+        if (reserved != 0 || count != end - start + 1 || input.remaining() != count * 4) {
+            throw new IOException("Invalid lunar section shape");
+        }
+        int[] values = new int[count];
+        for (int i = 0; i < count; i++) values[i] = input.getInt();
+        return new LunarData(start, end, values);
+    }
+
+    private static SolarData parseSolar(byte[] data, Section section) throws IOException {
+        ByteBuffer input = sectionBuffer(data, section);
+        if (input.remaining() < 32) throw new IOException("Invalid solar section");
+        int start = input.getShort() & 0xffff;
+        int end = input.getShort() & 0xffff;
+        int count = input.getShort() & 0xffff;
+        int termCount = input.get() & 0xff;
+        int reserved = input.get() & 0xff;
+        if (reserved != 0 || termCount != 24 || count != end - start + 1
+                || input.remaining() != termCount + count * 6) {
+            throw new IOException("Invalid solar section shape");
+        }
+        int[] baseDays = new int[termCount];
+        for (int i = 0; i < termCount; i++) baseDays[i] = input.get() & 0xff;
+        long[] values = new long[count];
+        for (int year = 0; year < count; year++) {
+            long packed = 0;
+            for (int b = 0; b < 6; b++) {
+                packed |= (long) (input.get() & 0xff) << (b * 8);
+            }
+            values[year] = packed;
+        }
+        return new SolarData(start, end, baseDays, values);
+    }
+
+    private static boolean overlaps(Section left, Section right) {
+        return (long) left.offset < (long) right.offset + right.length
+                && (long) right.offset < (long) left.offset + left.length;
+    }
+
+    private static ByteBuffer sectionBuffer(byte[] data, Section section) {
+        return ByteBuffer.wrap(data, section.offset, section.length)
+                .slice()
+                .order(ByteOrder.LITTLE_ENDIAN);
+    }
+
     private static InputStream open(String relativePath) throws IOException {
         Path root = externalRoot();
         if (root != null) {
             Path file = root.resolve(relativePath);
-            if (!Files.isRegularFile(file)) throw new IOException("Missing external asset " + file);
+            if (!Files.isRegularFile(file)) {
+                throw new IOException("Missing external asset " + file);
+            }
             return Files.newInputStream(file);
         }
         return CalendarAssetLoader.class.getClassLoader()
@@ -122,15 +241,79 @@ final class CalendarAssetLoader {
 
     private static Path externalRoot() {
         String configured = System.getProperty(ROOT_PROPERTY);
-        if (configured == null || configured.trim().isEmpty()) configured = System.getenv(ROOT_ENV);
-        return configured == null || configured.trim().isEmpty() ? null : Paths.get(configured.trim());
+        if (configured == null || configured.trim().isEmpty()) {
+            configured = System.getenv(ROOT_ENV);
+        }
+        return configured == null || configured.trim().isEmpty()
+                ? null
+                : Paths.get(configured.trim());
     }
 
-    private static String readUtf8(InputStream input) throws IOException {
+    private static byte[] readAllBytes(InputStream input) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream(4096);
         byte[] buffer = new byte[4096];
         int count;
         while ((count = input.read(buffer)) >= 0) output.write(buffer, 0, count);
-        return new String(output.toByteArray(), StandardCharsets.UTF_8);
+        return output.toByteArray();
+    }
+
+    private static final class Section {
+        private final int type;
+        private final int flags;
+        private final int offset;
+        private final int length;
+
+        private Section(int type, int flags, int offset, int length) {
+            this.type = type;
+            this.flags = flags;
+            this.offset = offset;
+            this.length = length;
+        }
+    }
+
+    private static final class LunarData {
+        private final int start;
+        private final int end;
+        private final int[] values;
+
+        private LunarData(int start, int end, int[] values) {
+            this.start = start;
+            this.end = end;
+            this.values = values;
+        }
+    }
+
+    private static final class SolarData {
+        private final int start;
+        private final int end;
+        private final int[] baseDays;
+        private final long[] values;
+
+        private SolarData(int start, int end, int[] baseDays, long[] values) {
+            this.start = start;
+            this.end = end;
+            this.baseDays = baseDays;
+            this.values = values;
+        }
+    }
+
+    private static final class CalendarData {
+        private final int lunarStart;
+        private final int lunarEnd;
+        private final int[] lunarYears;
+        private final int solarStart;
+        private final int solarEnd;
+        private final int[] solarBaseDays;
+        private final long[] solarTerms;
+
+        private CalendarData(LunarData lunar, SolarData solar) {
+            this.lunarStart = lunar.start;
+            this.lunarEnd = lunar.end;
+            this.lunarYears = lunar.values;
+            this.solarStart = solar.start;
+            this.solarEnd = solar.end;
+            this.solarBaseDays = solar.baseDays;
+            this.solarTerms = solar.values;
+        }
     }
 }

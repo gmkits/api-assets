@@ -6,7 +6,8 @@
 项目可以直接并入 `gmkit` 作为扩展模块。对外只维护两个稳定边界：
 
 - Java：`com.github.gmkits:cn-holiday-kit` 单一依赖、单一 JAR。
-- 通用数据：`data/source/CN/holidays.csv`，任意语言都可读取。
+- 通用数据：`data/source/CN/holidays.csv` 为维护源，`.hday` v2 与
+  `calendar.cdat` 为语言无关运行时格式。
 
 TypeScript 编译器、Web 示例、Spring API 和内部 Java 子模块只用于构建、测试或部署，
 全部不作为独立发布物，避免多仓库和多版本联动。
@@ -17,7 +18,7 @@ TypeScript 编译器、Web 示例、Spring API 和内部 Java 子模块只用于
 | --- | --- |
 | 中国大陆放假与调休 | 2000–2026，离线 bundle |
 | 农历双向转换 | 1900–2100 |
-| 二十四节气 | 1900–2100 |
+| 二十四节气 | 1901–2100，权威表驱动 |
 | 节日与纪念日 | 公历、农历、节气联合判定 |
 | Java 运行时 | JDK 8 / 17 / 21 / 25 同一 JAR |
 | 模块系统 | JDK 8 classpath；JDK 9+ 自动模块 `com.github.gmkits.holiday` |
@@ -112,8 +113,11 @@ curl "http://localhost:8080/api/v1/range?from=2025-10-01&to=2025-10-08"
 curl http://localhost:8080/api/v1/year/2026
 ```
 
-建议其他语言直接读取 CSV/`.hday`，或调用这套 REST API；仓库不再为每种语言维护一套
-手写 SDK。现有 TypeScript 代码用于格式实现和 Web 适配，可按需复制到业务侧。
+建议其他语言读取 `.hday` v2 / `calendar.cdat` 通用二进制，或调用这套 REST API；
+仓库不再为每种语言维护一套手写 SDK。格式见
+[`spec/bundle-format.md`](spec/bundle-format.md) 和
+[`spec/calendar-format.md`](spec/calendar-format.md)，现有 Java/TypeScript 读取器可作为
+其他语言实现的错误语义基线。
 
 ## 数据准确性
 
@@ -162,6 +166,7 @@ mvn -f java/pom.xml clean verify         # 在 8/17/21/25 上运行同一命令
 
 bash scripts/verify-bundles.sh
 node scripts/verify-cn-holiday-data.mjs
+bash scripts/verify-calendar-parity.sh
 ```
 
 CI 使用 BellSoft Liberica JDK 8、17、21、25 跑同一套 Java 测试。严格 Javadoc、
@@ -179,7 +184,10 @@ java -Xms4g -Xmx4g -jar \
 JMH 的 `thrpt` 是库内查询吞吐，不等于 HTTP 端到端 QPS；API 最大 QPS 还取决于
 序列化、连接、日志、限流和机器核数，应另用 wrk/k6 对部署实例压测。
 本机 4 GiB 短测结果见
-[`java/holiday-benchmarks/results/2026-07-27-http-api-4g.md`](java/holiday-benchmarks/results/2026-07-27-http-api-4g.md)。
+[`java/holiday-benchmarks/results/2026-07-28-v2-4g.md`](java/holiday-benchmarks/results/2026-07-28-v2-4g.md)。
+
+当前 2000–2026 的 27 个 v2 bundle 总计约 24 KB、平均约 900 B；
+通用 `calendar.cdat` 为 2,088 B。bundle 内嵌 CRC32，manifest 另以 SHA-256 校验。
 
 ## 仓库结构
 

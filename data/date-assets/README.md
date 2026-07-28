@@ -6,20 +6,24 @@ This directory is the replaceable runtime data package for `cn-holiday-kit`.
 date-assets/
 ├── manifest.json
 ├── calendar/
-│   ├── lunar-years.hex
-│   └── solar-terms.csv
+│   └── calendar.cdat
 └── holidays/
     ├── manifest.json
     └── bundles/CN/<year>.hday
 ```
 
-- `calendar/lunar-years.hex`: compressed lunar-year descriptors for 1900–2100.
-- `calendar/solar-terms.csv`: 24 solar-term dates per year for 1900–2100.
-- `holidays/bundles/CN`: replaceable Chinese holiday bundles for 2000–2026.
-- `manifest.json`: byte sizes, year ranges, and SHA-256 hashes for calendar assets.
+- `calendar/calendar.cdat`: CRC-protected lunar descriptors for 1900–2100 and
+  compressed authoritative solar-term dates for 1901–2100.
+- `holidays/bundles/CN`: replaceable sparse `.hday` v2 bundles for 2000–2026.
+- `manifest.json`: byte sizes, supported ranges, and SHA-256 hashes.
 
-Rebuild it from the single universal CSV source
-`data/source/CN/holidays.csv`:
+The audit sources remain outside the runtime package:
+
+- `data/source/calendar/lunar-years.hex`
+- `tests/solar-terms.csv`
+- `data/source/CN/holidays.csv`
+
+Rebuild all generated assets with:
 
 ```bash
 bash scripts/update-bundles.sh
@@ -31,11 +35,9 @@ Java applications can load this directory with:
 HolidayService service = CnHolidayKit.fromAssets(Paths.get("./data/date-assets"));
 ```
 
-Calendar assets are initialized once per JVM, so configure the asset root before
-the first lunar or solar-term call and restart the process after replacing them.
+Calendar data initializes once per JVM, so configure the asset root before the
+first lunar or solar-term call and restart after replacing `calendar.cdat`.
 Holiday bundles are cached by year and can be reloaded with
 `HolidayService.clearCache()`.
 
-The directory contains runtime artifacts only. Do not edit bundles or manifests
-by hand; update the source CSV (or run `scripts/sync-cn-holidays.mjs`) and
-rebuild instead.
+Do not edit generated bundles, `calendar.cdat`, or manifests by hand.

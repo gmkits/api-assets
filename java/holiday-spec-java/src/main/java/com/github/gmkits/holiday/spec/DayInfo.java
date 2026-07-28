@@ -42,13 +42,11 @@ public final class DayInfo {
         this.statutoryHoliday = b.statutoryHoliday;
         this.adjustedWorkday = b.adjustedWorkday;
         this.holidayNames = freezeNames(b.holidayNames);
-        this.labels = b.labels == null ? Collections.<String>emptyList()
-                : Collections.unmodifiableList(new ArrayList<>(b.labels));
+        this.labels = freezeList(b.labels);
         this.lunar = b.lunar;
         this.solarTerm = b.solarTerm;
         this.ganZhi = b.ganZhi;
-        this.festivals = b.festivals == null ? Collections.<FestivalInfo>emptyList()
-                : Collections.unmodifiableList(new ArrayList<>(b.festivals));
+        this.festivals = freezeList(b.festivals);
         this.sourceVersion = b.sourceVersion;
     }
 
@@ -61,6 +59,18 @@ public final class DayInfo {
             copy.put(e.getKey(), Collections.unmodifiableList(new ArrayList<>(e.getValue())));
         }
         return Collections.unmodifiableMap(copy);
+    }
+
+    private static <T> List<T> freezeList(List<T> source) {
+        /*
+         * 空标签和空节日是绝大多数日期的常态，统一复用 JDK 的不可变空集合，
+         * 避免为每一天保留一个空 ArrayList 和包装视图。非空输入仍执行防御性
+         * 复制，因此 DayInfo 的不可变约束不受影响。
+         */
+        if (source == null || source.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(new ArrayList<>(source));
     }
 
     /**
