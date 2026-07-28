@@ -315,16 +315,23 @@ class LunarCalendarTest {
     }
 
     @ParameterizedTest
-    @CsvFileSource(resources = "/solar-terms-golden.csv", numLinesToSkip = 1)
-    void solarTermsGoldenCsv(int year, int termIndex, String termName, int month, int day) {
-        Assumptions.assumeTrue(year >= 1901, "1900 is an estimate, not authoritative data");
+    @CsvFileSource(resources = "/solar-terms.csv", numLinesToSkip = 1)
+    void solarTermsGoldenCsv(String solarDate, int termIndex, String sourceName) {
+        LocalDate expected = LocalDate.parse(solarDate);
+        int year = expected.getYear();
         LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(year);
         LunarCalendar.SolarTermInfo term = terms[termIndex];
-        assertEquals(termName, term.getName(), year + " term " + termIndex + " 名称不匹配");
-        assertEquals(month, term.getDate().getMonthValue(),
-            year + " " + termName + " 月份不匹配");
-        assertEquals(day, term.getDate().getDayOfMonth(),
-            year + " " + termName + " 日期不匹配（期望 " + month + "-" + day
-                + "，实际 " + term.getDate().getMonthValue() + "-" + term.getDate().getDayOfMonth() + "）");
+        String expectedName = simplifySolarTermName(sourceName);
+        assertEquals(expectedName, term.getName(), year + " term " + termIndex + " 名称不匹配");
+        assertEquals(expected, term.getDate(), year + " " + expectedName + " 日期不匹配");
+    }
+
+    private static String simplifySolarTermName(String name) {
+        if ("驚蟄".equals(name)) return "惊蛰";
+        if ("穀雨".equals(name)) return "谷雨";
+        if ("小滿".equals(name)) return "小满";
+        if ("芒種".equals(name)) return "芒种";
+        if ("處暑".equals(name)) return "处暑";
+        return name;
     }
 }

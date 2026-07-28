@@ -1,7 +1,7 @@
 package com.github.gmkits.holiday.api;
 
 import com.github.gmkits.holiday.api.controller.BundleController;
-import com.github.gmkits.holiday.spring.HolidayProperties;
+import com.github.gmkits.holiday.api.HolidayProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.ResponseEntity;

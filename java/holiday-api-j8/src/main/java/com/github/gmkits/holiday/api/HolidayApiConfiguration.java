@@ -1,8 +1,7 @@
-package com.github.gmkits.holiday.spring;
+package com.github.gmkits.holiday.api;
 
 import com.github.gmkits.holiday.core.HolidayService;
 import com.github.gmkits.holiday.core.HolidayServiceBuilder;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,25 +9,25 @@ import org.springframework.context.annotation.Configuration;
 import java.nio.file.Paths;
 
 /**
- * HolidayService 的 Spring Boot 自动配置。
+ * HTTP 服务内部配置。
  */
 @Configuration
 @EnableConfigurationProperties(HolidayProperties.class)
-public class HolidayAutoConfiguration {
+public class HolidayApiConfiguration {
 
     /**
-     * 当用户未自定义 {@link HolidayService} Bean 时，按配置创建默认实现。
+     * 创建唯一的线程安全日期查询服务。
+     *
+     * @param properties HTTP 服务配置
+     * @return 日期查询服务
      */
     @Bean
-    @ConditionalOnMissingBean
     public HolidayService holidayService(HolidayProperties properties) {
         HolidayServiceBuilder builder = new HolidayServiceBuilder()
                 .defaultRegion(properties.getDefaultRegion())
                 .enableClasspathFallback(properties.isClasspathFallback());
         if (hasText(properties.getAssetPath())) {
             builder.assetPath(Paths.get(properties.getAssetPath()));
-        } else if (hasText(properties.getDataPath())) {
-            builder.dataPath(Paths.get(properties.getDataPath()));
         }
         return builder.build();
     }

@@ -11,12 +11,15 @@ pnpm --filter @holiday/compiler build
 node "$ROOT/scripts/build-cn-holiday-canonical.mjs"
 
 GENERATED="$ROOT/target/generated-data"
+BUNDLES="$ROOT/data/date-assets/holidays/bundles"
+HOLIDAY_MANIFEST="$ROOT/data/date-assets/holidays/manifest.json"
 mkdir -p "$GENERATED/materialized/CN"
+mkdir -p "$BUNDLES/CN"
 
 for canonical in "$GENERATED"/canonical/CN/*.canon.json; do
   year="$(basename "$canonical" .canon.json)"
   materialized="$GENERATED/materialized/CN/$year.year.json"
-  bundle="$ROOT/data/bundles/CN/$year.hday"
+  bundle="$BUNDLES/CN/$year.hday"
 
   node "$CLI" validate --input "$canonical"
   node "$CLI" materialize --input "$canonical" --output "$materialized"
@@ -24,13 +27,9 @@ for canonical in "$GENERATED"/canonical/CN/*.canon.json; do
 done
 
 node "$CLI" build-manifest \
-  --bundles-dir "$ROOT/data/bundles" \
-  --output "$ROOT/data/manifest.json"
+  --bundles-dir "$BUNDLES" \
+  --output "$HOLIDAY_MANIFEST"
 
-mkdir -p "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN"
-cp "$ROOT"/data/bundles/CN/2000.hday "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN/"
-cp "$ROOT"/data/bundles/CN/2025.hday "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN/"
-cp "$ROOT"/data/bundles/CN/2026.hday "$ROOT/java/holiday-core-java/src/test/resources/bundles/CN/"
 node "$ROOT/scripts/build-date-assets.mjs"
 
 node "$ROOT/scripts/verify-cn-holiday-data.mjs"

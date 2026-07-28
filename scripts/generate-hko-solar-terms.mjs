@@ -8,7 +8,6 @@
  * Usage:
  *   node scripts/generate-hko-solar-terms.mjs
  *   node scripts/generate-hko-solar-terms.mjs --output path/to/out.csv
- *   node scripts/generate-hko-solar-terms.mjs --java-output path/to/java.csv
  */
 
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -20,13 +19,11 @@ import { START_YEAR, END_YEAR, downloadAll, iterateCalendarRows } from './lib/hk
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_OUTPUT = join(__dirname, '..', 'tests', 'solar-terms.csv');
-const DEFAULT_JAVA_OUTPUT = join(__dirname, '..', 'java', 'holiday-core-java', 'src', 'test', 'resources', 'solar-terms.csv');
 const EXPECTED_TERMS_PER_YEAR = 24;
 
 const { values: cliArgs } = parseArgs({
   options: {
     output: { type: 'string', short: 'o' },
-    'java-output': { type: 'string' },
   },
   strict: false,
 });
@@ -121,16 +118,10 @@ function buildCsv(rows) {
 }
 
 function writeOutputs(csv) {
-  const outputPaths = new Set([
-    cliArgs.output ?? DEFAULT_OUTPUT,
-    cliArgs['java-output'] ?? DEFAULT_JAVA_OUTPUT,
-  ]);
-
-  for (const outputPath of outputPaths) {
-    mkdirSync(dirname(outputPath), { recursive: true });
-    writeFileSync(outputPath, csv, 'utf-8');
-    process.stderr.write(`Written to ${outputPath}\n`);
-  }
+  const outputPath = cliArgs.output ?? DEFAULT_OUTPUT;
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, csv, 'utf-8');
+  process.stderr.write(`Written to ${outputPath}\n`);
 }
 
 async function main() {

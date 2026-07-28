@@ -5,7 +5,7 @@
 import { createHolidayService } from '../../packages/ts-core/dist/esm/index.js';
 
 const service = createHolidayService({
-  dataPath: '../../data/bundles',
+  dataPath: '../../data/date-assets/holidays/bundles',
   defaultRegion: 'CN',
 });
 

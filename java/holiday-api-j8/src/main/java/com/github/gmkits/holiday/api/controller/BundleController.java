@@ -1,6 +1,6 @@
 package com.github.gmkits.holiday.api.controller;
 
-import com.github.gmkits.holiday.spring.HolidayProperties;
+import com.github.gmkits.holiday.api.HolidayProperties;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -102,9 +102,6 @@ public class BundleController {
         if (hasText(properties.getAssetPath())) {
             return Paths.get(properties.getAssetPath()).resolve("holidays")
                     .resolve("bundles").resolve(region).resolve(year + ".hday");
-        }
-        if (hasText(properties.getDataPath())) {
-            return Paths.get(properties.getDataPath()).resolve(region).resolve(year + ".hday");
         }
         return null;
     }

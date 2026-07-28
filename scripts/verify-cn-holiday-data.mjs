@@ -56,7 +56,7 @@ for (let year = sources.startYear; year <= sources.endYear; year++) {
   }
 }
 
-const bundleYears = readdirSync(join(root, 'data/bundles/CN'))
+const bundleYears = readdirSync(join(root, 'data/date-assets/holidays/bundles/CN'))
   .filter((name) => name.endsWith('.hday'))
   .map((name) => Number(name.slice(0, -5)))
   .sort((a, b) => a - b);

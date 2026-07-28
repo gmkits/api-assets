@@ -9,7 +9,7 @@
 - 通用数据：`data/source/CN/holidays.csv` 为维护源，`.hday` v2 与
   `calendar.cdat` 为语言无关运行时格式。
 
-TypeScript 编译器、Web 示例、Spring API 和内部 Java 子模块只用于构建、测试或部署，
+TypeScript 编译器、Spring API 和内部 Java 子模块只用于构建、测试或部署，
 全部不作为独立发布物，避免多仓库和多版本联动。
 
 ## 能力与范围
@@ -90,8 +90,7 @@ data/
 ├── source/CN/
 │   ├── holidays.csv       # 唯一人工审阅的数据表
 │   └── sources.json       # 年度公文、来源版本与校验摘要
-├── bundles/CN/            # 生成的紧凑二进制
-└── date-assets/           # 可整体复制、挂载或替换的运行时资产
+└── date-assets/           # 唯一生成物，可整体复制、挂载或替换
 ```
 
 通用 CSV 规范见 [`spec/cn-holidays-csv.md`](spec/cn-holidays-csv.md)，资产替换规则见
@@ -147,7 +146,7 @@ node scripts/sync-cn-holidays.mjs
 
 ```bash
 bash scripts/update-bundles.sh
-git diff -- data/source data/bundles data/date-assets
+git diff -- data/source data/date-assets
 ```
 
 同步脚本会并行下载固定版本数据、核对 2007 年以来两套来源的 OFF/WORK 覆盖，
@@ -196,7 +195,7 @@ java/cn-holiday-kit       唯一 Java 发布物与统一入口
 java/holiday-*-java       内部源码分区
 java/holiday-api-j8       可选 REST 服务
 java/holiday-benchmarks   JMH
-packages/ts-*             私有构建器、格式实现和 Web 适配
+packages/ts-*             私有编译器、格式与离线查询实现
 spec                      通用格式与 JSON Schema
 data                      数据源、二进制和可替换资产
 scripts                   同步、编译、校验

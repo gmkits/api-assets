@@ -2,7 +2,7 @@
 const { createHolidayService } = require('../../packages/ts-core/dist/cjs/index.cjs');
 
 const service = createHolidayService({
-  dataPath: '../../data/bundles',
+  dataPath: '../../data/date-assets/holidays/bundles',
   defaultRegion: 'CN',
 });
 

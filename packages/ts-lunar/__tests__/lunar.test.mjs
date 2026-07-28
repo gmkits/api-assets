@@ -314,14 +314,29 @@ describe('名称', () => {
 // ─── 二十四节气 ───
 
 // 加载节气全量参照 CSV
-const solarTermsCsvPath = resolve(__dirname, '../../../tests/solar-terms-golden.csv');
+const TRADITIONAL_SOLAR_TERM_NAMES = new Map([
+    ['驚蟄', '惊蛰'],
+    ['穀雨', '谷雨'],
+    ['小滿', '小满'],
+    ['芒種', '芒种'],
+    ['處暑', '处暑'],
+]);
+const solarTermsCsvPath = resolve(__dirname, '../../../tests/solar-terms.csv');
 const solarTermsCsvRows = readFileSync(solarTermsCsvPath, 'utf-8')
     .split('\n')
     .slice(1)                     // 跳过表头
     .filter(Boolean)
     .map(line => {
-        const [year, termIndex, termName, month, day] = line.split(',');
-        return [Number(year), Number(termIndex), termName, Number(month), Number(day)];
+        const [solarDate, termIndex, sourceName] = line.split(',');
+        const [year, month, day] = solarDate.split('-').map(Number);
+        const index = Number(termIndex);
+        return [
+            year,
+            index,
+            TRADITIONAL_SOLAR_TERM_NAMES.get(sourceName) ?? sourceName,
+            month,
+            day,
+        ];
     })
     .filter(([year]) => year >= 1901);
 

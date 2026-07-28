@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +11,8 @@ const assets = join(root, 'data/date-assets');
 const calendarDir = join(assets, 'calendar');
 const holidayBundleDir = join(assets, 'holidays/bundles/CN');
 const calendarAsset = join(calendarDir, 'calendar.cdat');
-const holidayManifest = JSON.parse(readFileSync(join(root, 'data/manifest.json'), 'utf8'));
+const holidayManifestPath = join(assets, 'holidays/manifest.json');
+const holidayManifest = JSON.parse(readFileSync(holidayManifestPath, 'utf8'));
 
 mkdirSync(calendarDir, { recursive: true });
 mkdirSync(holidayBundleDir, { recursive: true });
@@ -21,12 +22,6 @@ buildCalendarAsset({
   solarSource: join(root, 'tests/solar-terms.csv'),
   output: calendarAsset,
 });
-copyFileSync(join(root, 'data/manifest.json'), join(assets, 'holidays/manifest.json'));
-
-for (const name of readdirSync(join(root, 'data/bundles/CN')).filter((file) => file.endsWith('.hday'))) {
-  copyFileSync(join(root, 'data/bundles/CN', name), join(holidayBundleDir, name));
-}
-
 const holidayYears = Object.keys(holidayManifest.bundles.CN ?? {}).map(Number).sort((a, b) => a - b);
 if (holidayYears.length === 0) {
   throw new Error('No CN holiday bundles found');

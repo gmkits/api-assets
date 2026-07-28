@@ -1,8 +1,8 @@
 // Basic Java example
-// Compile: javac -cp ../../java/holiday-core-java/build/libs/*:../../java/holiday-spec-java/build/libs/* Main.java
-// Run: java -cp .:../../java/holiday-core-java/build/libs/*:../../java/holiday-spec-java/build/libs/* Main
+// Compile: javac -cp ../../java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-SNAPSHOT.jar Main.java
+// Run: java -cp .:../../java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-SNAPSHOT.jar Main
 
-import com.github.gmkits.holiday.core.HolidayServiceBuilder;
+import com.github.gmkits.holiday.CnHolidayKit;
 import com.github.gmkits.holiday.core.HolidayService;
 import com.github.gmkits.holiday.spec.DayInfo;
 import java.time.LocalDate;
@@ -10,10 +10,8 @@ import java.nio.file.Paths;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        HolidayService service = HolidayServiceBuilder.newBuilder()
-            .defaultRegion("CN")
-            .dataPath(Paths.get("../../data/bundles"))
-            .build();
+        HolidayService service =
+            CnHolidayKit.fromAssets(Paths.get("../../data/date-assets"));
 
         LocalDate date = LocalDate.of(2025, 10, 1);
         DayInfo info = service.getDayInfo(date);

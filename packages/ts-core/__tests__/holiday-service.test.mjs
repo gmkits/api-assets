@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { createHolidayService } from '../dist/esm/index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const bundlePath = resolve(here, '../../../data/bundles/CN/2025.hday');
-const manifestPath = resolve(here, '../../../data/manifest.json');
+const bundlePath = resolve(here, '../../../data/date-assets/holidays/bundles/CN/2025.hday');
+const manifestPath = resolve(here, '../../../data/date-assets/holidays/manifest.json');
 const calendarPath = resolve(
   here,
   '../../../data/date-assets/calendar/calendar.cdat',

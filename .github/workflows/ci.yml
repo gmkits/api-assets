@@ -47,10 +47,11 @@ jobs:
       - name: 验证离线数据编译流水线
         run: |
           bash scripts/update-bundles.sh
-          node packages/ts-compiler/dist/esm/cli.js inspect --bundle data/bundles/CN/2025.hday
-          node packages/ts-compiler/dist/esm/cli.js inspect --bundle data/bundles/CN/2026.hday
-          git diff --exit-code -- data/bundles data/manifest.json data/date-assets \
-            java/holiday-core-java/src/test/resources/bundles
+          node packages/ts-compiler/dist/esm/cli.js inspect \
+            --bundle data/date-assets/holidays/bundles/CN/2025.hday
+          node packages/ts-compiler/dist/esm/cli.js inspect \
+            --bundle data/date-assets/holidays/bundles/CN/2026.hday
+          git diff --exit-code -- data/date-assets
 
   # ── Java 多版本矩阵构建 ──
   java-build:

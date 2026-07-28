@@ -32,6 +32,22 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/../../data/date-assets/holidays</directory>
+                <includes>
+                    <include>bundles/CN/2000.hday</include>
+                    <include>bundles/CN/2025.hday</include>
+                    <include>bundles/CN/2026.hday</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>${project.basedir}/../../tests</directory>
+                <includes>
+                    <include>solar-terms.csv</include>
+                </includes>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

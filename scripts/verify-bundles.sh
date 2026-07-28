@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-BUNDLES_DIR="${1:-data/bundles}"
-MANIFEST="${2:-data/manifest.json}"
+BUNDLES_DIR="${1:-data/date-assets/holidays/bundles}"
+MANIFEST="${2:-data/date-assets/holidays/manifest.json}"
 
 echo "=== Verifying bundles ==="
 

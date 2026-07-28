@@ -7,32 +7,17 @@ coverage/
 *.log
 .DS_Store
 
-# VitePress
-apps/docs-site/.vitepress/cache/
-apps/docs-site/.vitepress/dist/
-
 # Java build artifacts
 java/**/build/
 java/**/.gradle/
 java/**/target/
+java/**/dependency-reduced-pom.xml
 java/**/dependency-reduced-pom-*.xml
 .gradle/
 
-# Admin web build
-apps/admin-web/dist/
-
-# Test outputs
-tests/cross-lang/output/
 /target/
 
-# Vue tsc build info
 *.tsbuildinfo
-
-# vue-tsc emit artifacts
-apps/admin-web/src/**/*.vue.js
-apps/admin-web/src/**/*.js
-!apps/admin-web/src/**/*.test.js
-packages/ts-lunar/dist/
 
 # HKO download cache
 .hko-cache/
@@ -40,7 +25,4 @@ packages/ts-lunar/dist/
 # Solar terms download cache
 .solar-terms-cache/
 
-# Generated compact data (intermediate build artifact)
-.solar-terms-compact.txt
 node_modules/
-.solar-terms-cache/

@@ -3,7 +3,6 @@ server:
 holiday:
   default-region: CN
   asset-path: ${HOLIDAY_ASSET_PATH:}
-  data-path: ${HOLIDAY_DATA_PATH:}
   classpath-fallback: true
 spring:
   application:

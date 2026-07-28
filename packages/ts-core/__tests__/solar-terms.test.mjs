@@ -16,7 +16,7 @@ const TRAD_TO_SIMP = { '驚蟄': '惊蛰', '穀雨': '谷雨', '小滿': '小满
 const toSimp = (n) => TRAD_TO_SIMP[n] || n;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BUNDLE_2025 = resolve(__dirname, '../../../data/bundles/CN/2025.hday');
+const BUNDLE_2025 = resolve(__dirname, '../../../data/date-assets/holidays/bundles/CN/2025.hday');
 const SOLAR_TERMS_CSV = resolve(__dirname, '../../../tests/solar-terms.csv');
 let bundle2025 = null;
 let solarTermRows = [];

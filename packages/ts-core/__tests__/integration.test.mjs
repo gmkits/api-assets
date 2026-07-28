@@ -15,9 +15,9 @@ import {
 import { crc32 } from '../../ts-spec/dist/esm/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BUNDLE_2025 = resolve(__dirname, '../../../data/bundles/CN/2025.hday');
-const BUNDLE_2026 = resolve(__dirname, '../../../data/bundles/CN/2026.hday');
-const BUNDLE_2000 = resolve(__dirname, '../../../data/bundles/CN/2000.hday');
+const BUNDLE_2025 = resolve(__dirname, '../../../data/date-assets/holidays/bundles/CN/2025.hday');
+const BUNDLE_2026 = resolve(__dirname, '../../../data/date-assets/holidays/bundles/CN/2026.hday');
+const BUNDLE_2000 = resolve(__dirname, '../../../data/date-assets/holidays/bundles/CN/2000.hday');
 
 let bundle2025 = null;
 let bundle2026 = null;

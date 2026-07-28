@@ -31,7 +31,7 @@ The Maven projects `holiday-spec-java`, `holiday-lunar-java`, and
 `holiday-core-java` are internal build partitions, not separate product
 releases. They allow focused tests and short dependency directions while the
 shade step merges them into the final artifact and removes them from its
-published POM. Spring APIs and JMH are deployment/test tools and are also
+published POM. HTTP API and JMH are deployment/test tools and are also
 outside the library publication boundary.
 Their POMs set `maven.deploy.skip=true`, so a reactor deploy cannot
 accidentally publish them as independent products.
