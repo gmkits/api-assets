@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Java 8 API 返回的不可变版本与数据覆盖信息。
+ * API 返回的不可变版本与数据覆盖信息。
  */
 public final class VersionInfo {
 

@@ -31,17 +31,6 @@ public final class HolidayServiceBuilder {
     }
 
     /**
-     * 设置 bundle 数据目录，目录结构应为 {@code {dataPath}/{regionCode}/{year}.hday}。
-     *
-     * @param path bundle 根目录
-     * @return 当前构建器
-     */
-    public HolidayServiceBuilder dataPath(Path path) {
-        this.dataPath = path;
-        return this;
-    }
-
-    /**
      * 设置统一离线资产根目录。
      *
      * <p>目录结构为：

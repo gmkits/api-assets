@@ -1,5 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { installCalendarAsset } from '../../ts-lunar/dist/esm/index.js';
 
 import {
   isLeapYear,
@@ -13,6 +17,16 @@ import {
 } from '../dist/esm/index.js';
 
 import { NO_INDEX } from '../../ts-spec/dist/esm/index.js';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const calendarBytes = readFileSync(resolve(
+  here,
+  '../../../data/date-assets/calendar/calendar.cdat',
+));
+installCalendarAsset(calendarBytes.buffer.slice(
+  calendarBytes.byteOffset,
+  calendarBytes.byteOffset + calendarBytes.byteLength,
+));
 
 function workdayTable(dayCount) {
   const words = Math.ceil(dayCount / 32);

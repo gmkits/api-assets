@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.gmkits</groupId>
         <artifactId>cn-holiday-kit-java</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0-rc1</version>
     </parent>
 
     <artifactId>holiday-benchmarks</artifactId>

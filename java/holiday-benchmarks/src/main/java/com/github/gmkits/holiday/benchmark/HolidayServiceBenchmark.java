@@ -52,9 +52,7 @@ public class HolidayServiceBenchmark {
 
         @Setup(Level.Trial)
         public void setup() {
-            Path dataPath = Paths.get(System.getProperty(
-                            "cn.holiday.assets.path", "../data/date-assets"))
-                    .toAbsolutePath().normalize();
+            Path dataPath = resolveAssetRoot();
             service = CnHolidayKit.fromAssets(dataPath);
             day = LocalDate.of(2026, 10, 1);
             rangeStart = LocalDate.of(2026, 1, 1);
@@ -74,9 +72,7 @@ public class HolidayServiceBenchmark {
 
         @Setup(Level.Trial)
         public void setup() throws IOException {
-            assetRoot = Paths.get(System.getProperty(
-                            "cn.holiday.assets.path", "../data/date-assets"))
-                    .toAbsolutePath().normalize();
+            assetRoot = resolveAssetRoot();
             bundle = Files.readAllBytes(
                     assetRoot.resolve("holidays/bundles/CN/2026.hday"));
             day = LocalDate.of(2026, 10, 1);
@@ -129,5 +125,15 @@ public class HolidayServiceBenchmark {
         blackhole.consume(state.service.isHoliday(state.day));
         blackhole.consume(state.service.getMonth(2026, 10));
         blackhole.consume(state.service.countWorkdays(state.rangeStart, state.rangeEnd));
+    }
+
+    private static Path resolveAssetRoot() {
+        String configured = System.getProperty("cn.holiday.assets.path");
+        if (configured != null && !configured.trim().isEmpty()) {
+            return Paths.get(configured).toAbsolutePath().normalize();
+        }
+        Path repositoryRoot = Paths.get("data/date-assets").toAbsolutePath().normalize();
+        if (Files.isDirectory(repositoryRoot)) return repositoryRoot;
+        return Paths.get("../data/date-assets").toAbsolutePath().normalize();
     }
 }

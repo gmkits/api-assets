@@ -1,6 +1,7 @@
 import { before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,11 +12,20 @@ import {
 } from '../dist/esm/index.js';
 
 import { NO_INDEX } from '../../ts-spec/dist/esm/index.js';
+import { installCalendarAsset } from '../../ts-lunar/dist/esm/index.js';
 
 const TRAD_TO_SIMP = { '驚蟄': '惊蛰', '穀雨': '谷雨', '小滿': '小满', '芒種': '芒种', '處暑': '处暑' };
 const toSimp = (n) => TRAD_TO_SIMP[n] || n;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const calendarBytes = readFileSync(resolve(
+  __dirname,
+  '../../../data/date-assets/calendar/calendar.cdat',
+));
+installCalendarAsset(calendarBytes.buffer.slice(
+  calendarBytes.byteOffset,
+  calendarBytes.byteOffset + calendarBytes.byteLength,
+));
 const BUNDLE_2025 = resolve(__dirname, '../../../data/date-assets/holidays/bundles/CN/2025.hday');
 const SOLAR_TERMS_CSV = resolve(__dirname, '../../../tests/solar-terms.csv');
 let bundle2025 = null;

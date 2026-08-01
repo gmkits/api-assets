@@ -8,7 +8,7 @@ Applications consume one coordinate and one physical artifact:
 <dependency>
   <groupId>com.github.gmkits</groupId>
   <artifactId>cn-holiday-kit</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0-rc1</version>
 </dependency>
 ```
 
@@ -79,11 +79,11 @@ mvn -B -f java/pom.xml clean verify
 # The same command is also a compatibility gate on JDK 17 and JDK 21. On
 # JDK 9+, verify additionally compiles and runs the module-path consumer.
 
-# Complete JDK 25 build, including modern API and a real module-path consumer
-mvn -B -f java/pom.xml clean verify -Pj25
+# JDK 17/21/25 会额外构建并测试 Spring Boot API；JDK 8 只验证核心库。
+mvn -B -f java/pom.xml clean verify
 
 # Inspect the automatic module on JDK 9+ (the verify phase also compiles and
 # runs a consumer module with `requires com.github.gmkits.holiday`)
 jar --describe-module --file \
-  java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-SNAPSHOT.jar
+  java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-rc1.jar
 ```

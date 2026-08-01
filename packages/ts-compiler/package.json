@@ -1,6 +1,6 @@
 {
   "name": "@holiday/compiler",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "private": true,
   "description": "Holiday Data Platform — compiler pipeline (import, validate, materialize, compile)",
   "license": "Apache-2.0",

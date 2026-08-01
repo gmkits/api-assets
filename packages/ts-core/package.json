@@ -1,6 +1,6 @@
 {
   "name": "@holiday/core",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "private": true,
   "description": "Holiday Data Platform — core runtime SDK for querying holiday data",
   "license": "Apache-2.0",

@@ -6,7 +6,7 @@
 
     <groupId>com.github.gmkits</groupId>
     <artifactId>cn-holiday-kit-java</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-rc1</version>
     <packaging>pom</packaging>
 
     <name>cn-holiday-kit-java</name>
@@ -17,7 +17,6 @@
         <module>holiday-core-java</module>
         <module>holiday-lunar-java</module>
         <module>cn-holiday-kit</module>
-        <module>holiday-api-j8</module>
         <module>holiday-benchmarks</module>
     </modules>
 
@@ -82,8 +81,27 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
+                <configuration>
+                    <!-- 内部模块测试也必须读取唯一的通用日历资产。 -->
+                    <systemPropertyVariables>
+                        <cn.holiday.assets.path>${maven.multiModuleProjectDirectory}/../data/date-assets</cn.holiday.assets.path>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- 核心库保持 Java 8；HTTP 服务只在受支持的 Java 17+ 上参与构建。 -->
+        <profile>
+            <id>holiday-api-java17</id>
+            <activation>
+                <jdk>[17,)</jdk>
+            </activation>
+            <modules>
+                <module>holiday-api</module>
+            </modules>
+        </profile>
+    </profiles>
 
 </project>

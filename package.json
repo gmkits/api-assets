@@ -1,6 +1,6 @@
 {
   "name": "cn-holiday-kit",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "private": true,
   "description": "Holiday Data Platform — cross-platform holiday toolkit for China",
   "license": "Apache-2.0",
@@ -11,5 +11,11 @@
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.28.1",
+      "postcss": "8.5.25"
+    }
   }
 }

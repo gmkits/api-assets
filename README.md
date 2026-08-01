@@ -33,7 +33,7 @@ TypeScript 编译器、Spring API 和内部 Java 子模块只用于构建、测�
 <dependency>
   <groupId>com.github.gmkits</groupId>
   <artifactId>cn-holiday-kit</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0-rc1</version>
 </dependency>
 ```
 
@@ -98,18 +98,18 @@ data/
 
 ## 简单 API 服务
 
-如需跨语言访问，可启动内部的 Java 8 Spring Boot 服务：
+如需跨语言访问，可在 JDK 17+ 启动内部 Spring Boot 服务（核心库仍兼容 JDK 8）：
 
 ```bash
-mvn -f java/pom.xml -pl holiday-api-j8 -am package
+mvn -f java/pom.xml -pl holiday-api -am package
 java -Xms512m -Xmx4g -jar \
-  java/holiday-api-j8/target/holiday-api-j8-1.0.0-SNAPSHOT.jar
+  java/holiday-api/target/holiday-api-1.0.0-rc1.jar
 ```
 
 ```bash
 curl "http://localhost:8080/api/v1/day?date=2025-10-06"
 curl "http://localhost:8080/api/v1/range?from=2025-10-01&to=2025-10-08"
-curl http://localhost:8080/api/v1/year/2026
+curl "http://localhost:8080/api/v1/year?year=2026"
 ```
 
 建议其他语言读取 `.hday` v2 / `calendar.cdat` 通用二进制，或调用这套 REST API；
@@ -193,7 +193,7 @@ JMH 的 `thrpt` 是库内查询吞吐，不等于 HTTP 端到端 QPS；API 最�
 ```text
 java/cn-holiday-kit       唯一 Java 发布物与统一入口
 java/holiday-*-java       内部源码分区
-java/holiday-api-j8       可选 REST 服务
+java/holiday-api          可选 Java 17+ REST 服务
 java/holiday-benchmarks   JMH
 packages/ts-*             私有编译器、格式与离线查询实现
 spec                      通用格式与 JSON Schema

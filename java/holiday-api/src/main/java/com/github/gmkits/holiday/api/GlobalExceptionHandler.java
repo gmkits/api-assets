@@ -1,6 +1,7 @@
 package com.github.gmkits.holiday.api;
 
 import com.github.gmkits.holiday.api.dto.ErrorResponse;
+import com.github.gmkits.holiday.core.HolidayDataUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -13,6 +14,20 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * 处理离线数据未覆盖的地区或年份。
+     *
+     * @param ex 数据覆盖异常
+     * @return HTTP 404 错误响应
+     */
+    @ExceptionHandler(HolidayDataUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleDataUnavailable(
+            HolidayDataUnavailableException ex) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
 
     /**
      * 处理缺少必填查询参数。

@@ -125,4 +125,29 @@ class DayControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.regionCode").value("CN"));
     }
+
+    @Test
+    void getRange_missingBoundaryYearDoesNotReturnPartialData() throws Exception {
+        mockMvc.perform(get("/api/v1/range")
+                        .param("from", "1999-12-31")
+                        .param("to", "2000-01-02"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void getRange_reversedBoundaryIsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/range")
+                        .param("from", "2025-01-02")
+                        .param("to", "2025-01-01"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void getYear_usesQueryParameterContract() throws Exception {
+        mockMvc.perform(get("/api/v1/year").param("year", "2026"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(365));
+    }
 }

@@ -8,7 +8,7 @@ import type { DayInfo, Manifest } from '@holiday/spec';
 import { installCalendarAsset } from '@holiday/lunar';
 
 import type { HdayBundle } from './hday-parser.js';
-import { HdayFormatError, parseHdayBundle } from './hday-parser.js';
+import { parseHdayBundle } from './hday-parser.js';
 import { LRUCache } from './lru-cache.js';
 import {
   countBundleWorkdays,
@@ -37,8 +37,8 @@ export interface HolidayServiceOptions {
   preloadedBundles?: Map<string, ArrayBuffer>;
   /** 可选发布 manifest；提供后只允许其中声明的 bundle，并验证 SHA-256。 */
   manifest?: Manifest;
-  /** 可替换的通用 `calendar.cdat`；构建服务时同步校验并安装。 */
-  calendarData?: ArrayBuffer;
+  /** 通用 `calendar.cdat`；构建服务时同步校验并安装。 */
+  calendarData: ArrayBuffer;
   /** 已解析 bundle 的 LRU 缓存上限。 */
   maxCacheSize?: number;
 }
@@ -47,7 +47,8 @@ export interface HolidayServiceOptions {
  * 对外查询接口。
  */
 export interface HolidayService {
-  getDayInfo(date: string, regionCode?: string): Promise<DayInfo | null>;
+  /** 查询单日；数据未覆盖或资产损坏时拒绝 Promise。 */
+  getDayInfo(date: string, regionCode?: string): Promise<DayInfo>;
   isHoliday(date: string, regionCode?: string): Promise<boolean>;
   isWorkday(date: string, regionCode?: string): Promise<boolean>;
   getRange(from: string, to: string, regionCode?: string): Promise<DayInfo[]>;
@@ -75,10 +76,11 @@ class HolidayServiceImpl implements HolidayService {
   private readonly cache: LRUCache<string, HdayBundle>;
   private readonly loadingBundles: Map<string, Promise<HdayBundle>>;
 
-  constructor(options: HolidayServiceOptions = {}) {
-    if (options.calendarData) {
-      installCalendarAsset(options.calendarData);
+  constructor(options: HolidayServiceOptions) {
+    if (!options || !options.calendarData) {
+      throw new TypeError('创建服务必须提供有效的 calendar.cdat ArrayBuffer');
     }
+    installCalendarAsset(options.calendarData);
     this.defaultRegion = options.defaultRegion ?? 'CN';
     this.dataPath = options.dataPath;
     this.preloaded = options.preloadedBundles ?? new Map();
@@ -167,11 +169,13 @@ class HolidayServiceImpl implements HolidayService {
     year: number,
   ): Promise<ArrayBuffer> {
     const filePath = `${this.dataPath}/${region}/${year}.hday`;
+    let filesystemAvailable = false;
 
     try {
       const fsModule = 'fs';
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const fs: any = await import(/* webpackIgnore: true */ fsModule);
+      filesystemAvailable = true;
       const nodeBuffer: {
         buffer: ArrayBuffer;
         byteOffset: number;
@@ -181,8 +185,12 @@ class HolidayServiceImpl implements HolidayService {
         nodeBuffer.byteOffset,
         nodeBuffer.byteOffset + nodeBuffer.byteLength,
       );
-    } catch {
-      // Node.js 文件系统不可用或文件不存在时退回 fetch。
+    } catch (error) {
+      if (filesystemAvailable) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`读取数据包失败 ${filePath}: ${message}`);
+      }
+      // 浏览器没有 Node.js 文件系统时退回 fetch。
     }
 
     if (typeof fetch === 'function') {
@@ -203,11 +211,15 @@ class HolidayServiceImpl implements HolidayService {
   async getDayInfo(
     date: string,
     regionCode?: string,
-  ): Promise<DayInfo | null> {
+  ): Promise<DayInfo> {
     const region = regionCode ?? this.defaultRegion;
     const [year] = parseDate(date);
     const bundle = await this.getBundle(region, year);
-    return queryDay(bundle, date);
+    const dayInfo = queryDay(bundle, date);
+    if (!dayInfo) {
+      throw new Error(`数据包不包含请求日期: ${region}/${date}`);
+    }
+    return dayInfo;
   }
 
   async isHoliday(date: string, regionCode?: string): Promise<boolean> {
@@ -308,16 +320,21 @@ class HolidayServiceImpl implements HolidayService {
     const current = findBundleStatutoryHoliday(bundle, startIndex);
     if (current) return current;
 
-    // 当年没找到，搜索下一年
-    try {
-      const nextBundle = await this.getBundle(region, year + 1);
-      return findBundleStatutoryHoliday(nextBundle, 0);
-    } catch (error) {
-      if (error instanceof HdayFormatError) throw error;
-      // 下一年没有数据
+    if (this.manifest) {
+      const futureYears = Object.keys(this.manifest.bundles[region] ?? {})
+        .map(Number)
+        .filter((candidate) => candidate > year)
+        .sort((left, right) => left - right);
+      for (const futureYear of futureYears) {
+        const nextBundle = await this.getBundle(region, futureYear);
+        const next = findBundleStatutoryHoliday(nextBundle, 0);
+        if (next) return next;
+      }
+      return null;
     }
 
-    return null;
+    const nextBundle = await this.getBundle(region, year + 1);
+    return findBundleStatutoryHoliday(nextBundle, 0);
   }
 }
 
@@ -355,7 +372,7 @@ async function sha256Hex(data: ArrayBuffer): Promise<string> {
  * 创建可复用的 HolidayService 实例。
  */
 export function createHolidayService(
-  options?: HolidayServiceOptions,
+  options: HolidayServiceOptions,
 ): HolidayService {
   return new HolidayServiceImpl(options);
 }

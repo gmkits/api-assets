@@ -53,9 +53,19 @@ const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const LUNAR_MIN_SOLAR_MONTH = 1;
 /** 农历支持的最早公历日期。 */
 const LUNAR_MIN_SOLAR_DAY = 31;
-/** 农历支持的最晚公历日期。 */
-const [LUNAR_MAX_SOLAR_YEAR, LUNAR_MAX_SOLAR_MONTH, LUNAR_MAX_SOLAR_DAY] =
-  lunarToSolar(LUNAR_END_YEAR, 12, monthDays(LUNAR_END_YEAR, 12));
+/** 农历支持的最晚公历日期，安装资产后按需计算一次。 */
+let lunarMaxSolarDate: [number, number, number] | undefined;
+
+function getLunarMaxSolarDate(): [number, number, number] {
+  if (!lunarMaxSolarDate) {
+    lunarMaxSolarDate = lunarToSolar(
+      LUNAR_END_YEAR,
+      12,
+      monthDays(LUNAR_END_YEAR, 12),
+    );
+  }
+  return lunarMaxSolarDate;
+}
 
 interface BundleQueryView {
   dayInfos: DayInfo[];
@@ -156,7 +166,8 @@ function isSolarDateWithinLunarRange(
   month: number,
   day: number,
 ): boolean {
-  if (year < LUNAR_START_YEAR || year > LUNAR_MAX_SOLAR_YEAR) {
+  const [maxYear, maxMonth, maxDay] = getLunarMaxSolarDate();
+  if (year < LUNAR_START_YEAR || year > maxYear) {
     return false;
   }
   if (
@@ -167,9 +178,8 @@ function isSolarDateWithinLunarRange(
     return false;
   }
   if (
-    year === LUNAR_MAX_SOLAR_YEAR &&
-    (month > LUNAR_MAX_SOLAR_MONTH ||
-      (month === LUNAR_MAX_SOLAR_MONTH && day > LUNAR_MAX_SOLAR_DAY))
+    year === maxYear &&
+    (month > maxMonth || (month === maxMonth && day > maxDay))
   ) {
     return false;
   }

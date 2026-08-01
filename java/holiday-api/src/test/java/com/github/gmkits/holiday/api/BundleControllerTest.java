@@ -12,6 +12,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BundleControllerTest {
 
@@ -38,5 +39,7 @@ class BundleControllerTest {
 
         properties.setClasspathFallback(false);
         assertEquals(404, controller.getBundle("CN", 2099).getStatusCodeValue());
+        assertThrows(IllegalArgumentException.class,
+                () -> controller.getBundle("..", 2026));
     }
 }

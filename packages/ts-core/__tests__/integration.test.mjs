@@ -1,6 +1,7 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,8 +14,17 @@ import {
   dayOfYear,
 } from '../dist/esm/index.js';
 import { crc32 } from '../../ts-spec/dist/esm/index.js';
+import { installCalendarAsset } from '../../ts-lunar/dist/esm/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const calendarBytes = readFileSync(resolve(
+  __dirname,
+  '../../../data/date-assets/calendar/calendar.cdat',
+));
+installCalendarAsset(calendarBytes.buffer.slice(
+  calendarBytes.byteOffset,
+  calendarBytes.byteOffset + calendarBytes.byteLength,
+));
 const BUNDLE_2025 = resolve(__dirname, '../../../data/date-assets/holidays/bundles/CN/2025.hday');
 const BUNDLE_2026 = resolve(__dirname, '../../../data/date-assets/holidays/bundles/CN/2026.hday');
 const BUNDLE_2000 = resolve(__dirname, '../../../data/date-assets/holidays/bundles/CN/2000.hday');

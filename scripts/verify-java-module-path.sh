@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-JAR="${1:-$ROOT/java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-SNAPSHOT.jar}"
+JAR="${1:-$ROOT/java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-rc1.jar}"
 SOURCE_ROOT="$ROOT/java/cn-holiday-kit/src/module-test/java"
 MAIN_CLASS="com.github.gmkits.holiday.moduletest.ModulePathSmoke"
 TMP="$(mktemp -d)"

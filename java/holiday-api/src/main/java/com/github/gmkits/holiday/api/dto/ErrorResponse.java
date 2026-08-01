@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Java 8 API 的不可变错误响应。
+ * API 的不可变错误响应。
  */
 public final class ErrorResponse {
 

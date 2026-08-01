@@ -13,12 +13,22 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { solarToLunar } from '../packages/ts-lunar/dist/esm/index.js';
+import {
+  installCalendarAsset,
+  solarToLunar,
+} from '../packages/ts-lunar/dist/esm/index.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const outputDir = join(root, 'data/source/CN');
 const outputCsv = join(outputDir, 'holidays.csv');
 const outputSources = join(outputDir, 'sources.json');
+const calendarBytes = readFileSync(
+  join(root, 'data/date-assets/calendar/calendar.cdat'),
+);
+installCalendarAsset(calendarBytes.buffer.slice(
+  calendarBytes.byteOffset,
+  calendarBytes.byteOffset + calendarBytes.byteLength,
+));
 
 const START_YEAR = 2000;
 const END_YEAR = 2026;

@@ -3,10 +3,17 @@
 // Here we use relative imports for demonstration
 
 import { createHolidayService } from '../../packages/ts-core/dist/esm/index.js';
+import { readFileSync } from 'node:fs';
+
+const calendarBytes = readFileSync('../../data/date-assets/calendar/calendar.cdat');
 
 const service = createHolidayService({
   dataPath: '../../data/date-assets/holidays/bundles',
   defaultRegion: 'CN',
+  calendarData: calendarBytes.buffer.slice(
+    calendarBytes.byteOffset,
+    calendarBytes.byteOffset + calendarBytes.byteLength,
+  ),
 });
 
 async function main() {

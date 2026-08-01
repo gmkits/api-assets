@@ -37,29 +37,7 @@
 // 数据来源：香港天文台 / 紫金山天文台天文年历
 // ===================================================================
 
-const LUNAR_INFO: number[] = [
-  0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
-  0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
-  0x04970, 0x0a4b0, 0x0b4b5, 0x06a50, 0x06d40, 0x1ab54, 0x02b60, 0x09570, 0x052f2, 0x04970,
-  0x06566, 0x0d4a0, 0x0ea50, 0x16a95, 0x05ad0, 0x02b60, 0x186e3, 0x092e0, 0x1c8d7, 0x0c950,
-  0x0d4a0, 0x1d8a6, 0x0b550, 0x056a0, 0x1a5b4, 0x025d0, 0x092d0, 0x0d2b2, 0x0a950, 0x0b557,
-  0x06ca0, 0x0b550, 0x15355, 0x04da0, 0x0a5b0, 0x14573, 0x052b0, 0x0a9a8, 0x0e950, 0x06aa0,
-  0x0aea6, 0x0ab50, 0x04b60, 0x0aae4, 0x0a570, 0x05260, 0x0f263, 0x0d950, 0x05b57, 0x056a0,
-  0x096d0, 0x04dd5, 0x04ad0, 0x0a4d0, 0x0d4d4, 0x0d250, 0x0d558, 0x0b540, 0x0b6a0, 0x195a6,
-  0x095b0, 0x049b0, 0x0a974, 0x0a4b0, 0x0b27a, 0x06a50, 0x06d40, 0x0af46, 0x0ab60, 0x09570,
-  0x04af5, 0x04970, 0x064b0, 0x074a3, 0x0ea50, 0x06b58, 0x05ac0, 0x0ab60, 0x096d5, 0x092e0,
-  0x0c960, 0x0d954, 0x0d4a0, 0x0da50, 0x07552, 0x056a0, 0x0abb7, 0x025d0, 0x092d0, 0x0cab5,
-  0x0a950, 0x0b4a0, 0x0baa4, 0x0ad50, 0x055d9, 0x04ba0, 0x0a5b0, 0x15176, 0x052b0, 0x0a930,
-  0x07954, 0x06aa0, 0x0ad50, 0x05b52, 0x04b60, 0x0a6e6, 0x0a4e0, 0x0d260, 0x0ea65, 0x0d530,
-  0x05aa0, 0x076a3, 0x096d0, 0x04afb, 0x04ad0, 0x0a4d0, 0x1d0b6, 0x0d250, 0x0d520, 0x0dd45,
-  0x0b5a0, 0x056d0, 0x055b2, 0x049b0, 0x0a577, 0x0a4b0, 0x0aa50, 0x1b255, 0x06d20, 0x0ada0,
-  0x14b63, 0x09370, 0x049f8, 0x04970, 0x064b0, 0x168a6, 0x0ea50, 0x06aa0, 0x1a6c4, 0x0aae0,
-  0x092e0, 0x0d2e3, 0x0c960, 0x0d557, 0x0d4a0, 0x0da50, 0x05d55, 0x056a0, 0x0a6d0, 0x055d4,
-  0x052d0, 0x0a9b8, 0x0a950, 0x0b4a0, 0x0b6a6, 0x0ad50, 0x055a0, 0x0aba4, 0x0a5b0, 0x052b0,
-  0x0b273, 0x06930, 0x07337, 0x06aa0, 0x0ad50, 0x14b55, 0x04b60, 0x0a570, 0x054e4, 0x0d160,
-  0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
-  0x0d520,
-];
+let LUNAR_INFO: number[] = [];
 
 /** 数据覆盖范围起始年。 */
 export const LUNAR_START_YEAR = 1900;
@@ -195,7 +173,19 @@ function rebuildLunarTables(): void {
   }
 }
 
-rebuildLunarTables();
+let calendarAssetInstalled = false;
+
+/**
+ * 确认通用日历资产已经安装。
+ *
+ * TypeScript 发布物不再复制农历和节气表；调用方必须先安装随包发布的
+ * `calendar.cdat`，保证 Java 与 TypeScript 始终读取同一份权威数据。
+ */
+export function assertCalendarAssetInstalled(): void {
+  if (!calendarAssetInstalled) {
+    throw new Error('日历资产未安装：请先调用 installCalendarAsset(calendar.cdat)');
+  }
+}
 
 // ===================================================================
 // 农历信息查询（位运算解码）
@@ -296,7 +286,19 @@ export interface LunarInfo extends LunarDate {
  * @returns 农历日期信息
  */
 export function solarToLunar(solarYear: number, solarMonth: number, solarDay: number, locale: 'zh-CN' | 'zh-TW' = 'zh-CN'): LunarInfo {
+  assertCalendarAssetInstalled();
+  if (!Number.isInteger(solarYear)
+      || !Number.isInteger(solarMonth)
+      || !Number.isInteger(solarDay)) {
+    throw new RangeError(`无效公历日期：${solarYear}-${solarMonth}-${solarDay}`);
+  }
   const targetMs = Date.UTC(solarYear, solarMonth - 1, solarDay);
+  const targetDate = new Date(targetMs);
+  if (targetDate.getUTCFullYear() !== solarYear
+      || targetDate.getUTCMonth() + 1 !== solarMonth
+      || targetDate.getUTCDate() !== solarDay) {
+    throw new RangeError(`无效公历日期：${solarYear}-${solarMonth}-${solarDay}`);
+  }
   let offset = Math.floor((targetMs - BASE_DATE_MS) / MS_PER_DAY);
 
   if (offset < 0) {
@@ -562,208 +564,7 @@ const SOLAR_TERM_BASE_DAYS: number[] = [
  *
  * 与 LUNAR_INFO 相同风格的紧凑整数数组设计，只包含权威表覆盖范围。
  */
-const SOLAR_TERM_PACKED: bigint[] = [
-  0x6aaaa6aa9a5an, // 1901
-  0xaaaaaabaaa6an, // 1902
-  0xaaabbabbafaan, // 1903
-  0x5aa665a65aabn, // 1904
-  0x6aaaa6aa9a5an, // 1905
-  0xaaaaaaaaaa6an, // 1906
-  0xaaabbabbafaan, // 1907
-  0x5aa665a65aabn, // 1908
-  0x6aaaa6aa9a5an, // 1909
-  0xaaaaaaaaaa6an, // 1910
-  0xaaabbabbafaan, // 1911
-  0x5aa665a65aabn, // 1912
-  0x6aaaa6aa9a56n, // 1913
-  0xaaaaaaaa9a5an, // 1914
-  0xaaabaabaaeaan, // 1915
-  0x569665a65aaan, // 1916
-  0x5aa6a6a69a56n, // 1917
-  0x6aaaaaaa9a5an, // 1918
-  0xaaabaabaaeaan, // 1919
-  0x569665a65aaan, // 1920
-  0x5aa6a6a65a56n, // 1921
-  0x6aaaaaaa9a5an, // 1922
-  0xaaabaabaaa6an, // 1923
-  0x569665a65aaan, // 1924
-  0x5aa6a6a65a56n, // 1925
-  0x6aaaa6aa9a5an, // 1926
-  0xaaaaaabaaa6an, // 1927
-  0x555665665aaan, // 1928
-  0x5aa665a65a56n, // 1929
-  0x6aaaa6aa9a5an, // 1930
-  0xaaaaaabaaa6an, // 1931
-  0x555665665aaan, // 1932
-  0x5aa665a65a56n, // 1933
-  0x6aaaa6aa9a5an, // 1934
-  0xaaaaaaaaaa6an, // 1935
-  0x555665665aaan, // 1936
-  0x5aa665a65a56n, // 1937
-  0x6aaaa6aa9a5an, // 1938
-  0xaaaaaaaaaa6an, // 1939
-  0x555665665aaan, // 1940
-  0x5aa665a65a56n, // 1941
-  0x6aaaa6aa9a5an, // 1942
-  0xaaaaaaaaaa6an, // 1943
-  0x555665655aaan, // 1944
-  0x569665a65a56n, // 1945
-  0x6aa6a6aa9a56n, // 1946
-  0xaaaaaaaa9a5an, // 1947
-  0x5556556559aan, // 1948
-  0x569665a65a55n, // 1949
-  0x6aa6a6a65a56n, // 1950
-  0xaaaaaaaa9a5an, // 1951
-  0x5556556559aan, // 1952
-  0x569665a65a55n, // 1953
-  0x5aa6a6a65a56n, // 1954
-  0x6aaaa6aa9a5an, // 1955
-  0x5556556555aan, // 1956
-  0x569665a65a55n, // 1957
-  0x5aa665a65a56n, // 1958
-  0x6aaaa6aa9a5an, // 1959
-  0x55555565556an, // 1960
-  0x555665665a55n, // 1961
-  0x5aa665a65a56n, // 1962
-  0x6aaaa6aa9a5an, // 1963
-  0x55555565556an, // 1964
-  0x555665665a55n, // 1965
-  0x5aa665a65a56n, // 1966
-  0x6aaaa6aa9a5an, // 1967
-  0x55555555556an, // 1968
-  0x555665665a55n, // 1969
-  0x5aa665a65a56n, // 1970
-  0x6aaaa6aa9a5an, // 1971
-  0x55555555556an, // 1972
-  0x555665655a55n, // 1973
-  0x5aa665a65a56n, // 1974
-  0x6aa6a6aa9a5an, // 1975
-  0x55555555456an, // 1976
-  0x555655655a55n, // 1977
-  0x5a9665a65a56n, // 1978
-  0x6aa6a6a69a5an, // 1979
-  0x55555555456an, // 1980
-  0x555655655a55n, // 1981
-  0x569665a65a56n, // 1982
-  0x6aa6a6a65a56n, // 1983
-  0x55555155455an, // 1984
-  0x555655655955n, // 1985
-  0x569665a65a55n, // 1986
-  0x5aa6a5a65a56n, // 1987
-  0x15555155455an, // 1988
-  0x555555655555n, // 1989
-  0x569665665a55n, // 1990
-  0x5aa665a65a56n, // 1991
-  0x15555155455an, // 1992
-  0x555555655515n, // 1993
-  0x555665665a55n, // 1994
-  0x5aa665a65a56n, // 1995
-  0x15555155455an, // 1996
-  0x555555555515n, // 1997
-  0x555665665a55n, // 1998
-  0x5aa665a65a56n, // 1999
-  0x15555155455an, // 2000
-  0x555555555515n, // 2001
-  0x555665665a55n, // 2002
-  0x5aa665a65a56n, // 2003
-  0x15555155455an, // 2004
-  0x555555555515n, // 2005
-  0x555655655a55n, // 2006
-  0x5aa665a65a56n, // 2007
-  0x15515155455an, // 2008
-  0x555555554515n, // 2009
-  0x555655655a55n, // 2010
-  0x5a9665a65a56n, // 2011
-  0x15515151455an, // 2012
-  0x555551554515n, // 2013
-  0x555655655a55n, // 2014
-  0x569665a65a56n, // 2015
-  0x155151510556n, // 2016
-  0x555551554505n, // 2017
-  0x555655655955n, // 2018
-  0x569665665a55n, // 2019
-  0x155110510556n, // 2020
-  0x155551554505n, // 2021
-  0x555555655555n, // 2022
-  0x569665665a55n, // 2023
-  0x055110510556n, // 2024
-  0x155551554505n, // 2025
-  0x555555555515n, // 2026
-  0x555665665a55n, // 2027
-  0x055110510556n, // 2028
-  0x155551554505n, // 2029
-  0x555555555515n, // 2030
-  0x555665665a55n, // 2031
-  0x055110510556n, // 2032
-  0x155551554505n, // 2033
-  0x555555555515n, // 2034
-  0x555655655a55n, // 2035
-  0x055110510556n, // 2036
-  0x155551554505n, // 2037
-  0x555555555515n, // 2038
-  0x555655655a55n, // 2039
-  0x055110510556n, // 2040
-  0x155151514505n, // 2041
-  0x555555554515n, // 2042
-  0x555655655a55n, // 2043
-  0x054110510556n, // 2044
-  0x155151510505n, // 2045
-  0x555551554515n, // 2046
-  0x555655655a55n, // 2047
-  0x014110110556n, // 2048
-  0x155110510501n, // 2049
-  0x555551554505n, // 2050
-  0x555555655555n, // 2051
-  0x014110110555n, // 2052
-  0x155110510501n, // 2053
-  0x555551554505n, // 2054
-  0x555555555555n, // 2055
-  0x014110110555n, // 2056
-  0x055110510501n, // 2057
-  0x155551554505n, // 2058
-  0x555555555555n, // 2059
-  0x000110110555n, // 2060
-  0x055110510501n, // 2061
-  0x155551554505n, // 2062
-  0x555555555515n, // 2063
-  0x000110110555n, // 2064
-  0x055110510501n, // 2065
-  0x155551554505n, // 2066
-  0x555555555515n, // 2067
-  0x000100100555n, // 2068
-  0x055110510501n, // 2069
-  0x155151514505n, // 2070
-  0x555555555515n, // 2071
-  0x000100100555n, // 2072
-  0x054110510501n, // 2073
-  0x155151514505n, // 2074
-  0x555551554515n, // 2075
-  0x000100100555n, // 2076
-  0x054110510501n, // 2077
-  0x155150510505n, // 2078
-  0x555551554515n, // 2079
-  0x000100100555n, // 2080
-  0x014110110501n, // 2081
-  0x155110510505n, // 2082
-  0x555551554505n, // 2083
-  0x000000100055n, // 2084
-  0x014110110500n, // 2085
-  0x155110510501n, // 2086
-  0x555551554505n, // 2087
-  0x000000000055n, // 2088
-  0x014110110500n, // 2089
-  0x055110510501n, // 2090
-  0x155551554505n, // 2091
-  0x000000000055n, // 2092
-  0x000110110500n, // 2093
-  0x055110510501n, // 2094
-  0x155551554505n, // 2095
-  0x000000000015n, // 2096
-  0x000100110500n, // 2097
-  0x055110510501n, // 2098
-  0x155551554505n, // 2099
-  0x555555555515n, // 2100
-];
+let SOLAR_TERM_PACKED: bigint[] = [];
 
 /** Version and ranges installed from a validated `calendar.cdat` asset. */
 export interface CalendarAssetInfo {
@@ -866,7 +667,8 @@ export function installCalendarAsset(data: ArrayBuffer): CalendarAssetInfo {
       || view.getUint8(solar.offset + 7) !== 0
       || solarStart !== SOLAR_TERM_DATA_START
       || solarEnd !== SOLAR_TERM_DATA_END
-      || solarCount !== SOLAR_TERM_PACKED.length || termCount !== 24) {
+      || solarCount !== SOLAR_TERM_DATA_END - SOLAR_TERM_DATA_START + 1
+      || termCount !== 24) {
     throw new RangeError('calendar.cdat 节气 section 范围无效');
   }
   for (let index = 0; index < termCount; index++) {
@@ -885,9 +687,10 @@ export function installCalendarAsset(data: ArrayBuffer): CalendarAssetInfo {
     solarValues[year] = packed;
   }
 
-  LUNAR_INFO.splice(0, LUNAR_INFO.length, ...lunarValues);
-  SOLAR_TERM_PACKED.splice(0, SOLAR_TERM_PACKED.length, ...solarValues);
+  LUNAR_INFO = lunarValues;
+  SOLAR_TERM_PACKED = solarValues;
   rebuildLunarTables();
+  calendarAssetInstalled = true;
   return {
     majorVersion,
     minorVersion,
@@ -1001,6 +804,7 @@ export function getSolarTerm(solarYear: number, solarMonth: number, solarDay: nu
 // ===================================================================
 
 function validateYear(year: number): void {
+  assertCalendarAssetInstalled();
   if (year < LUNAR_START_YEAR || year > LUNAR_END_YEAR) {
     throw new RangeError(
       `年份 ${year} 超出范围，农历数据覆盖 ${LUNAR_START_YEAR}-${LUNAR_END_YEAR}`,
@@ -1009,6 +813,7 @@ function validateYear(year: number): void {
 }
 
 function validateSolarTermYear(year: number): void {
+  assertCalendarAssetInstalled();
   if (year < SOLAR_TERM_DATA_START || year > SOLAR_TERM_DATA_END) {
     throw new RangeError(
       `年份 ${year} 超出节气数据范围 ${SOLAR_TERM_DATA_START}-${SOLAR_TERM_DATA_END}`,

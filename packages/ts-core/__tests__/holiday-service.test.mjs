@@ -35,6 +35,13 @@ async function fixture() {
 }
 
 describe('HolidayService manifest and calendar assets', () => {
+  it('requires the shared calendar asset when creating a service', () => {
+    assert.throws(
+      () => createHolidayService({}),
+      /calendar\.cdat|日历资产/,
+    );
+  });
+
   it('verifies SHA-256 and answers status directly from bitmaps', async () => {
     const { bundle, manifest, calendar } = await fixture();
     const service = createHolidayService({
@@ -47,10 +54,11 @@ describe('HolidayService manifest and calendar assets', () => {
   });
 
   it('rejects a manifest SHA-256 mismatch', async () => {
-    const { bundle, manifest } = await fixture();
+    const { bundle, manifest, calendar } = await fixture();
     manifest.bundles.CN['2025'].sha256 = '0'.repeat(64);
     const service = createHolidayService({
       manifest,
+      calendarData: calendar,
       preloadedBundles: new Map([['CN-2025', bundle]]),
     });
     await assert.rejects(
@@ -60,9 +68,10 @@ describe('HolidayService manifest and calendar assets', () => {
   });
 
   it('rejects region/year keys not declared by the manifest', async () => {
-    const { bundle, manifest } = await fixture();
+    const { bundle, manifest, calendar } = await fixture();
     const service = createHolidayService({
       manifest,
+      calendarData: calendar,
       preloadedBundles: new Map([['CN-2025', bundle]]),
     });
     await assert.rejects(

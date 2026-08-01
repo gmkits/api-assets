@@ -1,6 +1,6 @@
 // Basic Java example
-// Compile: javac -cp ../../java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-SNAPSHOT.jar Main.java
-// Run: java -cp .:../../java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-SNAPSHOT.jar Main
+// Compile: javac -cp ../../java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-rc1.jar Main.java
+// Run: java -cp .:../../java/cn-holiday-kit/target/cn-holiday-kit-1.0.0-rc1.jar Main
 
 import com.github.gmkits.holiday.CnHolidayKit;
 import com.github.gmkits.holiday.core.HolidayService;

@@ -41,13 +41,10 @@ public class DayController {
      */
     @GetMapping("/day")
     public ResponseEntity<DayInfo> getDay(
-            @RequestParam(defaultValue = "CN") String regionCode,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        DayInfo info = holidayService.getDayInfo(regionCode, date);
-        if (info == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(info);
+            @RequestParam(name = "regionCode", defaultValue = "CN") String regionCode,
+            @RequestParam(name = "date")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(holidayService.getDayInfo(regionCode, date));
     }
 
     /**
@@ -60,13 +57,15 @@ public class DayController {
      */
     @GetMapping("/range")
     public ResponseEntity<List<DayInfo>> getRange(
-            @RequestParam(defaultValue = "CN") String regionCode,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        List<DayInfo> result = holidayService.getRange(regionCode, from, to);
-        if (result.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            @RequestParam(name = "regionCode", defaultValue = "CN") String regionCode,
+            @RequestParam(name = "from")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(name = "to")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("起始日期不能晚于结束日期");
         }
+        List<DayInfo> result = holidayService.getRange(regionCode, from, to);
         return ResponseEntity.ok(result);
     }
 
@@ -79,13 +78,9 @@ public class DayController {
      */
     @GetMapping("/year")
     public ResponseEntity<List<DayInfo>> getYear(
-            @RequestParam(defaultValue = "CN") String regionCode,
-            @RequestParam int year) {
-        List<DayInfo> result = holidayService.getYear(regionCode, year);
-        if (result.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(result);
+            @RequestParam(name = "regionCode", defaultValue = "CN") String regionCode,
+            @RequestParam(name = "year") int year) {
+        return ResponseEntity.ok(holidayService.getYear(regionCode, year));
     }
 
     /**
@@ -105,6 +100,15 @@ public class DayController {
      */
     @GetMapping("/version")
     public VersionInfo getVersion() {
-        return new VersionInfo("1.0.0", "1.0.0-SNAPSHOT", Collections.singletonList("CN"));
+        Package apiPackage = DayController.class.getPackage();
+        String apiVersion = apiPackage == null
+                ? null : apiPackage.getImplementationVersion();
+        if (apiVersion == null || apiVersion.trim().isEmpty()) {
+            apiVersion = "dev";
+        }
+        return new VersionInfo(
+                apiVersion,
+                "2026.GOV_NOTICE",
+                Collections.singletonList("CN"));
     }
 }

@@ -1,10 +1,10 @@
 # cn-holiday-kit HTTP API
 
-仓库只保留一套无状态查询 API：`holiday-api-j8` 的 `/api/v1`。它编译为 Java 8
-字节码，同一个可执行 JAR 可运行在 JDK 8、17、21、25。
+仓库只保留一套无状态查询 API：`holiday-api` 的 `/api/v1`。它基于仍在维护的
+Spring Boot 3.5，并要求 JDK 17+；核心 `cn-holiday-kit` 库仍兼容 JDK 8、17、21、25。
 
 所有日期使用 ISO `YYYY-MM-DD`，区域默认 `CN`。查询不到已安装年份时返回 404，
-参数格式错误返回 400。
+跨年度范围只要有一年缺失也返回 404，绝不返回看似成功的部分数据；参数格式错误返回 400。
 
 ## 接口
 

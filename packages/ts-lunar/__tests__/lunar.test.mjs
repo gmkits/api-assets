@@ -31,6 +31,11 @@ const calendarAssetPath = resolve(
     __dirname,
     '../../../data/date-assets/calendar/calendar.cdat',
 );
+const calendarBytes = readFileSync(calendarAssetPath);
+installCalendarAsset(calendarBytes.buffer.slice(
+  calendarBytes.byteOffset,
+  calendarBytes.byteOffset + calendarBytes.byteLength,
+));
 const csvRows = readFileSync(csvPath, 'utf-8')
     .split('\n')
     .slice(1)                     // 跳过表头
@@ -149,6 +154,11 @@ describe('闰月互转', () => {
 // ─── 错误处理 ───
 
 describe('错误处理', () => {
+    it('拒绝会被 Date.UTC 归一化的非法公历日期', () => {
+        assert.throws(() => solarToLunar(2025, 2, 30), /无效公历日期/);
+        assert.throws(() => solarToLunar(2025, 2, 1.5), /无效公历日期/);
+    });
+
     it('无闰月年份传 isLeapMonth=true 报错', () => {
         assert.throws(() => lunarToSolar(2024, 6, 1, true), RangeError);
         assert.throws(() => lunarToSolar(2024, 1, 1, true), RangeError);

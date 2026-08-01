@@ -14,7 +14,7 @@ class VersionInfoTest {
     @Test
     void regions_shouldBeCopiedAsReadonlySnapshot() {
         List<String> regions = new ArrayList<>(Arrays.asList("CN"));
-        VersionInfo versionInfo = new VersionInfo("1.0.0", "1.0.0-SNAPSHOT", regions);
+        VersionInfo versionInfo = new VersionInfo("1.0.0-rc1", "2026.GOV_NOTICE", regions);
 
         regions.add("TEST");
 

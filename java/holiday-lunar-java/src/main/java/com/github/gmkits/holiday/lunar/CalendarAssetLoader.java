@@ -41,11 +41,10 @@ final class CalendarAssetLoader {
     private CalendarAssetLoader() {
     }
 
-    static int[] loadLunarYears(int[] fallback) {
+    static int[] loadLunarYears() {
         CalendarData data = load();
-        if (data == null) return fallback;
         if (data.lunarStart != 1900 || data.lunarEnd != 2100
-                || data.lunarYears.length != fallback.length) {
+                || data.lunarYears.length != 201) {
             throw new ExceptionInInitializerError("calendar.cdat lunar range mismatch");
         }
         return data.lunarYears.clone();
@@ -54,17 +53,9 @@ final class CalendarAssetLoader {
     static long[] loadSolarTerms(
             int startYear,
             int endYear,
-            int[] baseDays,
-            long[] fallback) {
+            int[] baseDays) {
         CalendarData data = load();
         int yearCount = endYear - startYear + 1;
-        if (data == null) {
-            if (fallback.length != yearCount) {
-                throw new ExceptionInInitializerError(
-                        "Embedded solar-term range mismatch");
-            }
-            return fallback;
-        }
         if (data.solarStart != startYear || data.solarEnd != endYear
                 || data.solarTerms.length != yearCount
                 || data.solarBaseDays.length != baseDays.length) {
@@ -90,7 +81,11 @@ final class CalendarAssetLoader {
         synchronized (CalendarAssetLoader.class) {
             if (attempted) return cached;
             try (InputStream input = open(ASSET_PATH)) {
-                cached = input == null ? null : parse(readAllBytes(input));
+                if (input == null) {
+                    throw new IOException("Missing classpath asset "
+                            + CLASSPATH_ROOT + ASSET_PATH);
+                }
+                cached = parse(readAllBytes(input));
                 attempted = true;
                 return cached;
             } catch (IOException | RuntimeException exception) {

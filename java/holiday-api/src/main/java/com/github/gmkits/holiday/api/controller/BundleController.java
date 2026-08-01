@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.regex.Pattern;
 
 /**
  * 提供离线 manifest 与单年 bundle 下载。
@@ -25,6 +26,9 @@ import java.nio.file.Paths;
 @RestController
 @RequestMapping("/api/v1")
 public class BundleController {
+
+    private static final Pattern REGION_CODE =
+            Pattern.compile("[A-Z]{2}(?:-[A-Z0-9]{1,8})*");
 
     private final HolidayProperties properties;
 
@@ -73,8 +77,11 @@ public class BundleController {
      */
     @GetMapping("/bundle/{region}/{year}")
     public ResponseEntity<byte[]> getBundle(
-            @PathVariable String region,
-            @PathVariable int year) throws IOException {
+            @PathVariable(name = "region") String region,
+            @PathVariable(name = "year") int year) throws IOException {
+        if (!REGION_CODE.matcher(region).matches() || year < 1 || year > 9999) {
+            throw new IllegalArgumentException("不支持的地区或年份: " + region + "/" + year);
+        }
         Path external = externalBundle(region, year);
         if (external != null && Files.isRegularFile(external)) {
             return bundleResponse(Files.readAllBytes(external), year);

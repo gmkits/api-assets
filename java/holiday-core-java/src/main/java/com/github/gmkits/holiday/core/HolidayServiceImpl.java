@@ -68,37 +68,31 @@ final class HolidayServiceImpl implements HolidayService {
 
     @Override
     public DayInfo getDayInfo(String regionCode, LocalDate date) {
-        HdayBundle bundle = resolveBundle(regionCode, date.getYear());
-        if (bundle == null) {
-            return null;
-        }
-        return bundle.getDayInfo(date);
+        return requireBundle(regionCode, date.getYear()).getDayInfo(date);
     }
 
     @Override
     public boolean isHoliday(LocalDate date) {
-        HdayBundle bundle = resolveBundle(defaultRegion, date.getYear());
-        return bundle != null && bundle.isHoliday(date.getDayOfYear() - 1);
+        HdayBundle bundle = requireBundle(defaultRegion, date.getYear());
+        return bundle.isHoliday(date.getDayOfYear() - 1);
     }
 
     @Override
     public boolean isWorkday(LocalDate date) {
-        HdayBundle bundle = resolveBundle(defaultRegion, date.getYear());
-        return bundle != null && bundle.isWorkday(date.getDayOfYear() - 1);
+        HdayBundle bundle = requireBundle(defaultRegion, date.getYear());
+        return bundle.isWorkday(date.getDayOfYear() - 1);
     }
 
     @Override
     public boolean isStatutoryHoliday(LocalDate date) {
-        HdayBundle bundle = resolveBundle(defaultRegion, date.getYear());
-        return bundle != null
-                && bundle.isStatutoryHoliday(date.getDayOfYear() - 1);
+        HdayBundle bundle = requireBundle(defaultRegion, date.getYear());
+        return bundle.isStatutoryHoliday(date.getDayOfYear() - 1);
     }
 
     @Override
     public boolean isAdjustedWorkday(LocalDate date) {
-        HdayBundle bundle = resolveBundle(defaultRegion, date.getYear());
-        return bundle != null
-                && bundle.isAdjustedWorkday(date.getDayOfYear() - 1);
+        HdayBundle bundle = requireBundle(defaultRegion, date.getYear());
+        return bundle.isAdjustedWorkday(date.getDayOfYear() - 1);
     }
 
     @Override
@@ -114,10 +108,7 @@ final class HolidayServiceImpl implements HolidayService {
 
         List<DayInfo> result = new ArrayList<>(estimateRangeCapacity(from, to));
         for (int year = from.getYear(); year <= to.getYear(); year++) {
-            HdayBundle bundle = resolveBundle(regionCode, year);
-            if (bundle == null) {
-                continue;
-            }
+            HdayBundle bundle = requireBundle(regionCode, year);
             int startIndex = year == from.getYear() ? from.getDayOfYear() - 1 : 0;
             int endIndex = year == to.getYear() ? to.getDayOfYear() - 1 : bundle.getDayCount() - 1;
             bundle.appendRangeTo(result, startIndex, endIndex);
@@ -132,11 +123,7 @@ final class HolidayServiceImpl implements HolidayService {
 
     @Override
     public List<DayInfo> getYear(String regionCode, int year) {
-        HdayBundle bundle = resolveBundle(regionCode, year);
-        if (bundle == null) {
-            return Collections.emptyList();
-        }
-        return bundle.getDayInfos();
+        return requireBundle(regionCode, year).getDayInfos();
     }
 
     @Override
@@ -146,10 +133,7 @@ final class HolidayServiceImpl implements HolidayService {
 
     @Override
     public List<DayInfo> getMonth(String regionCode, int year, int month) {
-        HdayBundle bundle = resolveBundle(regionCode, year);
-        if (bundle == null) {
-            return Collections.emptyList();
-        }
+        HdayBundle bundle = requireBundle(regionCode, year);
         LocalDate first = LocalDate.of(year, month, 1);
         LocalDate last = first.withDayOfMonth(first.lengthOfMonth());
         int startIndex = first.getDayOfYear() - 1;
@@ -171,10 +155,7 @@ final class HolidayServiceImpl implements HolidayService {
         // 直接在 bundle 上计数，避免分配中间 List<DayInfo>
         int count = 0;
         for (int year = from.getYear(); year <= to.getYear(); year++) {
-            HdayBundle bundle = resolveBundle(regionCode, year);
-            if (bundle == null) {
-                continue;
-            }
+            HdayBundle bundle = requireBundle(regionCode, year);
             int startIndex = year == from.getYear() ? from.getDayOfYear() - 1 : 0;
             int endIndex = year == to.getYear() ? to.getDayOfYear() - 1 : bundle.getDayCount() - 1;
             count += bundle.countWorkdays(startIndex, endIndex);
@@ -189,16 +170,22 @@ final class HolidayServiceImpl implements HolidayService {
 
     @Override
     public DayInfo getNextHoliday(String regionCode, LocalDate from) {
-        HdayBundle bundle = resolveBundle(regionCode, from.getYear());
-        if (bundle != null) {
-            DayInfo day = bundle.findStatutoryHoliday(from.getDayOfYear() - 1);
-            if (day != null) {
-                return day;
-            }
+        HdayBundle bundle = requireBundle(regionCode, from.getYear());
+        DayInfo day = bundle.findStatutoryHoliday(from.getDayOfYear() - 1);
+        if (day != null) {
+            return day;
         }
-        HdayBundle nextBundle = resolveBundle(regionCode, from.getYear() + 1);
-        if (nextBundle != null) {
-            return nextBundle.findStatutoryHoliday(0);
+
+        int[] range = availableRange(regionCode);
+        int lastYear = range == null ? from.getYear() + 1 : range[1];
+        for (int year = from.getYear() + 1; year <= lastYear; year++) {
+            if (range != null && !isDeclared(regionCode, year)) continue;
+            HdayBundle nextBundle = range == null
+                    ? resolveBundle(regionCode, year)
+                    : requireBundle(regionCode, year);
+            if (nextBundle == null) return null;
+            day = nextBundle.findStatutoryHoliday(0);
+            if (day != null) return day;
         }
         return null;
     }
@@ -215,10 +202,8 @@ final class HolidayServiceImpl implements HolidayService {
 
     private static int estimateRangeCapacity(LocalDate from, LocalDate to) {
         long dayCount = to.toEpochDay() - from.toEpochDay() + 1;
-        if (dayCount >= Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
-        }
-        return (int) dayCount;
+        // 不按不受信任的超长区间申请巨型数组；跨年时 List 自行按实际结果扩容。
+        return (int) Math.min(dayCount, 366L);
     }
 
     private HdayBundle resolveBundle(String region, int year) {
@@ -258,6 +243,20 @@ final class HolidayServiceImpl implements HolidayService {
         if (loaded == null) return null;
         HdayBundle raced = cache.putIfAbsent(key, loaded);
         return raced == null ? loaded : raced;
+    }
+
+    private HdayBundle requireBundle(String region, int year) {
+        HdayBundle bundle = resolveBundle(region, year);
+        if (bundle == null) {
+            throw new HolidayDataUnavailableException(region, year);
+        }
+        return bundle;
+    }
+
+    private int[] availableRange(String region) {
+        return mergeRanges(
+                filesystemManifest == null ? null : filesystemManifest.yearRange(region),
+                classpathManifest == null ? null : classpathManifest.yearRange(region));
     }
 
     private static int[] mergeRanges(int[] first, int[] second) {

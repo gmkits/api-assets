@@ -1,9 +1,16 @@
 // CJS example: using @holiday/core
 const { createHolidayService } = require('../../packages/ts-core/dist/cjs/index.cjs');
+const { readFileSync } = require('node:fs');
+
+const calendarBytes = readFileSync('../../data/date-assets/calendar/calendar.cdat');
 
 const service = createHolidayService({
   dataPath: '../../data/date-assets/holidays/bundles',
   defaultRegion: 'CN',
+  calendarData: calendarBytes.buffer.slice(
+    calendarBytes.byteOffset,
+    calendarBytes.byteOffset + calendarBytes.byteLength,
+  ),
 });
 
 async function main() {

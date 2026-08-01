@@ -11,7 +11,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -177,18 +177,34 @@ class DataNormTest {
     // === 边界情况 ===
 
     @Test
-    void queryNonExistentYear_shouldReturnNull() {
-        assertNull(service.getDayInfo(LocalDate.of(2099, 1, 1)));
+    void queryNonExistentYear_shouldFailExplicitly() {
+        assertThrows(HolidayDataUnavailableException.class,
+                () -> service.getDayInfo(LocalDate.of(2099, 1, 1)));
     }
 
     @Test
-    void queryInvalidRegion_shouldReturnNull() {
-        assertNull(service.getDayInfo("XX", LocalDate.of(2025, 1, 1)));
+    void queryInvalidRegion_shouldFailExplicitly() {
+        assertThrows(HolidayDataUnavailableException.class,
+                () -> service.getDayInfo("XX", LocalDate.of(2025, 1, 1)));
     }
 
     @Test
-    void getYear_nonExistentYear_shouldReturnEmptyList() {
-        List<DayInfo> year = service.getYear(2099);
-        assertTrue(year.isEmpty(), "Non-existent year should return empty list");
+    void getYear_nonExistentYear_shouldFailExplicitly() {
+        assertThrows(HolidayDataUnavailableException.class,
+                () -> service.getYear(2099));
+    }
+
+    @Test
+    void rangeCrossingMissingYear_shouldNotReturnPartialData() {
+        assertThrows(HolidayDataUnavailableException.class,
+                () -> service.getRange(
+                        LocalDate.of(1999, 12, 31),
+                        LocalDate.of(2000, 1, 2)));
+    }
+
+    @Test
+    void oversizedMissingRange_shouldFailWithoutHugePreallocation() {
+        assertThrows(HolidayDataUnavailableException.class,
+                () -> service.getRange(LocalDate.MIN, LocalDate.of(2025, 1, 1)));
     }
 }
