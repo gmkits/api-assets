@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@11.14.0",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "validate:assets": "node tools/validate-assets.mjs",
