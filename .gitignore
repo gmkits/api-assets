@@ -1,28 +1,19 @@
 .idea/
-node_modules/
-dist/
-*.tgz
-.turbo/
-coverage/
-*.log
+.vscode/
 .DS_Store
-
-# Java build artifacts
-java/**/build/
-java/**/.gradle/
-java/**/target/
-java/**/dependency-reduced-pom.xml
-java/**/dependency-reduced-pom-*.xml
-.gradle/
-
-/target/
-
+*.log
+*.tgz
 *.tsbuildinfo
 
-# HKO download cache
-.hko-cache/
-
-# Solar terms download cache
-.solar-terms-cache/
-
 node_modules/
+**/node_modules/
+**/dist/
+**/target/
+**/build/
+.gradle/
+coverage/
+
+.hko-cache/
+.solar-terms-cache/
+**/.hko-cache/
+**/.solar-terms-cache/

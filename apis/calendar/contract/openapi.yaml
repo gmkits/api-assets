@@ -1,0 +1,535 @@
+openapi: 3.0.3
+info:
+  title: Calendar API
+  version: 1.0.0-rc.1
+  description: 中国大陆节假日、农历、二十四节气和可下载离线日期资产。
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: /
+tags:
+  - name: Calendar
+    description: 日期、节假日和版本查询。
+  - name: Conversion
+    description: 公历、农历和节气转换。
+  - name: Assets
+    description: 已验证离线资产下载。
+  - name: Operations
+    description: 容器健康和可观测性端点。
+security:
+  - bearerAuth: []
+  - {}
+paths:
+  /v1/calendar/dates/{date}:
+    get:
+      tags: [Calendar]
+      operationId: getCalendarDate
+      summary: 查询单个日期
+      parameters:
+        - $ref: '#/components/parameters/DatePath'
+        - $ref: '#/components/parameters/Region'
+      responses:
+        '200':
+          description: 完整日期属性
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayInfo' }
+        '400': { $ref: '#/components/responses/InvalidArgument' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/DataNotAvailable' }
+  /v1/calendar/dates:
+    get:
+      tags: [Calendar]
+      operationId: listCalendarDates
+      summary: 查询最多 366 天的闭区间
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Region'
+      responses:
+        '200':
+          description: 按日期升序排列的完整结果
+          content:
+            application/json:
+              schema:
+                type: array
+                minItems: 1
+                maxItems: 366
+                items: { $ref: '#/components/schemas/DayInfo' }
+        '400': { $ref: '#/components/responses/InvalidArgument' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/DataNotAvailable' }
+  /v1/calendar/years/{year}:
+    get:
+      tags: [Calendar]
+      operationId: getCalendarYear
+      summary: 查询完整公历年
+      parameters:
+        - $ref: '#/components/parameters/YearPath'
+        - $ref: '#/components/parameters/Region'
+      responses:
+        '200':
+          description: 365 或 366 个日期
+          content:
+            application/json:
+              schema:
+                type: array
+                minItems: 365
+                maxItems: 366
+                items: { $ref: '#/components/schemas/DayInfo' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/DataNotAvailable' }
+  /v1/calendar/workdays/count:
+    get:
+      tags: [Calendar]
+      operationId: countWorkdays
+      summary: 统计闭区间工作日
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Region'
+      responses:
+        '200':
+          description: 工作日数量
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkdayCount' }
+        '400': { $ref: '#/components/responses/InvalidArgument' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/DataNotAvailable' }
+  /v1/calendar/holidays/next:
+    get:
+      tags: [Calendar]
+      operationId: getNextHoliday
+      summary: 查询指定日期起含当天的下一法定节假日
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/Region'
+      responses:
+        '200':
+          description: 下一法定节假日
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayInfo' }
+        '400': { $ref: '#/components/responses/InvalidArgument' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/DataNotAvailable' }
+  /v1/calendar/lunar/from-solar:
+    get:
+      tags: [Conversion]
+      operationId: convertSolarToLunar
+      summary: 公历转农历
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: 农历和干支信息
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FullLunarInfo' }
+        '400': { $ref: '#/components/responses/InvalidArgument' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/calendar/solar/from-lunar:
+    get:
+      tags: [Conversion]
+      operationId: convertLunarToSolar
+      summary: 农历转公历
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1900, maximum: 2100 }
+        - name: month
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 12 }
+        - name: day
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 30 }
+        - name: leapMonth
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: 对应公历日期
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [date]
+                properties:
+                  date: { type: string, format: date }
+        '400': { $ref: '#/components/responses/InvalidArgument' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/calendar/solar-terms/{year}:
+    get:
+      tags: [Conversion]
+      operationId: getSolarTerms
+      summary: 查询一年二十四节气
+      parameters:
+        - $ref: '#/components/parameters/YearPath'
+      responses:
+        '200':
+          description: 按日期升序排列的 24 个节气
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [year, terms]
+                properties:
+                  year: { type: integer }
+                  terms:
+                    type: array
+                    minItems: 24
+                    maxItems: 24
+                    items: { $ref: '#/components/schemas/SolarTerm' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/DataNotAvailable' }
+  /v1/calendar/metadata:
+    get:
+      tags: [Calendar]
+      operationId: getCalendarMetadata
+      summary: 查询版本和数据覆盖范围
+      responses:
+        '200':
+          description: 当前镜像内置资产信息
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Metadata' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/calendar/assets/manifest:
+    get:
+      tags: [Assets]
+      operationId: downloadCalendarAssetManifest
+      summary: 下载统一离线资产清单
+      responses:
+        '200':
+          description: 资产路径、范围和 SHA-256
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            X-Checksum-SHA256: { $ref: '#/components/headers/Sha256' }
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/calendar/assets/calendar.cdat:
+    get:
+      tags: [Assets]
+      operationId: downloadCalendarData
+      summary: 下载农历和节气通用资产
+      responses:
+        '200': { $ref: '#/components/responses/BinaryAsset' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/calendar/assets/holidays/{region}/{year}.hday:
+    get:
+      tags: [Assets]
+      operationId: downloadHolidayYear
+      summary: 下载单地区单年度节假日资产
+      parameters:
+        - name: region
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[A-Z]{2}(?:-[A-Z0-9]{1,8})*$' }
+        - $ref: '#/components/parameters/YearPath'
+      responses:
+        '200': { $ref: '#/components/responses/BinaryAsset' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '400': { $ref: '#/components/responses/InvalidArgument' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/AssetNotFound' }
+  /internal/health/live:
+    get:
+      tags: [Operations]
+      operationId: getLiveness
+      summary: 进程存活检查
+      security: []
+      responses:
+        '200':
+          description: 进程存活
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /internal/health/ready:
+    get:
+      tags: [Operations]
+      operationId: getReadiness
+      summary: 已验证离线资产的就绪检查
+      security: []
+      responses:
+        '200':
+          description: 服务可接收流量
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /internal/metrics:
+    get:
+      tags: [Operations]
+      operationId: getMetrics
+      summary: Prometheus 指标
+      responses:
+        '200':
+          description: Prometheus 文本格式
+          content:
+            text/plain:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: 仅用于开发平台到服务的内部调用；未配置 UPSTREAM_TOKEN 时可省略。
+  parameters:
+    DatePath:
+      name: date
+      in: path
+      required: true
+      schema: { type: string, format: date }
+    YearPath:
+      name: year
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1, maximum: 9999 }
+    Region:
+      name: region
+      in: query
+      required: false
+      schema: { type: string, default: CN, pattern: '^[A-Z]{2}(?:-[A-Z0-9]{1,8})*$' }
+    From:
+      name: from
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    To:
+      name: to
+      in: query
+      required: true
+      schema: { type: string, format: date }
+  headers:
+    ETag:
+      description: 当前响应内容的实体标签。
+      schema: { type: string }
+    Sha256:
+      description: 小写十六进制 SHA-256。
+      schema: { type: string, pattern: '^[0-9a-f]{64}$' }
+    RequestId:
+      description: 透传或生成的请求标识。
+      schema: { type: string, maxLength: 64 }
+  responses:
+    InvalidArgument:
+      description: 日期、范围或转换参数无效
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    DataNotAvailable:
+      description: 请求超出已安装数据范围，或没有后续节假日
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    AssetNotFound:
+      description: 请求的二进制资产不存在
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unauthorized:
+      description: 上游 Bearer Token 缺失或不正确
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    BinaryAsset:
+      description: 已通过启动校验的二进制资产
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        X-Checksum-SHA256: { $ref: '#/components/headers/Sha256' }
+        Content-Disposition:
+          schema: { type: string }
+      content:
+        application/octet-stream:
+          schema: { type: string, format: binary }
+    NotModified:
+      description: If-None-Match 命中，响应不包含实体
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        X-Checksum-SHA256: { $ref: '#/components/headers/Sha256' }
+  schemas:
+    DayInfo:
+      type: object
+      additionalProperties: false
+      required: [date, regionCode, calendarSystem, isHoliday, isOfficialHoliday, isWorkday, isWeekend, isStatutoryHoliday, isAdjustedWorkday, holidayNames, labels, lunar, solarTerm, ganZhi, festivals, sourceVersion]
+      properties:
+        date: { type: string, format: date }
+        regionCode: { type: string, example: CN }
+        calendarSystem: { type: string, enum: [GREGORIAN, CHINESE_LUNAR] }
+        isHoliday: { type: boolean }
+        isOfficialHoliday: { type: boolean }
+        isWorkday: { type: boolean }
+        isWeekend: { type: boolean }
+        isStatutoryHoliday: { type: boolean }
+        isAdjustedWorkday: { type: boolean }
+        holidayNames:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+        labels:
+          type: array
+          items: { type: string }
+        lunar:
+          type: object
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/LunarDateInfo' }]
+        solarTerm:
+          type: object
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/DaySolarTerm' }]
+        ganZhi:
+          type: object
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/GanZhi' }]
+        festivals:
+          type: array
+          items: { $ref: '#/components/schemas/Festival' }
+        sourceVersion: { type: string, example: 2026.GOV_NOTICE }
+    LunarDateInfo:
+      type: object
+      additionalProperties: false
+      required: [year, month, day, isLeapMonth, monthName, dayName]
+      properties:
+        year: { type: integer }
+        month: { type: integer, minimum: 1, maximum: 12 }
+        day: { type: integer, minimum: 1, maximum: 30 }
+        isLeapMonth: { type: boolean }
+        monthName: { type: string }
+        dayName: { type: string }
+    FullLunarInfo:
+      type: object
+      additionalProperties: false
+      required: [date, tianGan, diZhi, ganZhiYear, shengXiao, monthName, dayName, fullName]
+      properties:
+        date:
+          type: object
+          additionalProperties: false
+          required: [year, month, day, leapMonth]
+          properties:
+            year: { type: integer }
+            month: { type: integer }
+            day: { type: integer }
+            leapMonth: { type: boolean }
+        tianGan: { type: string }
+        diZhi: { type: string }
+        ganZhiYear: { type: string }
+        shengXiao: { type: string }
+        monthName: { type: string }
+        dayName: { type: string }
+        fullName: { type: string }
+    GanZhi:
+      type: object
+      additionalProperties: false
+      required: [yearName, heavenlyStem, earthlyBranch, zodiac]
+      properties:
+        yearName: { type: string }
+        heavenlyStem: { type: string }
+        earthlyBranch: { type: string }
+        zodiac: { type: string }
+    DaySolarTerm:
+      type: object
+      additionalProperties: false
+      required: [index, name]
+      properties:
+        index: { type: integer, minimum: 0, maximum: 23 }
+        name: { type: string }
+    SolarTerm:
+      type: object
+      additionalProperties: false
+      required: [name, longitude, date]
+      properties:
+        name: { type: string }
+        longitude: { type: integer, minimum: 0, maximum: 345 }
+        date: { type: string, format: date }
+    Festival:
+      type: object
+      additionalProperties: false
+      required: [code, names]
+      properties:
+        code: { type: string }
+        names:
+          type: object
+          additionalProperties: { type: string }
+    WorkdayCount:
+      type: object
+      additionalProperties: false
+      required: [from, to, region, workdays]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        region: { type: string }
+        workdays: { type: integer, minimum: 0, maximum: 366 }
+    Metadata:
+      type: object
+      additionalProperties: false
+      required: [releaseVersion, contractVersion, dataVersion, generatedAt, holidays, lunar, solarTerms, binaryFormats, sourceCommit]
+      properties:
+        releaseVersion: { type: string }
+        contractVersion: { type: string, enum: [v1] }
+        dataVersion: { type: string }
+        generatedAt: { type: string, format: date-time }
+        holidays:
+          type: array
+          items: { $ref: '#/components/schemas/HolidayCoverage' }
+        lunar: { $ref: '#/components/schemas/YearCoverage' }
+        solarTerms: { $ref: '#/components/schemas/YearCoverage' }
+        binaryFormats:
+          type: object
+          additionalProperties: false
+          required: [hday, calendarData]
+          properties:
+            hday: { type: integer }
+            calendarData: { type: integer }
+        sourceCommit: { type: string }
+    HolidayCoverage:
+      type: object
+      additionalProperties: false
+      required: [region, startYear, endYear]
+      properties:
+        region: { type: string }
+        startYear: { type: integer }
+        endYear: { type: integer }
+    YearCoverage:
+      type: object
+      additionalProperties: false
+      required: [startYear, endYear]
+      properties:
+        startYear: { type: integer }
+        endYear: { type: integer }
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [UP] }
+        dataVersion: { type: string }
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, detail, instance, code, requestId]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string }
+        code:
+          type: string
+          enum: [INVALID_ARGUMENT, CALENDAR_DATA_NOT_AVAILABLE, NO_FUTURE_HOLIDAY, ASSET_NOT_FOUND, UPSTREAM_UNAUTHORIZED, INTERNAL_ERROR]
+        requestId: { type: string, minLength: 1, maxLength: 64 }

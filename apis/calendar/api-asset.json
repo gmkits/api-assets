@@ -1,0 +1,51 @@
+{
+  "$schema": "../../shared/schemas/api-asset.schema.json",
+  "schemaVersion": "1",
+  "id": "calendar",
+  "name": "Calendar API",
+  "version": "1.0.0-rc.1",
+  "contract": {
+    "type": "openapi",
+    "path": "contract/openapi.yaml"
+  },
+  "runtime": {
+    "language": "java",
+    "version": "21"
+  },
+  "build": {
+    "verify": "make verify",
+    "build": "make build",
+    "image": "make image VERSION=1.0.0-rc.1",
+    "smoke": "make smoke VERSION=1.0.0-rc.1"
+  },
+  "container": {
+    "image": "api-assets/calendar:${version}",
+    "port": 8080
+  },
+  "paths": {
+    "base": "/v1/calendar",
+    "liveness": "/internal/health/live",
+    "readiness": "/internal/health/ready",
+    "metrics": "/internal/metrics"
+  },
+  "data": {
+    "version": "2026.GOV_NOTICE",
+    "regions": ["CN"],
+    "coverage": {
+      "holidays": "2000-2026",
+      "lunar": "1900-2100",
+      "solarTerms": "1901-2100"
+    }
+  },
+  "artifacts": [
+    { "id": "openapi", "path": "contract/openapi.yaml" },
+    { "id": "asset-manifest", "path": "assets/runtime/manifest.json" },
+    { "id": "calendar-data", "path": "assets/runtime/calendar/calendar.cdat" },
+    { "id": "holiday-manifest", "path": "assets/runtime/holidays/manifest.json" }
+  ],
+  "capabilities": {
+    "deterministic": true,
+    "sideEffectFree": true,
+    "cacheable": true
+  }
+}

@@ -1,7 +1,9 @@
 packages:
-  - 'packages/*'
+  - 'apis/*/tooling/*'
+
 allowBuilds:
   esbuild: true
+
 overrides:
   esbuild: 0.28.1
   postcss: 8.5.25

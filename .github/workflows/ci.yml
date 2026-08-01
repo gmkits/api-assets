@@ -1,4 +1,4 @@
-name: CI
+name: API assets CI
 
 on:
   push:
@@ -11,78 +11,101 @@ permissions:
   contents: read
 
 jobs:
-  # ── JSON Schema 格式校验 ──
-  spec-validate:
-    name: 校验 JSON Schema
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      assets: ${{ steps.assets.outputs.assets }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - run: npm install -g ajv-cli ajv-formats
-      - name: 校验所有 Schema 文件
+          fetch-depth: 0
+      - id: assets
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          for schema in spec/holiday-json-schema/*.schema.json; do
-            echo "Validating $schema..."
-            ajv compile -s "$schema" --spec=draft7 -c ajv-formats
-          done
+          mapfile -t all_assets < <(find apis -mindepth 2 -maxdepth 2 -name api-asset.json -print | cut -d/ -f2 | sort)
+          selected=("${all_assets[@]}")
 
-  # ── TypeScript 全量构建 + 类型检查 + 测试 + 编译器流水线 ──
-  ts-build:
-    name: TypeScript 构建与测试
+          if [[ "$EVENT_NAME" != workflow_dispatch ]]; then
+            base="$BEFORE_SHA"
+            [[ "$EVENT_NAME" == pull_request ]] && base="$PR_BASE_SHA"
+            if [[ -n "$base" && "$base" != 0000000000000000000000000000000000000000 ]] \
+                && git cat-file -e "$base^{commit}" 2>/dev/null; then
+              mapfile -t changed < <(git diff --name-only "$base" "$GITHUB_SHA")
+              selected=()
+              verify_all=false
+              for path in "${changed[@]}"; do
+                case "$path" in
+                  shared/*|tools/*|Makefile|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.base.json|compose.yaml|.dockerignore|.github/workflows/ci.yml)
+                    verify_all=true
+                    ;;
+                  apis/*/*)
+                    asset="${path#apis/}"
+                    asset="${asset%%/*}"
+                    [[ -f "apis/$asset/api-asset.json" ]] && selected+=("$asset")
+                    ;;
+                esac
+              done
+              [[ "$verify_all" == true ]] && selected=("${all_assets[@]}")
+            fi
+          fi
+
+          mapfile -t selected < <(printf '%s\n' "${selected[@]}" | awk 'NF && !seen[$0]++' | sort)
+          assets=$(node -e 'console.log(JSON.stringify(process.argv.slice(1)))' "${selected[@]}")
+          echo "assets=$assets" >> "$GITHUB_OUTPUT"
+
+  contracts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
-      - run: pnpm install
-      - run: pnpm -r run build
-      - run: pnpm -r run lint
-      - run: pnpm -r run test
-      - name: 验证离线数据编译流水线
-        run: |
-          bash scripts/update-bundles.sh
-          node packages/ts-compiler/dist/esm/cli.js inspect \
-            --bundle data/date-assets/holidays/bundles/CN/2025.hday
-          node packages/ts-compiler/dist/esm/cli.js inspect \
-            --bundle data/date-assets/holidays/bundles/CN/2026.hday
-          git diff --exit-code -- data/date-assets
+          version: 11.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run validate:assets
+      - run: pnpm run lint:openapi
 
-  # ── Java 多版本矩阵构建 ──
-  java-build:
-    name: Java 构建与测试 (JDK ${{ matrix.java }})
+  verify:
+    needs: [discover, contracts]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        java: ['8', '17', '21', '25']
+        asset: ${{ fromJSON(needs.discover.outputs.assets) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: pnpm/action-setup@v4
         with:
-          distribution: 'liberica'
-          java-version: ${{ matrix.java }}
-      - name: 使用 Liberica JDK ${{ matrix.java }} 构建同一代码
-        working-directory: java
-        run: mvn -B clean verify
-
-  # ── Bundle 完整性校验（魔数 + SHA256）──
-  bundle-verify:
-    name: Bundle 完整性校验
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+          version: 11.14.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: 校验 bundle 文件完整性
-        run: bash scripts/verify-bundles.sh
-      - name: 校验统一日期资产已同步
-        run: |
-          node scripts/build-date-assets.mjs
-          git diff --exit-code -- data/date-assets
+          node-version: '22.12'
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        if: matrix.asset == 'calendar'
+        with:
+          distribution: liberica
+          java-version: '21'
+          cache: maven
+      - run: pnpm install --frozen-lockfile
+      - run: make -C "apis/${{ matrix.asset }}" verify
+      - run: git diff --exit-code
+
+  image:
+    needs: [discover, verify]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        asset: ${{ fromJSON(needs.discover.outputs.assets) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build OCI image without publishing
+        run: make image API="${{ matrix.asset }}"

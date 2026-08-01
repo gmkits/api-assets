@@ -1,0 +1,28 @@
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+spring:
+  application:
+    name: calendar-api
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+calendar:
+  default-region: CN
+  asset-path: ${CALENDAR_ASSET_PATH:${calendar.assets.path:}}
+  upstream-token: ${UPSTREAM_TOKEN:}
+  release-version: ${CALENDAR_RELEASE_VERSION:1.0.0-rc.1}
+  source-commit: ${SOURCE_COMMIT:unknown}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        exclude: '*'

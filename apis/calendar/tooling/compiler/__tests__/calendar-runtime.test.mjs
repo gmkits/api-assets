@@ -1,0 +1,452 @@
+/**
+ * 农历模块测试。
+ *
+ * - 数据表完整性
+ * - 闰月编解码
+ * - 公历↔农历互转（已知日期 + CSV 全量）
+ * - 闰月互转 / 无效闰月报错 / 小月溢出
+ * - 天干地支 / 生肖
+ * - 边界与异常
+ * - 权威节气范围与越界行为
+ */
+import { describe, it } from 'node:test';
+import { strict as assert } from 'node:assert';
+import {readFileSync} from 'node:fs';
+import {resolve, dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+import {
+    LUNAR_START_YEAR, LUNAR_END_YEAR,
+    leapMonth, leapMonthDays, monthDays, yearDays,
+    solarToLunar, solarToLunarFromStr, lunarToSolar, lunarToSolarStr,
+    getTianGan, getDiZhi, getGanZhi, getShengXiao,
+    getMonthName, getDayName,
+    getSolarTerms, getSolarTerm, SOLAR_TERM_NAMES, installCalendarAsset,
+} from '../dist/esm/index.js';
+
+// ─── 加载全量参照 CSV ───
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const csvPath = resolve(__dirname, '../../../tests/golden/lunar-golden.csv');
+const calendarAssetPath = resolve(
+    __dirname,
+    '../../../assets/runtime/calendar/calendar.cdat',
+);
+const calendarBytes = readFileSync(calendarAssetPath);
+installCalendarAsset(calendarBytes.buffer.slice(
+  calendarBytes.byteOffset,
+  calendarBytes.byteOffset + calendarBytes.byteLength,
+));
+const csvRows = readFileSync(csvPath, 'utf-8')
+    .split('\n')
+    .slice(1)                     // 跳过表头
+    .filter(Boolean)
+    .map(line => {
+        const [solarDate, lunarYear, lunarMonth, lunarDay, isLeapMonth] = line.split(',');
+        const [sy, sm, sd] = solarDate.split('-').map(Number);
+        return [sy, sm, sd, Number(lunarYear), Number(lunarMonth), Number(lunarDay), isLeapMonth === '1'];
+    });
+
+// ─── 数据表完整性 ───
+
+describe('数据表完整性', () => {
+    it('覆盖 1900-2100', () => {
+    assert.equal(LUNAR_START_YEAR, 1900);
+    assert.equal(LUNAR_END_YEAR, 2100);
+  });
+
+    it('每年天数 353-385，每月天数 29 或 30', () => {
+    for (let y = LUNAR_START_YEAR; y <= LUNAR_END_YEAR; y++) {
+        const yd = yearDays(y);
+        assert.ok(yd >= 353 && yd <= 385, `${y}年 ${yd}天`);
+      for (let m = 1; m <= 12; m++) {
+          const md = monthDays(y, m);
+          assert.ok(md === 29 || md === 30, `${y}-${m} ${md}天`);
+      }
+    }
+  });
+});
+
+describe('calendar.cdat', () => {
+  it('校验并安装同一份跨语言资产', () => {
+    const bytes = readFileSync(calendarAssetPath);
+    const data = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    );
+    assert.deepEqual(installCalendarAsset(data), {
+      majorVersion: 1,
+      minorVersion: 0,
+      lunarStartYear: 1900,
+      lunarEndYear: 2100,
+      solarTermStartYear: 1901,
+      solarTermEndYear: 2100,
+    });
+    const lunar = solarToLunar(2025, 1, 29);
+    assert.deepEqual(
+      [lunar.year, lunar.month, lunar.day, lunar.isLeapMonth],
+      [2025, 1, 1, false],
+    );
+  });
+
+  it('拒绝损坏的 CRC', () => {
+    const bytes = Buffer.from(readFileSync(calendarAssetPath));
+    bytes[bytes.length - 5] ^= 1;
+    const data = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    );
+    assert.throws(() => installCalendarAsset(data), /CRC32/);
+  });
+});
+
+// ─── 闰月 ───
+
+describe('闰月', () => {
+    it('闰月月份 0-12，无闰月时天数 0，有闰月时 29 或 30', () => {
+    for (let y = LUNAR_START_YEAR; y <= LUNAR_END_YEAR; y++) {
+      const lm = leapMonth(y);
+        assert.ok(lm >= 0 && lm <= 12, `${y}年闰月=${lm}`);
+        const ld = leapMonthDays(y);
+        if (lm === 0) {
+            assert.equal(ld, 0, `${y}年无闰月但天数=${ld}`);
+        } else {
+            assert.ok(ld === 29 || ld === 30, `${y}年闰月天数=${ld}`);
+      }
+    }
+  });
+
+    it('已知闰月', () => {
+    assert.equal(leapMonth(2025), 6);
+    assert.equal(leapMonth(2023), 2);
+    assert.equal(leapMonth(2024), 0);
+  });
+});
+
+// ─── 闰月互转 ───
+
+describe('闰月互转', () => {
+    it('有闰月年份：闰月和非闰月各自正确互转', () => {
+        // 2025 闰六月
+        const leapM6Solar = lunarToSolar(2025, 6, 1, true);
+        const normalM6Solar = lunarToSolar(2025, 6, 1, false);
+        // 闰月和正常月应转到不同公历日期
+        assert.notDeepStrictEqual(leapM6Solar, normalM6Solar);
+
+        // 反查回来
+        const backLeap = solarToLunar(...leapM6Solar);
+        assert.equal(backLeap.month, 6);
+        assert.equal(backLeap.isLeapMonth, true);
+
+        const backNormal = solarToLunar(...normalM6Solar);
+        assert.equal(backNormal.month, 6);
+        assert.equal(backNormal.isLeapMonth, false);
+    });
+
+    it('2023 闰二月互转', () => {
+        const [sy, sm, sd] = lunarToSolar(2023, 2, 15, true);
+        const back = solarToLunar(sy, sm, sd);
+        assert.equal(back.month, 2);
+        assert.equal(back.day, 15);
+        assert.equal(back.isLeapMonth, true);
+    });
+});
+
+// ─── 错误处理 ───
+
+describe('错误处理', () => {
+    it('拒绝会被 Date.UTC 归一化的非法公历日期', () => {
+        assert.throws(() => solarToLunar(2025, 2, 30), /无效公历日期/);
+        assert.throws(() => solarToLunar(2025, 2, 1.5), /无效公历日期/);
+    });
+
+    it('无闰月年份传 isLeapMonth=true 报错', () => {
+        assert.throws(() => lunarToSolar(2024, 6, 1, true), RangeError);
+        assert.throws(() => lunarToSolar(2024, 1, 1, true), RangeError);
+    });
+
+    it('有闰月但指定错误月份 isLeapMonth=true 报错', () => {
+        // 2025 闰六月，传闰三月应报错
+        assert.throws(() => lunarToSolar(2025, 3, 1, true), RangeError);
+    });
+
+    it('29 天小月传 day=30 报错', () => {
+        // 找到一个 29 天月
+        for (let m = 1; m <= 12; m++) {
+            if (monthDays(2025, m) === 29) {
+                assert.throws(() => lunarToSolar(2025, m, 30), RangeError);
+                break;
+            }
+        }
+    });
+
+    it('超出年份范围', () => {
+        assert.throws(() => solarToLunar(1899, 1, 1), RangeError);
+        assert.throws(() => lunarToSolar(1899, 1, 1), RangeError);
+        assert.throws(() => yearDays(1899), RangeError);
+        assert.throws(() => yearDays(2101), RangeError);
+  });
+
+    it('无效月份/日期', () => {
+        assert.throws(() => monthDays(2025, 0), RangeError);
+        assert.throws(() => monthDays(2025, 13), RangeError);
+        assert.throws(() => lunarToSolar(2025, 0, 1), RangeError);
+        assert.throws(() => lunarToSolar(2025, 1, 0), RangeError);
+        assert.throws(() => lunarToSolar(2025, 1, 31), RangeError);
+  });
+
+    it('无效日期格式', () => {
+        assert.throws(() => solarToLunarFromStr('invalid'), Error);
+        assert.throws(() => solarToLunarFromStr('2025/01/29'), Error);
+    });
+});
+
+// ─── 已知日期验证 ───
+
+describe('已知日期', () => {
+    const cases = [
+        // [公历Y,M,D, 农历Y,M,D, isLeap, 干支年, 生肖]
+        [2025, 1, 29, 2025, 1, 1, false, '乙巳年', '蛇'],
+        [2024, 2, 10, 2024, 1, 1, false, '甲辰年', '龙'],
+        [2023, 1, 22, 2023, 1, 1, false, '癸卯年', '兔'],
+        [1900, 1, 31, 1900, 1, 1, false, '庚子年', '鼠'],
+        [2025, 10, 6, 2025, 8, 15, false, '乙巳年', '蛇'], // 中秋
+    ];
+
+    for (const [sy, sm, sd, ly, lm, ld, leap, ganZhi, sx] of cases) {
+        it(`${sy}-${sm}-${sd} → ${ganZhi}${leap ? '闰' : ''}${lm}月${ld}日`, () => {
+            const info = solarToLunar(sy, sm, sd);
+            assert.equal(info.year, ly);
+            assert.equal(info.month, lm);
+            assert.equal(info.day, ld);
+            assert.equal(info.isLeapMonth, leap);
+            assert.equal(info.ganZhiYear, ganZhi);
+            assert.equal(info.shengXiao, sx);
+        });
+    }
+
+    it('solarToLunarFromStr', () => {
+    const info = solarToLunarFromStr('2025-01-29');
+    assert.equal(info.year, 2025);
+    assert.equal(info.month, 1);
+    assert.equal(info.day, 1);
+  });
+
+    it('lunarToSolarStr', () => {
+        assert.equal(lunarToSolarStr(2025, 1, 1), '2025-01-29');
+  });
+});
+
+// ─── 边界日期 ───
+
+describe('边界日期', () => {
+    it('1901-01-01 = 农历 1900 年十一月十一（HKO 首行）', () => {
+        const info = solarToLunar(1901, 1, 1);
+        assert.equal(info.year, 1900);
+        assert.equal(info.month, 11);
+        assert.equal(info.day, 11);
+  });
+
+    it('2100 年末附近仍可转换', () => {
+        // 取 CSV 最后几行的日期验证
+        const lastRow = csvRows[csvRows.length - 1];
+        const [sy, sm, sd, ly, lm, ld, leap] = lastRow;
+        const info = solarToLunar(sy, sm, sd);
+        assert.equal(info.year, ly);
+        assert.equal(info.month, lm);
+        assert.equal(info.day, ld);
+        assert.equal(info.isLeapMonth, leap);
+  });
+});
+
+// ─── CSV 全量验证 ───
+
+describe('CSV 全量验证（73,000+ 行）', () => {
+    it('solarToLunar 对每一行均正确', () => {
+        let checked = 0;
+        for (const [sy, sm, sd, ly, lm, ld, leap] of csvRows) {
+            const info = solarToLunar(sy, sm, sd);
+            assert.equal(info.year, ly, `${sy}-${sm}-${sd} year`);
+            assert.equal(info.month, lm, `${sy}-${sm}-${sd} month`);
+            assert.equal(info.day, ld, `${sy}-${sm}-${sd} day`);
+            assert.equal(info.isLeapMonth, leap, `${sy}-${sm}-${sd} leap`);
+            checked++;
+    }
+        assert.ok(checked > 73000, `仅验证了 ${checked} 行`);
+  });
+
+    it('lunarToSolar 对每一行均正确（round-trip）', () => {
+        let checked = 0;
+        for (const [sy, sm, sd, ly, lm, ld, leap] of csvRows) {
+            const [ry, rm, rd] = lunarToSolar(ly, lm, ld, leap);
+            assert.equal(ry, sy, `lunar(${ly},${lm},${ld},${leap}) year`);
+            assert.equal(rm, sm, `lunar(${ly},${lm},${ld},${leap}) month`);
+            assert.equal(rd, sd, `lunar(${ly},${lm},${ld},${leap}) day`);
+            checked++;
+    }
+        assert.ok(checked > 73000, `仅验证了 ${checked} 行`);
+  });
+});
+
+// ─── 天干地支 / 生肖 ───
+
+describe('天干地支', () => {
+    it('甲子年循环', () => {
+    assert.equal(getGanZhi(1984), '甲子');
+    assert.equal(getShengXiao(1984), '鼠');
+        assert.equal(getGanZhi(1984 + 60), '甲子');
+        assert.equal(getGanZhi(1984 + 120), '甲子');
+  });
+
+    it('2025 乙巳蛇', () => {
+    assert.equal(getTianGan(2025), '乙');
+    assert.equal(getDiZhi(2025), '巳');
+    assert.equal(getGanZhi(2025), '乙巳');
+    assert.equal(getShengXiao(2025), '蛇');
+  });
+});
+
+// ─── 月份/日期名称 ───
+
+describe('名称', () => {
+    it('月份名', () => {
+    assert.equal(getMonthName(1, false), '正月');
+    assert.equal(getMonthName(12, false), '腊月');
+    assert.equal(getMonthName(4, true), '闰四月');
+  });
+
+    it('日期名', () => {
+    assert.equal(getDayName(1), '初一');
+    assert.equal(getDayName(15), '十五');
+    assert.equal(getDayName(30), '三十');
+  });
+});
+
+// ─── 二十四节气 ───
+
+// 加载节气全量参照 CSV
+const TRADITIONAL_SOLAR_TERM_NAMES = new Map([
+    ['驚蟄', '惊蛰'],
+    ['穀雨', '谷雨'],
+    ['小滿', '小满'],
+    ['芒種', '芒种'],
+    ['處暑', '处暑'],
+]);
+const solarTermsCsvPath = resolve(__dirname, '../../../tests/golden/solar-terms.csv');
+const solarTermsCsvRows = readFileSync(solarTermsCsvPath, 'utf-8')
+    .split('\n')
+    .slice(1)                     // 跳过表头
+    .filter(Boolean)
+    .map(line => {
+        const [solarDate, termIndex, sourceName] = line.split(',');
+        const [year, month, day] = solarDate.split('-').map(Number);
+        const index = Number(termIndex);
+        return [
+            year,
+            index,
+            TRADITIONAL_SOLAR_TERM_NAMES.get(sourceName) ?? sourceName,
+            month,
+            day,
+        ];
+    })
+    .filter(([year]) => year >= 1901);
+
+describe('二十四节气', () => {
+  it('SOLAR_TERM_NAMES 应有 24 个名称', () => {
+    assert.equal(SOLAR_TERM_NAMES.length, 24);
+  });
+
+  it('getSolarTerms 应返回 24 个节气', () => {
+    const terms = getSolarTerms(2025);
+    assert.equal(terms.length, 24);
+    for (const term of terms) {
+      assert.ok(term.name, '节气应有名称');
+      assert.ok(term.date[0] === 2025, `节气年份应为 2025，实际 ${term.date[0]}: ${term.name}`);
+      assert.ok(term.date[1] >= 1 && term.date[1] <= 12, '月份应在 1-12');
+      assert.ok(term.date[2] >= 1 && term.date[2] <= 31, '日期应在 1-31');
+    }
+  });
+
+  it('2025 年已知节气日期精确匹配', () => {
+    // 2025 年已知节气（来源：香港天文台 / 紫金山天文台数据）
+    const known = [
+      ['小寒', 1, 5],
+      ['大寒', 1, 20],
+      ['立春', 2, 3],
+      ['雨水', 2, 18],
+      ['惊蛰', 3, 5],
+      ['春分', 3, 20],
+      ['清明', 4, 4],
+      ['谷雨', 4, 20],
+      ['立夏', 5, 5],
+      ['小满', 5, 21],
+      ['芒种', 6, 5],
+      ['夏至', 6, 21],
+      ['小暑', 7, 7],
+      ['大暑', 7, 22],
+      ['立秋', 8, 7],
+      ['处暑', 8, 23],
+      ['白露', 9, 7],
+      ['秋分', 9, 23],
+      ['寒露', 10, 8],
+      ['霜降', 10, 23],
+      ['立冬', 11, 7],
+      ['小雪', 11, 22],
+      ['大雪', 12, 7],
+      ['冬至', 12, 21],
+    ];
+    const terms = getSolarTerms(2025);
+    for (const [name, expectedMonth, expectedDay] of known) {
+      const term = terms.find(t => t.name === name);
+      assert.ok(term, `应找到节气: ${name}`);
+      assert.equal(term.date[1], expectedMonth, `${name} 月份不匹配`);
+      assert.equal(term.date[2], expectedDay, `${name} 日期不匹配（期望 ${expectedMonth}-${expectedDay}，实际 ${term.date[1]}-${term.date[2]}）`);
+    }
+  });
+
+  it('getSolarTerm 应在节气日返回名称', () => {
+    const terms = getSolarTerms(2025);
+    const firstTerm = terms[0];
+    const result = getSolarTerm(firstTerm.date[0], firstTerm.date[1], firstTerm.date[2]);
+    assert.equal(result, firstTerm.name);
+  });
+
+  it('getSolarTerm 应在非节气日返回 null', () => {
+    // 2025-01-01 通常不是节气日
+    const result = getSolarTerm(2025, 1, 1);
+    assert.equal(result, null);
+  });
+
+  it('超出权威数据范围应拒绝估算', () => {
+    assert.throws(() => getSolarTerms(1900), RangeError);
+    assert.throws(() => getSolarTerms(2101), RangeError);
+    assert.throws(() => getSolarTerm(1900, 1, 6), RangeError);
+  });
+
+  it('节气按时间顺序排列', () => {
+    const terms = getSolarTerms(2025);
+    for (let i = 1; i < terms.length; i++) {
+      const prev = new Date(terms[i - 1].date[0], terms[i - 1].date[1] - 1, terms[i - 1].date[2]);
+      const curr = new Date(terms[i].date[0], terms[i].date[1] - 1, terms[i].date[2]);
+      assert.ok(curr >= prev, `节气顺序错误: ${terms[i - 1].name} (${prev.toISOString()}) 应早于 ${terms[i].name} (${curr.toISOString()})`);
+    }
+  });
+
+  it('CSV 全量验证（4,800 行，1901-2100 全部 24 节气）', () => {
+    let checked = 0;
+    // 按年分组验证
+    let currentYear = null;
+    let currentTerms = null;
+    for (const [year, termIndex, termName, month, day] of solarTermsCsvRows) {
+      if (year !== currentYear) {
+        currentYear = year;
+        currentTerms = getSolarTerms(year);
+      }
+      const term = currentTerms[termIndex];
+      assert.equal(term.name, termName, `${year} term ${termIndex} 名称不匹配`);
+      assert.equal(term.date[1], month, `${year} ${termName} 月份不匹配`);
+      assert.equal(term.date[2], day, `${year} ${termName} 日期不匹配（期望 ${month}-${day}，实际 ${term.date[1]}-${term.date[2]}）`);
+      checked++;
+    }
+    assert.equal(checked, 4800, `验证了 ${checked} 行，期望 4800`);
+  });
+});

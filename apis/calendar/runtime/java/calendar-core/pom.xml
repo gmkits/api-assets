@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.github.gmkits.apiassets</groupId>
+        <artifactId>calendar-java</artifactId>
+        <version>1.0.0-rc.1</version>
+    </parent>
+
+    <artifactId>calendar-core</artifactId>
+    <name>calendar-core</name>
+    <description>Internal calendar, lunar, solar-term and holiday engine</description>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/../../../assets/runtime</directory>
+                <targetPath>api-assets/calendar</targetPath>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/../../../assets/runtime/holidays</directory>
+                <includes>
+                    <include>bundles/CN/2000.hday</include>
+                    <include>bundles/CN/2025.hday</include>
+                    <include>bundles/CN/2026.hday</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>${project.basedir}/../../../tests/golden</directory>
+            </testResource>
+        </testResources>
+    </build>
+</project>

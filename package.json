@@ -1,21 +1,22 @@
 {
-  "name": "cn-holiday-kit",
-  "version": "1.0.0-rc.1",
+  "name": "api-assets",
+  "version": "0.0.0",
   "private": true,
-  "description": "Holiday Data Platform — cross-platform holiday toolkit for China",
+  "description": "Language-neutral monorepo for independently deployable API assets",
   "license": "Apache-2.0",
-  "scripts": {
-    "build": "pnpm -r run build",
-    "test": "pnpm -r run test",
-    "lint": "pnpm -r run lint"
-  },
+  "packageManager": "pnpm@11.14.0",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=22.12.0"
   },
-  "pnpm": {
-    "overrides": {
-      "esbuild": "0.28.1",
-      "postcss": "8.5.25"
-    }
+  "scripts": {
+    "validate:assets": "node tools/validate-assets.mjs",
+    "lint:openapi": "redocly lint apis/*/contract/openapi.yaml",
+    "build:calendar-compiler": "pnpm --filter @api-assets/calendar-compiler build",
+    "test:calendar-compiler": "pnpm --filter @api-assets/calendar-compiler test",
+    "lint:calendar-compiler": "pnpm --filter @api-assets/calendar-compiler lint"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.40.0",
+    "ajv": "8.17.1"
   }
 }

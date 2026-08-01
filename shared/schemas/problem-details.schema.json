@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gmkits.github.io/api-assets/schemas/problem-details.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "title", "status", "detail", "instance", "code", "requestId"],
+  "properties": {
+    "type": { "type": "string" },
+    "title": { "type": "string" },
+    "status": { "type": "integer", "minimum": 400, "maximum": 599 },
+    "detail": { "type": "string" },
+    "instance": { "type": "string" },
+    "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+    "requestId": { "type": "string", "minLength": 1, "maxLength": 64 }
+  }
+}
