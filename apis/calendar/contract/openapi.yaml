@@ -261,6 +261,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Health' }
+        '404': { $ref: '#/components/responses/RouteNotFound' }
   /internal/health/ready:
     get:
       tags: [Operations]
@@ -273,6 +274,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Health' }
+        '404': { $ref: '#/components/responses/RouteNotFound' }
   /internal/metrics:
     get:
       tags: [Operations]
@@ -345,6 +347,11 @@ components:
           schema: { $ref: '#/components/schemas/Problem' }
     Unauthorized:
       description: 上游 Bearer Token 缺失或不正确
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    RouteNotFound:
+      description: 请求的运维路由不存在
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }

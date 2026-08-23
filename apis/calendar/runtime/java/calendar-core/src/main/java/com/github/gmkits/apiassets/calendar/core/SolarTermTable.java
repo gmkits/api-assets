@@ -45,6 +45,29 @@ final class SolarTermTable {
         return "zh-TW".equals(locale) ? INFOS_TW[index] : INFOS[index];
     }
 
+    /**
+     * 一次构建指定年份的节气索引，数组下标就是 day-of-year 减一。
+     *
+     * <p>年度 bundle 构建会调用该方法一次，避免为每一天重复创建
+     * {@link LocalDate} 并重新解码同一年度的 48-bit 节气表。</p>
+     */
+    static SolarTermInfo[] forYear(int year, String locale) {
+        if (year < START_YEAR || year > END_YEAR) return null;
+        int dayCount = LocalDate.of(year, 1, 1).lengthOfYear();
+        SolarTermInfo[] byDay = new SolarTermInfo[dayCount];
+        LunarCalendar.SolarTermInfo[] terms = LunarCalendar.getSolarTerms(year);
+        SolarTermInfo[] infos = "zh-TW".equals(locale) ? INFOS_TW : INFOS;
+        for (int index = 0; index < terms.length; index++) {
+            int dayIndex = terms[index].getDate().getDayOfYear() - 1;
+            byDay[dayIndex] = infos[index];
+        }
+        return byDay;
+    }
+
+    static SolarTermInfo[] forYear(int year) {
+        return forYear(year, "zh-CN");
+    }
+
     private static SolarTermInfo[] buildInfos(String[] names) {
         SolarTermInfo[] out = new SolarTermInfo[names.length];
         for (int i = 0; i < names.length; i++) out[i] = new SolarTermInfo(i, names[i]);

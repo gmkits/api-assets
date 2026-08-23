@@ -234,6 +234,7 @@ public final class HdayBundle {
         Map<Integer, GanZhiInfo> ganZhiByYear = new HashMap<>();
         LocalDate cursor = LocalDate.of(year, 1, 1);
         LunarInfo[] lunarDays = resolveLunarYear();
+        SolarTermInfo[] solarTerms = SolarTermTable.forYear(year);
         for (int i = 0; i < dayCount; i++) {
             DayEntry entry = days[i];
             LunarInfo rawLunar = lunarDays == null ? null : lunarDays[i];
@@ -247,7 +248,7 @@ public final class HdayBundle {
                     ganZhiByYear.put(lunarYear, ganZhi);
                 }
             }
-            SolarTermInfo solarTerm = SolarTermTable.lookup(cursor.getYear(), i);
+            SolarTermInfo solarTerm = solarTerms == null ? null : solarTerms[i];
             result[i] = new DayInfo.Builder()
                     .date(cursor)
                     .regionCode(regionCode)
