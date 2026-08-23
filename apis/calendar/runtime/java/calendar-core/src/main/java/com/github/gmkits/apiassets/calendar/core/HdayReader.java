@@ -135,7 +135,17 @@ public final class HdayReader {
         }
         CalendarSystem calendarSystem = CalendarSystem.values()[calendarCode];
         int dayCount = unsigned(header.getShort());
-        int expectedDayCount = LocalDate.of(year, 1, 1).lengthOfYear();
+        if (year < 1 || year > 9999) {
+            throw format(HdayFormatException.Code.BAD_HEADER,
+                    "Year is outside the supported ISO range: " + year);
+        }
+        int expectedDayCount;
+        try {
+            expectedDayCount = LocalDate.of(year, 1, 1).lengthOfYear();
+        } catch (RuntimeException exception) {
+            throw format(HdayFormatException.Code.BAD_HEADER,
+                    "Invalid bundle year: " + year);
+        }
         if (dayCount != expectedDayCount) {
             throw format(HdayFormatException.Code.BAD_HEADER,
                     year + " requires " + expectedDayCount + " days, got " + dayCount);

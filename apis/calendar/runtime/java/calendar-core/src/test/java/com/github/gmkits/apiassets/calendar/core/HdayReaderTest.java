@@ -93,6 +93,11 @@ class HdayReaderTest {
         putShort(dayCount, 28, 366);
         refreshCrc(dayCount);
         assertFormatCode(dayCount, HdayFormatException.Code.BAD_HEADER);
+
+        byte[] invalidYear = bundleBytes();
+        putShort(invalidYear, 8, 0);
+        refreshCrc(invalidYear);
+        assertFormatCode(invalidYear, HdayFormatException.Code.BAD_HEADER);
     }
 
     @Test

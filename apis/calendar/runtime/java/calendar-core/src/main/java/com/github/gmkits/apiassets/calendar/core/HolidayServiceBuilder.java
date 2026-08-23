@@ -36,14 +36,30 @@ public final class HolidayServiceBuilder {
      * <p>目录结构为：
      * {@code calendar/calendar.cdat} 和
      * {@code holidays/bundles/{region}/{year}.hday}。日历资产是 JVM 级只读表，
-     * 应在第一次农历或节气查询前配置。</p>
+     * 应在第一次农历或节气查询前配置。同一个 JVM 只能配置一个根目录；
+     * 后续使用不同目录会立即拒绝，避免多个服务实例静默互相污染。</p>
      *
      * @param path 统一日期资产根目录
      * @return 当前构建器
      */
     public HolidayServiceBuilder assetPath(Path path) {
+        if (path == null) {
+            throw new IllegalArgumentException("asset path must not be null");
+        }
         Path normalized = path.toAbsolutePath().normalize();
-        System.setProperty(ASSET_ROOT_PROPERTY, normalized.toString());
+        synchronized (HolidayServiceBuilder.class) {
+            String configured = System.getProperty(ASSET_ROOT_PROPERTY);
+            if (configured != null && !configured.isBlank()) {
+                Path existing = Path.of(configured).toAbsolutePath().normalize();
+                if (!existing.equals(normalized)) {
+                    throw new IllegalStateException(
+                            "calendar assets are already configured for " + existing
+                                    + "; refusing to replace them with " + normalized);
+                }
+            } else {
+                System.setProperty(ASSET_ROOT_PROPERTY, normalized.toString());
+            }
+        }
         this.dataPath = normalized.resolve("holidays").resolve("bundles");
         return this;
     }

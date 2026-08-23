@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       assets: ${{ steps.assets.outputs.assets }}
+      has_assets: ${{ steps.assets.outputs.has_assets }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,6 +57,7 @@ jobs:
           mapfile -t selected < <(printf '%s\n' "${selected[@]}" | awk 'NF && !seen[$0]++' | sort)
           assets=$(node -e 'console.log(JSON.stringify(process.argv.slice(1)))' "${selected[@]}")
           echo "assets=$assets" >> "$GITHUB_OUTPUT"
+          [[ "${#selected[@]}" -gt 0 ]] && echo "has_assets=true" >> "$GITHUB_OUTPUT" || echo "has_assets=false" >> "$GITHUB_OUTPUT"
 
   contracts:
     runs-on: ubuntu-latest
@@ -74,6 +76,7 @@ jobs:
 
   verify:
     needs: [discover, contracts]
+    if: needs.discover.outputs.has_assets == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -100,6 +103,7 @@ jobs:
 
   image:
     needs: [discover, verify]
+    if: needs.discover.outputs.has_assets == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -109,3 +113,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build OCI image without publishing
         run: make image API="${{ matrix.asset }}"
+      - name: Run image smoke checks
+        run: make smoke API="${{ matrix.asset }}"
