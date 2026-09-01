@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.m2 \
     -pl calendar-service -am package -Dmaven.test.skip=true
 
 FROM bellsoft/liberica-openjre-debian:21
-ARG VERSION=1.0.0-rc.1
+ARG VERSION=1.0.0-rc.2
 ARG SOURCE_COMMIT=unknown
 ENV CALENDAR_RELEASE_VERSION=${VERSION} \
     SOURCE_COMMIT=${SOURCE_COMMIT} \

@@ -3,7 +3,7 @@
   "schemaVersion": "1",
   "id": "calendar",
   "name": "Calendar API",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "contract": {
     "type": "openapi",
     "path": "contract/openapi.yaml"
@@ -15,8 +15,8 @@
   "build": {
     "verify": "make verify",
     "build": "make build",
-    "image": "make image VERSION=1.0.0-rc.1",
-    "smoke": "make smoke VERSION=1.0.0-rc.1"
+    "image": "make image VERSION=1.0.0-rc.2",
+    "smoke": "make smoke VERSION=1.0.0-rc.2"
   },
   "container": {
     "image": "api-assets/calendar:${version}",

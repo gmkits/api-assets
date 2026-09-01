@@ -39,6 +39,7 @@ public final class HdayBundle {
     private final List<DayInfo> yearView;
     private final long[] holidayBits;
     private final long[] workdayBits;
+    private final long[] weekendBits;
     private final long[] statutoryBits;
     private final long[] adjustedBits;
     private final int[] workdayPrefix;
@@ -58,6 +59,7 @@ public final class HdayBundle {
         int words = (dayCount + 63) >>> 6;
         this.holidayBits = new long[words];
         this.workdayBits = new long[words];
+        this.weekendBits = new long[words];
         this.statutoryBits = new long[words];
         this.adjustedBits = new long[words];
         buildStatusBits(days);
@@ -211,6 +213,28 @@ public final class HdayBundle {
         return workdayPrefix[end + 1] - workdayPrefix[start];
     }
 
+    /** 统计闭区间内命中的状态位数量。 */
+    int countStatus(int startDayIndex, int endDayIndex, int status) {
+        int start = Math.max(0, startDayIndex);
+        int end = Math.min(dayCount - 1, endDayIndex);
+        if (start > end) return 0;
+        int count = 0;
+        for (int index = start; index <= end; index++) {
+            if (getBit(statusBits(status), index)) count++;
+        }
+        return count;
+    }
+
+    private long[] statusBits(int status) {
+        return switch (status) {
+            case DayEntry.FLAG_IS_WEEKEND -> weekendBits;
+            case DayEntry.FLAG_IS_STATUTORY_HOLIDAY -> statutoryBits;
+            case DayEntry.FLAG_IS_ADJUSTED_WORKDAY -> adjustedBits;
+            case DayEntry.FLAG_IS_WORKDAY -> workdayBits;
+            default -> throw new IllegalArgumentException("Unknown status flag: " + status);
+        };
+    }
+
     /**
      * 从指定起点开始扫描下一个法定节假日。
      */
@@ -278,6 +302,7 @@ public final class HdayBundle {
             DayEntry entry = days[i];
             if (entry.isHoliday()) setBit(holidayBits, i);
             if (entry.isWorkday()) setBit(workdayBits, i);
+            if (entry.isWeekend()) setBit(weekendBits, i);
             if (entry.isStatutoryHoliday()) setBit(statutoryBits, i);
             if (entry.isAdjustedWorkday()) setBit(adjustedBits, i);
         }

@@ -212,6 +212,31 @@ class HolidayServiceTest {
         assertStatutoryHoliday(LocalDate.of(2025, 5, 2));
     }
 
+    @Test
+    void workdayStats_areConsistentWithoutMaterializingRange() {
+        WorkdayStats stats = service.getWorkdayStats("CN",
+                LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31));
+        assertEquals(31, stats.calendarDays());
+        assertEquals(stats.calendarDays(), stats.workdays() + stats.nonWorkdays());
+        assertTrue(stats.weekendDays() > 0);
+        assertTrue(stats.statutoryHolidayDays() > 0);
+        assertTrue(stats.adjustedWorkdays() > 0);
+    }
+
+    @Test
+    void holidayPeriods_groupNamesAndStatusDates() {
+        List<HolidayPeriod> periods = service.getHolidayPeriods("CN", 2025);
+        assertFalse(periods.isEmpty());
+        HolidayPeriod spring = periods.stream()
+                .filter(period -> "SPRING_FESTIVAL".equals(period.code()))
+                .findFirst().orElseThrow();
+        assertEquals(LocalDate.of(2025, 1, 26), spring.startDate());
+        assertTrue(spring.daysOff().contains(LocalDate.of(2025, 1, 28)));
+        assertTrue(spring.adjustedWorkdays().contains(LocalDate.of(2025, 1, 26)));
+        assertTrue(spring.statutoryDates().contains(LocalDate.of(2025, 1, 29)));
+        assertFalse(spring.names().get("zh-CN").isEmpty());
+    }
+
     private static void assertAdjustedWorkday(LocalDate date) {
         DayInfo info = service.getDayInfo(date);
         assertNotNull(info);

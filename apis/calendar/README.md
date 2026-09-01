@@ -28,13 +28,22 @@ make -C apis/calendar assets
 ```text
 GET /v1/calendar/dates/{date}
 GET /v1/calendar/dates?from=&to=
+POST /v1/calendar/dates:batch
+GET /v1/calendar/months/{year}/{month}
 GET /v1/calendar/years/{year}
 GET /v1/calendar/workdays/count?from=&to=
+GET /v1/calendar/holidays?year=
+GET /v1/calendar/holidays/next?from=
+GET /v1/calendar/regions
 GET /v1/calendar/lunar/from-solar?date=
 GET /v1/calendar/solar/from-lunar?year=&month=&day=&leapMonth=
 GET /v1/calendar/solar-terms/{year}
 GET /v1/calendar/assets/manifest
 ```
+
+所有集合响应均为 `{region, locale, from, to, count, items}`；批量接口额外返回合并后的
+`ranges`。单日查询支持 `locale=zh-CN|en-US` 和严格字段投影 `fields`，英文名称缺失时
+回退中文并将 `localeFallback` 设为 `true`。完整可运行示例见 [`demo`](demo/README.md)。
 
 `UPSTREAM_TOKEN` 非空时保护 `/v1/calendar/**` 和 `/internal/metrics`。
 `CALENDAR_RELEASE_VERSION` 与 `SOURCE_COMMIT` 由构建平台注入并显示在 metadata。

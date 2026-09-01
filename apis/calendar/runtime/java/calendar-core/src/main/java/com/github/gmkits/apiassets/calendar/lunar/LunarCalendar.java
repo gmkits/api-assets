@@ -32,7 +32,7 @@ import java.util.Arrays;
  * <ol>
  *   <li>年天数缓存（YEAR_DAYS_CACHE）：yearDays() O(1) 查表</li>
  *   <li>年前缀和数组（CUMULATIVE_DAYS）：solarToLunar 年份定位 O(log n) 二分查找</li>
- *   <li>按需扁平日槽表：公历转农历 O(1) 定位月份；首次转换时才分配约 72 KiB</li>
+ *   <li>年度月份偏移表：公历转农历最多逆向扫描 13 个槽位，避免常驻每日查找表</li>
  *   <li>月份键直达表：农历转公历 O(1) 定位月份槽</li>
  *   <li>节气 O(1) 位运算解码：权威数据 + 2-bit 偏移压缩，1901-2100 准确日期</li>
  * </ol>
@@ -119,31 +119,6 @@ public final class LunarCalendar {
 
     /** 普通月/闰月编码直接映射到月份槽，农历转公历无需扫描。 */
     private static final byte[] MONTH_SLOT_LOOKUP = new byte[YEAR_COUNT * 32];
-
-    /**
-     * 公历转农历的紧凑日槽索引。
-     *
-     * <p>完整覆盖范围只需一个约 72 KiB 的 {@code byte[]}。通过 holder idiom 延迟构建，
-     * 不调用 {@link #solarToLunar(LocalDate)} 的编译或审计场景不会承担这部分常驻内存。</p>
-     */
-    private static final class DaySlotLookup {
-        private static final byte[] VALUES = build();
-
-        private static byte[] build() {
-            byte[] values = new byte[(int) CUMULATIVE_DAYS[YEAR_COUNT]];
-            for (int yi = 0; yi < YEAR_COUNT; yi++) {
-                int yearBase = (int) CUMULATIVE_DAYS[yi];
-                int monthBase = yi * MONTH_STRIDE;
-                int slotCount = MONTH_SLOT_COUNTS[yi] & 0xff;
-                for (int slot = 0; slot < slotCount; slot++) {
-                    int from = yearBase + (MONTH_OFFSETS[monthBase + slot] & 0xffff);
-                    int to = yearBase + (MONTH_OFFSETS[monthBase + slot + 1] & 0xffff);
-                    Arrays.fill(values, from, to, (byte) slot);
-                }
-            }
-            return values;
-        }
-    }
 
     static {
         // 一次性预计算所有年份天数、前缀和和月份偏移表
@@ -260,7 +235,7 @@ public final class LunarCalendar {
      * <ol>
      *   <li>计算公历日期与基准日的天数偏移 offset</li>
      *   <li>二分查找 CUMULATIVE_DAYS → O(log 201) ≈ 8 次比较定位农历年</li>
-     *   <li>查按需生成的扁平日槽表，O(1) 定位月槽</li>
+     *   <li>在当前农历年最多逆向扫描 13 个月份槽定位月槽</li>
      *   <li>组装结果</li>
      * </ol>
      * <p>总时间 &lt; 1μs（二分最多 8 步 + O(1) 月份定位，全部为数组索引操作）。</p>
@@ -286,11 +261,11 @@ public final class LunarCalendar {
         int lunarYear = START_YEAR + lo;
         checkArgument(lunarYear <= END_YEAR,
             "日期超出农历转换范围（%s-%s）", START_YEAR, END_YEAR);
-        int absoluteDay = (int) offset;
         offset -= CUMULATIVE_DAYS[lo];
 
         int base = lo * MONTH_STRIDE;
-        int slot = DaySlotLookup.VALUES[absoluteDay] & 0xff;
+        int slotCount = MONTH_SLOT_COUNTS[lo] & 0xff;
+        int slot = findMonthSlot(base, slotCount, offset);
 
         int m = MONTH_META[base + slot] & 0xff;
         int lunarMonth = m & 0xF;
@@ -298,6 +273,16 @@ public final class LunarCalendar {
         int lunarDay = (int) (offset - (MONTH_OFFSETS[base + slot] & 0xffff)) + 1;
 
         return buildLunarInfo(lunarYear, lunarMonth, lunarDay, isLeapMonth);
+    }
+
+    /** 在一个农历年内定位包含 dayOffset 的月份槽；槽位最多 13 个。 */
+    private static int findMonthSlot(int base, int slotCount, long dayOffset) {
+        for (int slot = slotCount - 1; slot >= 0; slot--) {
+            if (dayOffset >= (MONTH_OFFSETS[base + slot] & 0xffff)) {
+                return slot;
+            }
+        }
+        throw new IllegalStateException("农历月份偏移表不包含日期偏移: " + dayOffset);
     }
 
     /**

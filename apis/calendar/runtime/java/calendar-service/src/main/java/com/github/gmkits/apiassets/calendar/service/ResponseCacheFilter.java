@@ -15,20 +15,30 @@ import java.io.IOException;
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE)
 public final class ResponseCacheFilter extends OncePerRequestFilter {
+    private final boolean protectedApi;
+
+    public ResponseCacheFilter(CalendarProperties properties) {
+        this.protectedApi = properties.getUpstreamToken() != null
+                && !properties.getUpstreamToken().isBlank();
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
         chain.doFilter(request, response);
         int status = response.getStatus();
         if (!((status >= 200 && status < 300) || status == 304)
-                || response.containsHeader("Cache-Control")) return;
+                || response.containsHeader("Cache-Control")
+                || !("GET".equals(request.getMethod()) || "HEAD".equals(request.getMethod()))) return;
         String path = request.getRequestURI();
+        String visibility = protectedApi ? "private" : "public";
+        if (protectedApi) response.setHeader("Vary", "Authorization");
         if (path.startsWith("/v1/calendar/assets/") && !path.endsWith("/manifest")) {
-            response.setHeader("Cache-Control", "public,max-age=86400");
+            response.setHeader("Cache-Control", visibility + ",max-age=86400");
         } else if (path.endsWith("/metadata") || path.endsWith("/assets/manifest")) {
-            response.setHeader("Cache-Control", "public,max-age=60");
+            response.setHeader("Cache-Control", visibility + ",max-age=60");
         } else if (path.startsWith("/v1/calendar/")) {
-            response.setHeader("Cache-Control", "public,max-age=3600");
+            response.setHeader("Cache-Control", visibility + ",max-age=3600");
         }
     }
 }

@@ -10,7 +10,10 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -164,6 +167,53 @@ final class HolidayServiceImpl implements HolidayService {
     }
 
     @Override
+    public WorkdayStats getWorkdayStats(String regionCode, LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            return new WorkdayStats(from, to, regionCode, 0, 0, 0, 0, 0, 0);
+        }
+        int calendarDays = Math.toIntExact(to.toEpochDay() - from.toEpochDay() + 1);
+        int workdays = 0;
+        int weekendDays = 0;
+        int statutoryDays = 0;
+        int adjustedDays = 0;
+        for (int year = from.getYear(); year <= to.getYear(); year++) {
+            HdayBundle bundle = requireBundle(regionCode, year);
+            int startIndex = year == from.getYear() ? from.getDayOfYear() - 1 : 0;
+            int endIndex = year == to.getYear()
+                    ? to.getDayOfYear() - 1 : bundle.getDayCount() - 1;
+            workdays += bundle.countWorkdays(startIndex, endIndex);
+            weekendDays += bundle.countStatus(startIndex, endIndex,
+                    HdayBundle.DayEntry.FLAG_IS_WEEKEND);
+            statutoryDays += bundle.countStatus(startIndex, endIndex,
+                    HdayBundle.DayEntry.FLAG_IS_STATUTORY_HOLIDAY);
+            adjustedDays += bundle.countStatus(startIndex, endIndex,
+                    HdayBundle.DayEntry.FLAG_IS_ADJUSTED_WORKDAY);
+        }
+        return new WorkdayStats(from, to, regionCode, calendarDays, workdays,
+                calendarDays - workdays, weekendDays, statutoryDays, adjustedDays);
+    }
+
+    @Override
+    public List<HolidayPeriod> getHolidayPeriods(String regionCode, int year) {
+        HdayBundle bundle = requireBundle(regionCode, year);
+        Map<String, HolidayPeriodBuilder> grouped = new LinkedHashMap<>();
+        for (DayInfo day : bundle.getDayInfos()) {
+            if (!day.isHoliday() && !day.isAdjustedWorkday()) continue;
+            for (String label : day.getLabels()) {
+                if (isStatusLabel(label)) continue;
+                grouped.computeIfAbsent(label, HolidayPeriodBuilder::new).add(day);
+            }
+        }
+        List<HolidayPeriod> result = new ArrayList<>(grouped.size());
+        for (HolidayPeriodBuilder builder : grouped.values()) {
+            result.add(builder.build());
+        }
+        result.sort(Comparator.comparing(HolidayPeriod::startDate)
+                .thenComparing(HolidayPeriod::code));
+        return Collections.unmodifiableList(result);
+    }
+
+    @Override
     public DayInfo getNextHoliday(LocalDate from) {
         return getNextHoliday(defaultRegion, from);
     }
@@ -194,6 +244,48 @@ final class HolidayServiceImpl implements HolidayService {
         long dayCount = to.toEpochDay() - from.toEpochDay() + 1;
         // 不按不受信任的超长区间申请巨型数组；跨年时 List 自行按实际结果扩容。
         return (int) Math.min(dayCount, 366L);
+    }
+
+    private static boolean isStatusLabel(String label) {
+        return "STATUTORY".equals(label)
+                || "ADJUSTED_WORKDAY".equals(label)
+                || "BRIDGE_DAY".equals(label);
+    }
+
+    private static final class HolidayPeriodBuilder {
+        private final String code;
+        private final Map<String, List<String>> names = new LinkedHashMap<>();
+        private final List<LocalDate> daysOff = new ArrayList<>();
+        private final List<LocalDate> adjustedWorkdays = new ArrayList<>();
+        private final List<LocalDate> statutoryDates = new ArrayList<>();
+        private LocalDate startDate;
+        private LocalDate endDate;
+        private String sourceVersion;
+
+        private HolidayPeriodBuilder(String code) {
+            this.code = code;
+        }
+
+        private void add(DayInfo day) {
+            LocalDate date = day.getDate();
+            if (startDate == null || date.isBefore(startDate)) startDate = date;
+            if (endDate == null || date.isAfter(endDate)) endDate = date;
+            sourceVersion = day.getSourceVersion();
+            if (day.isHoliday()) daysOff.add(date);
+            if (day.isAdjustedWorkday()) adjustedWorkdays.add(date);
+            if (day.isStatutoryHoliday()) statutoryDates.add(date);
+            day.getHolidayNames().forEach((locale, values) -> {
+                List<String> target = names.computeIfAbsent(locale, key -> new ArrayList<>());
+                for (String value : values) {
+                    if (!target.contains(value)) target.add(value);
+                }
+            });
+        }
+
+        private HolidayPeriod build() {
+            return new HolidayPeriod(code, names, startDate, endDate, daysOff,
+                    adjustedWorkdays, statutoryDates, sourceVersion);
+        }
     }
 
     private HdayBundle resolveBundle(String region, int year) {

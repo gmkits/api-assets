@@ -1,6 +1,6 @@
 {
   "name": "@api-assets/calendar-compiler",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "private": true,
   "description": "Private compiler and audit tooling for the calendar API asset",
   "license": "Apache-2.0",

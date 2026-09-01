@@ -2,12 +2,12 @@ name: api-assets
 
 services:
   calendar:
-    image: api-assets/calendar:${CALENDAR_VERSION:-1.0.0-rc.1}
+    image: api-assets/calendar:${CALENDAR_VERSION:-1.0.0-rc.2}
     build:
       context: .
       dockerfile: apis/calendar/runtime/java/calendar-service/Dockerfile
       args:
-        VERSION: ${CALENDAR_VERSION:-1.0.0-rc.1}
+        VERSION: ${CALENDAR_VERSION:-1.0.0-rc.2}
         SOURCE_COMMIT: ${SOURCE_COMMIT:-local}
     ports:
       - "8080:8080"

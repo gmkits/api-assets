@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
-IMAGE="${IMAGE:-api-assets/calendar:1.0.0-rc.1}"
-PORT="${CALENDAR_SMOKE_PORT:-18080}"
+IMAGE="${IMAGE:-api-assets/calendar:1.0.0-rc.2}"
+PORT="${CALENDAR_SMOKE_PORT:-18082}"
 NAME="calendar-api-smoke-$$"
 TMP_DIR="$(mktemp -d)"
 

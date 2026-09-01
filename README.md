@@ -13,8 +13,9 @@ OpenAPI 和 Make 约定。
 pnpm install --frozen-lockfile
 make verify
 make build API=calendar
-make image API=calendar VERSION=1.0.0-rc.1
-make smoke API=calendar VERSION=1.0.0-rc.1
+make image API=calendar VERSION=1.0.0-rc.2
+make smoke API=calendar VERSION=1.0.0-rc.2
+make demo API=calendar
 ```
 
 开发平台按以下顺序接入：
@@ -34,6 +35,13 @@ make smoke API=calendar VERSION=1.0.0-rc.1
 docker compose up --build
 curl http://127.0.0.1:8080/v1/calendar/dates/2025-10-06
 curl http://127.0.0.1:8080/v1/calendar/metadata
+```
+
+完整的 curl 和 Node.js 22 客户端演示见 [`apis/calendar/demo`](apis/calendar/demo/README.md)，
+也可以用一条命令启动、验证并清理：
+
+```bash
+make demo API=calendar
 ```
 
 配置 `UPSTREAM_TOKEN=secret docker compose up` 后，请求需携带

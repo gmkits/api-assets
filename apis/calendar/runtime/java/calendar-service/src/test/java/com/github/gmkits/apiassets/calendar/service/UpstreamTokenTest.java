@@ -6,6 +6,7 @@ import org.springframework.boot.test.autoconfigure.actuate.observability.AutoCon
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.HttpHeaders;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,7 +29,11 @@ class UpstreamTokenTest {
                 .andExpect(status().isUnauthorized());
         mvc.perform(get("/v1/calendar/dates/2025-01-01")
                         .header("Authorization", "Bearer test-secret"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string(HttpHeaders.CACHE_CONTROL, "private,max-age=3600"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string(HttpHeaders.VARY, "Authorization"));
         mvc.perform(get("/internal/metrics"))
                 .andExpect(status().isUnauthorized());
         mvc.perform(get("/v1/calendar/assets/manifest"))

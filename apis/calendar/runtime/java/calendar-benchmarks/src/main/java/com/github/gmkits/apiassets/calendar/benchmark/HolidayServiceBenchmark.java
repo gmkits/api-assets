@@ -4,6 +4,7 @@ import com.github.gmkits.apiassets.calendar.core.HdayBundle;
 import com.github.gmkits.apiassets.calendar.core.HdayReader;
 import com.github.gmkits.apiassets.calendar.core.HolidayService;
 import com.github.gmkits.apiassets.calendar.core.HolidayServiceBuilder;
+import com.github.gmkits.apiassets.calendar.core.WorkdayStats;
 import com.github.gmkits.apiassets.calendar.lunar.LunarCalendar;
 import com.github.gmkits.apiassets.calendar.lunar.LunarInfo;
 import com.github.gmkits.apiassets.calendar.spec.DayInfo;
@@ -49,6 +50,8 @@ public class HolidayServiceBenchmark {
         LocalDate day;
         LocalDate rangeStart;
         LocalDate rangeEnd;
+        LocalDate batchStart;
+        LocalDate batchEnd;
 
         @Setup(Level.Trial)
         public void setup() {
@@ -57,6 +60,8 @@ public class HolidayServiceBenchmark {
             day = LocalDate.of(2026, 10, 1);
             rangeStart = LocalDate.of(2026, 1, 1);
             rangeEnd = LocalDate.of(2026, 12, 31);
+            batchStart = LocalDate.of(2000, 1, 1);
+            batchEnd = batchStart.plusDays(4095);
             if (service.getDayInfo(day) == null) {
                 throw new IllegalStateException("Benchmark assets not found under " + dataPath);
             }
@@ -97,6 +102,26 @@ public class HolidayServiceBenchmark {
     @Benchmark
     public int countWorkdaysForYear(SharedState state) {
         return state.service.countWorkdays(state.rangeStart, state.rangeEnd);
+    }
+
+    @Benchmark
+    public WorkdayStats workdayStatsForYear(SharedState state) {
+        return state.service.getWorkdayStats("CN", state.rangeStart, state.rangeEnd);
+    }
+
+    @Benchmark
+    public int holidaySummary(SharedState state) {
+        return state.service.getHolidayPeriods("CN", 2026).size();
+    }
+
+    @Benchmark
+    public List<DayInfo> batch366Days(SharedState state) {
+        return state.service.getRange("CN", state.rangeStart, state.rangeEnd);
+    }
+
+    @Benchmark
+    public int batch4096Days(SharedState state) {
+        return state.service.getRange("CN", state.batchStart, state.batchEnd).size();
     }
 
     @Benchmark

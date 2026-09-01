@@ -8,6 +8,8 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: true
 
 logging:
   structured:
@@ -18,7 +20,7 @@ calendar:
   default-region: CN
   asset-path: ${CALENDAR_ASSET_PATH:${calendar.assets.path:}}
   upstream-token: ${UPSTREAM_TOKEN:}
-  release-version: ${CALENDAR_RELEASE_VERSION:1.0.0-rc.1}
+  release-version: ${CALENDAR_RELEASE_VERSION:1.0.0-rc.2}
   source-commit: ${SOURCE_COMMIT:unknown}
 
 management:

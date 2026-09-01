@@ -150,6 +150,25 @@ public interface HolidayService {
     int countWorkdays(String regionCode, LocalDate from, LocalDate to);
 
     /**
+     * 统计闭区间内的完整工作状态。
+     *
+     * @param regionCode 地区代码
+     * @param from 起始日期，包含
+     * @param to 结束日期，包含
+     * @return 工作日、周末、法定假日和调休补班数量
+     */
+    WorkdayStats getWorkdayStats(String regionCode, LocalDate from, LocalDate to);
+
+    /**
+     * 返回指定年度按节日标签聚合的节假日周期。
+     *
+     * @param regionCode 地区代码
+     * @param year 公历年份
+     * @return 按周期开始日期排序的节假日列表
+     */
+    List<HolidayPeriod> getHolidayPeriods(String regionCode, int year);
+
+    /**
      * 从指定日期（含）起查找下一个法定节假日（默认地区）。
      *
      * @param from 搜索起始日期，包含

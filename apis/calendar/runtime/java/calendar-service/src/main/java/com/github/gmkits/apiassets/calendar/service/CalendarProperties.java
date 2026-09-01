@@ -9,7 +9,7 @@ public final class CalendarProperties {
     private String defaultRegion = "CN";
     private String assetPath;
     private String upstreamToken;
-    private String releaseVersion = "1.0.0-rc.1";
+    private String releaseVersion = "1.0.0-rc.2";
     private String sourceCommit = "unknown";
 
     public String getDefaultRegion() { return defaultRegion; }
